@@ -1,0 +1,114 @@
+.result-card {
+  background: #ffffff;
+  border-radius: 0;
+  padding: 24px;
+  border: 1px solid #000000;
+  transition: background 0.2s;
+}
+
+.result-card:hover {
+  background: #f5f5f5;
+}
+
+.result-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.result-card-header h3 {
+  font-size: 1.1rem;
+  color: #000000;
+  margin: 0;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.copy-button {
+  padding: 8px 16px;
+  background: #000000;
+  color: #ffffff;
+  border: 1px solid #000000;
+  border-radius: 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+
+.copy-button:hover {
+  background: #ffffff;
+  color: #000000;
+}
+
+.copy-button.copied {
+  background: #000000;
+  color: #ffffff;
+}
+
+.result-card-content {
+  background: #ffffff;
+  border-radius: 0;
+  padding: 16px;
+  border: 1px solid #000000;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.result-card-content pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #000000;
+}
+
+.hashtags-card {
+  background: #ffffff;
+  border-radius: 0;
+  padding: 24px;
+  border: 1px solid #000000;
+}
+
+.hashtags-card h3 {
+  font-size: 1.1rem;
+  color: #000000;
+  margin-bottom: 16px;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hashtags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.hashtag {
+  display: inline-block;
+  padding: 8px 12px;
+  background: #000000;
+  color: #ffffff;
+  border-radius: 0;
+  font-size: 0.85rem;
+  font-weight: 400;
+  cursor: default;
+  border: 1px solid #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hashtags-card .copy-button {
+  width: 100%;
+  padding: 12px;
+  font-size: 0.9rem;
+}
+
