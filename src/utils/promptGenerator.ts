@@ -34,7 +34,7 @@ export function generatePrompts(
   const targetAudience = buildTargetAudience(options)
   
   // 톤앤매너 설정
-  const toneAndStyle = buildToneAndStyle(options, contentType)
+  const toneAndStyle = buildToneAndStyle(options)
   
   // 메타 프롬프트 생성
   const metaPrompt = `당신은 ${typeInfo.name} 전문 작가입니다. 
@@ -65,7 +65,7 @@ ${targetAudience ? `타겟 독자: ${targetAudience}` : ''}
 ${toneAndStyle ? `톤앤매너: ${toneAndStyle}` : ''}
 
 작성 가이드라인:
-${getContentGuidelines(contentType, options)}
+${getContentGuidelines(contentType)}
 
 구조 요구사항:
 ${getStructureRequirements(contentType)}
@@ -107,7 +107,7 @@ function buildTargetAudience(options?: DetailedOptions): string {
   return parts.length > 0 ? parts.join(', ') : ''
 }
 
-function buildToneAndStyle(options?: DetailedOptions, contentType?: ContentType): string {
+function buildToneAndStyle(options?: DetailedOptions): string {
   if (!options) return ''
   
   const styles: string[] = []
@@ -136,7 +136,7 @@ function buildToneAndStyle(options?: DetailedOptions, contentType?: ContentType)
   return styles.length > 0 ? styles.join(', ') : ''
 }
 
-function getContentGuidelines(contentType: ContentType, options?: DetailedOptions): string {
+function getContentGuidelines(contentType: ContentType): string {
   switch (contentType) {
     case 'blog':
       return `- SEO 최적화: 관련 키워드 자연스럽게 포함

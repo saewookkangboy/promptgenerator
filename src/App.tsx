@@ -1,4 +1,3 @@
-import React, { useState } from 'react'
 import PromptGenerator from './components/PromptGenerator'
 import './App.css'
 
