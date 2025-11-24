@@ -1,10 +1,13 @@
 // 이미지 프롬프트 생성 UI 컴포넌트
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { ImagePromptOptions, ImageModel, ImageStyle, Composition, Lighting, ColorPalette, TechnicalSettings } from '../types/image.types'
 import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
+import { validateRequired } from '../utils/validation'
 import ResultCard from './ResultCard'
+import ErrorMessage from './ErrorMessage'
+import LoadingSpinner from './LoadingSpinner'
 import './PromptGenerator.css'
 
 const IMAGE_MODELS: { value: ImageModel; label: string }[] = [
@@ -98,40 +101,54 @@ function ImagePromptGenerator() {
   const [negativeInput, setNegativeInput] = useState('')
   const [results, setResults] = useState<PromptResult | null>(null)
   const [showAdvanced, setShowAdvanced] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
-  const handleGenerate = () => {
-    if (!subject.trim()) {
-      alert('주제를 입력해주세요.')
+  const handleGenerate = useCallback(() => {
+    const validation = validateRequired(subject, '주제')
+    if (!validation.isValid) {
+      setError(validation.error || '주제를 입력해주세요.')
       return
     }
 
-    const options: ImagePromptOptions = {
-      category: 'image',
-      userInput: subject,
-      model,
-      subject,
-      style,
-      composition,
-      lighting,
-      color,
-      technical,
-      negativePrompt: negativePrompt.length > 0 ? negativePrompt : undefined,
-      modelSpecific: {
-        midjourney: {
-          version: 6,
-          chaos: 0,
-        },
-        dalle: {
-          style: 'vivid',
-          size: '1024x1024',
-        },
-      },
-    }
+    setError(null)
+    setIsGenerating(true)
 
-    const generator = PromptGeneratorFactory.createImageGenerator(model)
-    const generated = generator.generate(options)
-    setResults(generated)
-  }
+    setTimeout(() => {
+      try {
+        const options: ImagePromptOptions = {
+          category: 'image',
+          userInput: subject,
+          model,
+          subject,
+          style,
+          composition,
+          lighting,
+          color,
+          technical,
+          negativePrompt: negativePrompt.length > 0 ? negativePrompt : undefined,
+          modelSpecific: {
+            midjourney: {
+              version: 6,
+              chaos: 0,
+            },
+            dalle: {
+              style: 'vivid',
+              size: '1024x1024',
+            },
+          },
+        }
+
+        const generator = PromptGeneratorFactory.createImageGenerator(model)
+        const generated = generator.generate(options) as PromptResult
+        setResults(generated)
+      } catch (error: any) {
+        setError(`프롬프트 생성 오류: ${error.message}`)
+      } finally {
+        setIsGenerating(false)
+      }
+    }, 300)
+  }, [subject, model, style, composition, lighting, color, technical, negativePrompt])
 
   const addNegativePrompt = () => {
     if (negativeInput.trim()) {
@@ -371,12 +388,20 @@ function ImagePromptGenerator() {
           )}
         </div>
 
-        <button onClick={handleGenerate} className="generate-button">
-          이미지 프롬프트 생성하기
+        <button 
+          onClick={handleGenerate} 
+          className="generate-button"
+          disabled={isGenerating}
+          aria-busy={isGenerating}
+        >
+          {isGenerating ? '생성 중...' : '이미지 프롬프트 생성하기'}
         </button>
       </div>
 
-      {results && (
+      {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+      {isGenerating && <LoadingSpinner message="이미지 프롬프트를 생성하고 있습니다..." />}
+
+      {results && !isGenerating && (
         <div className="results-section">
           <ResultCard
             title="메타 프롬프트"

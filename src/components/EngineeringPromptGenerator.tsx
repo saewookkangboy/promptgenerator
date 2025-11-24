@@ -1,10 +1,13 @@
 // 프롬프트 엔지니어링 UI 컴포넌트
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { EngineeringPromptOptions, EngineeringConfig } from '../types/engineering.types'
 import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
+import { validateRequired } from '../utils/validation'
 import ResultCard from './ResultCard'
+import ErrorMessage from './ErrorMessage'
+import LoadingSpinner from './LoadingSpinner'
 import './PromptGenerator.css'
 
 type EngineeringMethod = 'cot' | 'few-shot' | 'role-based' | 'zero-shot' | 'optimize'
@@ -14,6 +17,8 @@ function EngineeringPromptGenerator() {
   const [basePrompt, setBasePrompt] = useState('')
   const [config, setConfig] = useState<EngineeringConfig>({})
   const [results, setResults] = useState<PromptResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
   // Few-shot 예시 관리
   const [fewShotExamples, setFewShotExamples] = useState<Array<{ input: string; output: string; explanation?: string }>>([
@@ -28,19 +33,26 @@ function EngineeringPromptGenerator() {
   const [expertise, setExpertise] = useState<string[]>([''])
   const [perspective, setPerspective] = useState('')
 
-  const handleGenerate = () => {
-    if (!basePrompt.trim()) {
-      alert('기본 프롬프트를 입력해주세요.')
+  const handleGenerate = useCallback(() => {
+    const validation = validateRequired(basePrompt, '기본 프롬프트')
+    if (!validation.isValid) {
+      setError(validation.error || '기본 프롬프트를 입력해주세요.')
       return
     }
 
-    const engineeringConfig: EngineeringConfig = {}
+    setError(null)
+    setIsGenerating(true)
+
+    setTimeout(() => {
+      try {
+        const engineeringConfig: EngineeringConfig = {}
 
     // 방법별 설정 구성
     if (method === 'cot') {
       const validSteps = cotSteps.filter(s => s.trim())
       if (validSteps.length === 0) {
-        alert('Chain of Thought 단계를 최소 1개 이상 입력해주세요.')
+        setError('Chain of Thought 단계를 최소 1개 이상 입력해주세요.')
+        setIsGenerating(false)
         return
       }
       engineeringConfig.cot = {
@@ -52,7 +64,8 @@ function EngineeringPromptGenerator() {
     if (method === 'few-shot') {
       const validExamples = fewShotExamples.filter(e => e.input.trim() && e.output.trim())
       if (validExamples.length === 0) {
-        alert('Few-shot 예시를 최소 1개 이상 입력해주세요.')
+        setError('Few-shot 예시를 최소 1개 이상 입력해주세요.')
+        setIsGenerating(false)
         return
       }
       engineeringConfig.fewShot = {
@@ -63,12 +76,14 @@ function EngineeringPromptGenerator() {
 
     if (method === 'role-based') {
       if (!role.trim()) {
-        alert('역할을 입력해주세요.')
+        setError('역할을 입력해주세요.')
+        setIsGenerating(false)
         return
       }
       const validExpertise = expertise.filter(e => e.trim())
       if (validExpertise.length === 0) {
-        alert('전문성을 최소 1개 이상 입력해주세요.')
+        setError('전문성을 최소 1개 이상 입력해주세요.')
+        setIsGenerating(false)
         return
       }
       engineeringConfig.roleBased = {
@@ -95,10 +110,16 @@ function EngineeringPromptGenerator() {
       engineeringConfig,
     }
 
-    const generator = PromptGeneratorFactory.create('engineering')
-    const generated = generator.generate(options)
-    setResults(generated)
-  }
+        const generator = PromptGeneratorFactory.create('engineering')
+        const generated = generator.generate(options)
+        setResults(generated)
+      } catch (error: any) {
+        setError(`프롬프트 생성 오류: ${error.message}`)
+      } finally {
+        setIsGenerating(false)
+      }
+    }, 300)
+  }, [method, basePrompt, config, cotSteps, fewShotExamples, role, expertise, perspective])
 
   const addFewShotExample = () => {
     setFewShotExamples([...fewShotExamples, { input: '', output: '', explanation: '' }])
@@ -406,12 +427,20 @@ function EngineeringPromptGenerator() {
           </div>
         )}
 
-        <button onClick={handleGenerate} className="generate-button">
-          프롬프트 엔지니어링 생성하기
+        <button 
+          onClick={handleGenerate} 
+          className="generate-button"
+          disabled={isGenerating}
+          aria-busy={isGenerating}
+        >
+          {isGenerating ? '생성 중...' : '프롬프트 엔지니어링 생성하기'}
         </button>
       </div>
 
-      {results && (
+      {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+      {isGenerating && <LoadingSpinner message="프롬프트를 엔지니어링하고 있습니다..." />}
+
+      {results && !isGenerating && (
         <div className="results-section">
           <ResultCard
             title="메타 프롬프트"

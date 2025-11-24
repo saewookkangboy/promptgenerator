@@ -1,0 +1,56 @@
+.error-message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  background: #ffffff;
+  border: 2px solid #000000;
+  margin-bottom: 24px;
+  gap: 12px;
+}
+
+.error-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.error-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.error-text {
+  font-size: 0.9rem;
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.error-dismiss {
+  background: transparent;
+  border: none;
+  color: #000000;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s, color 0.2s;
+}
+
+.error-dismiss:hover {
+  background: #000000;
+  color: #ffffff;
+}
+
+.error-dismiss:focus {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
+}
+

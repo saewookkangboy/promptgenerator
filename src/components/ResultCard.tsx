@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { convertToNativeEnglish } from '../utils/englishTranslator'
 import './ResultCard.css'
 
@@ -14,20 +14,22 @@ function ResultCard({ title, content, englishVersion, showEnglishToggle = false 
   const [showEnglish, setShowEnglish] = useState(false)
   const [englishContent, setEnglishContent] = useState<string | null>(null)
 
-  const handleToggleEnglish = () => {
+  const handleToggleEnglish = useCallback(() => {
     if (!showEnglish && !englishContent) {
       // 영어 버전이 없으면 생성
       const translated = convertToNativeEnglish(content)
       setEnglishContent(translated)
     }
     setShowEnglish(!showEnglish)
-  }
+  }, [showEnglish, englishContent, content])
 
-  const displayContent = showEnglish 
-    ? (englishVersion || englishContent || convertToNativeEnglish(content))
-    : content
+  const displayContent = useMemo(() => {
+    return showEnglish 
+      ? (englishVersion || englishContent || convertToNativeEnglish(content))
+      : content
+  }, [showEnglish, englishVersion, englishContent, content])
 
-  const handleCopy = async () => {
+  const handleCopy = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(displayContent)
       setCopied(true)
@@ -35,7 +37,7 @@ function ResultCard({ title, content, englishVersion, showEnglishToggle = false 
     } catch (err) {
       alert('복사에 실패했습니다. 텍스트를 직접 선택하여 복사해주세요.')
     }
-  }
+  }, [displayContent])
 
   return (
     <div className="result-card">

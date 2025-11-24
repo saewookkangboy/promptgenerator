@@ -1,7 +1,10 @@
-import { useState } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { ContentType, DetailedOptions } from '../types'
 import { generatePrompts } from '../utils/promptGenerator'
+import { validatePrompt } from '../utils/validation'
 import ResultCard from './ResultCard'
+import ErrorMessage from './ErrorMessage'
+import LoadingSpinner from './LoadingSpinner'
 import './PromptGenerator.css'
 
 const CONTENT_TYPES: { value: ContentType; label: string }[] = [
@@ -55,26 +58,52 @@ function PromptGenerator() {
     conversational: false,
   })
   const [results, setResults] = useState<ReturnType<typeof generatePrompts> | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
-  const handleGenerate = () => {
-    if (!userPrompt.trim()) {
-      alert('프롬프트를 입력해주세요.')
+  const handleGenerate = useCallback(() => {
+    // 입력 검증
+    const validation = validatePrompt(userPrompt)
+    if (!validation.isValid) {
+      setError(validation.error || '프롬프트를 입력해주세요.')
       return
     }
 
-    const options: DetailedOptions = {
-      age: detailedOptions.age || undefined,
-      gender: detailedOptions.gender || undefined,
-      occupation: detailedOptions.occupation || undefined,
-      conversational: detailedOptions.conversational,
-    }
+    setError(null)
+    setIsGenerating(true)
 
-    const generated = generatePrompts(userPrompt, contentType, options)
-    setResults(generated)
-  }
+    // 비동기 처리 시뮬레이션 (실제로는 즉시 생성되지만 UX를 위해)
+    setTimeout(() => {
+      try {
+        const options: DetailedOptions = {
+          age: detailedOptions.age || undefined,
+          gender: detailedOptions.gender || undefined,
+          occupation: detailedOptions.occupation || undefined,
+          conversational: detailedOptions.conversational,
+        }
+
+        const generated = generatePrompts(userPrompt, contentType, options)
+        setResults(generated)
+      } catch (err) {
+        setError('프롬프트 생성 중 오류가 발생했습니다.')
+      } finally {
+        setIsGenerating(false)
+      }
+    }, 300)
+  }, [userPrompt, contentType, detailedOptions])
+
+  const handleDismissError = useCallback(() => {
+    setError(null)
+  }, [])
+
+  const isFormValid = useMemo(() => {
+    return userPrompt.trim().length >= 3
+  }, [userPrompt])
 
   return (
     <div className="prompt-generator">
+      {error && <ErrorMessage message={error} onDismiss={handleDismissError} />}
+      
       <div className="input-section">
         <div className="form-group">
           <label htmlFor="content-type">콘텐츠 유형 선택</label>
@@ -191,12 +220,19 @@ function PromptGenerator() {
           )}
         </div>
 
-        <button onClick={handleGenerate} className="generate-button">
-          프롬프트 생성하기
+        <button 
+          onClick={handleGenerate} 
+          className="generate-button"
+          disabled={!isFormValid || isGenerating}
+          aria-busy={isGenerating}
+        >
+          {isGenerating ? '생성 중...' : '프롬프트 생성하기'}
         </button>
       </div>
 
-      {results && (
+      {isGenerating && <LoadingSpinner message="프롬프트를 생성하고 있습니다..." />}
+
+      {results && !isGenerating && (
         <div className="results-section">
           <ResultCard
             title="메타 프롬프트"

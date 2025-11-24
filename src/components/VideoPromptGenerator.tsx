@@ -1,10 +1,12 @@
 // 동영상 프롬프트 생성 UI 컴포넌트
 
-import { useState } from 'react'
+import { useState, useCallback } from 'react'
 import { VideoPromptOptions, VideoModel, VideoScene, CameraSettings, MotionSettings, VideoStyle, VideoTechnicalSettings } from '../types/video.types'
 import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
 import ResultCard from './ResultCard'
+import ErrorMessage from './ErrorMessage'
+import LoadingSpinner from './LoadingSpinner'
 import './PromptGenerator.css'
 
 // 장면 프롬프트 표시 컴포넌트
@@ -146,14 +148,21 @@ function VideoPromptGenerator() {
     },
   ])
   const [results, setResults] = useState<PromptResult | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [isGenerating, setIsGenerating] = useState(false)
 
-  const handleGenerate = () => {
+  const handleGenerate = useCallback(() => {
     if (scenes.some(s => !s.description.trim())) {
-      alert('모든 장면의 설명을 입력해주세요.')
+      setError('모든 장면의 설명을 입력해주세요.')
       return
     }
 
-    const options: VideoPromptOptions = {
+    setError(null)
+    setIsGenerating(true)
+
+    setTimeout(() => {
+      try {
+        const options: VideoPromptOptions = {
       category: 'video',
       userInput: scenes.map(s => s.description).join(' '),
       model,
@@ -174,10 +183,16 @@ function VideoPromptGenerator() {
       },
     }
 
-    const generator = PromptGeneratorFactory.createVideoGenerator(model)
-    const generated = generator.generate(options)
-    setResults(generated)
-  }
+        const generator = PromptGeneratorFactory.createVideoGenerator(model)
+        const generated = generator.generate(options)
+        setResults(generated)
+      } catch (error: any) {
+        setError(`프롬프트 생성 오류: ${error.message}`)
+      } finally {
+        setIsGenerating(false)
+      }
+    }, 300)
+  }, [model, overallStyle, hasReferenceImage, referenceImageDescription, technical, scenes])
 
   const addScene = () => {
     const newScene: VideoScene = {
@@ -523,12 +538,20 @@ function VideoPromptGenerator() {
           </div>
         </div>
 
-        <button onClick={handleGenerate} className="generate-button">
-          동영상 프롬프트 생성하기
+        <button 
+          onClick={handleGenerate} 
+          className="generate-button"
+          disabled={isGenerating}
+          aria-busy={isGenerating}
+        >
+          {isGenerating ? '생성 중...' : '동영상 프롬프트 생성하기'}
         </button>
       </div>
 
-      {results && (
+      {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
+      {isGenerating && <LoadingSpinner message="동영상 프롬프트를 생성하고 있습니다..." />}
+
+      {results && !isGenerating && (
         <div className="results-section">
           <ResultCard
             title="메타 프롬프트"

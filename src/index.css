@@ -70,5 +70,47 @@ body {
 #root {
   max-width: 1200px;
   margin: 0 auto;
+  min-height: 100vh;
+}
+
+/* 접근성 개선 */
+*:focus-visible {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
+}
+
+/* 스크린 리더 전용 텍스트 */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* 반응형 개선 */
+@media (max-width: 768px) {
+  body {
+    padding: 12px;
+  }
+
+  #root {
+    max-width: 100%;
+  }
+}
+
+/* 애니메이션 성능 최적화 */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
 

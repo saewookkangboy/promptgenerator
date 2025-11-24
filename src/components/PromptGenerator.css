@@ -89,9 +89,16 @@
   color: #000000;
 }
 
-.generate-button:active {
+.generate-button:active:not(:disabled) {
   background: #000000;
   color: #ffffff;
+}
+
+.generate-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f5f5f5;
+  color: #000000;
 }
 
 .results-section {
@@ -188,6 +195,7 @@
   accent-color: #000000;
 }
 
+/* 반응형 개선 */
 @media (min-width: 768px) {
   .results-section {
     grid-template-columns: 1fr 1fr;
@@ -203,6 +211,32 @@
 
   .checkbox-group {
     grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 768px) {
+  .prompt-generator {
+    padding: 24px 16px;
+  }
+
+  .form-group {
+    margin-bottom: 20px;
+  }
+
+  .results-section {
+    gap: 16px;
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .prompt-generator {
+    padding: 16px 12px;
+  }
+
+  .generate-button {
+    padding: 14px;
+    font-size: 0.9rem;
   }
 }
 
