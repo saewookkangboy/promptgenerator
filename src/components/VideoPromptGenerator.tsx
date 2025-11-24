@@ -1,6 +1,6 @@
 // 동영상 프롬프트 생성 UI 컴포넌트
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { VideoPromptOptions, VideoModel, VideoScene, CameraSettings, MotionSettings, VideoStyle, VideoTechnicalSettings } from '../types/video.types'
 import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
@@ -146,18 +146,6 @@ function VideoPromptGenerator() {
     },
   ])
   const [results, setResults] = useState<PromptResult | null>(null)
-  const [isManualDuration, setIsManualDuration] = useState(false)
-
-  // 장면이 변경될 때마다 총 길이 자동 계산
-  useEffect(() => {
-    if (!isManualDuration) {
-      const calculatedDuration = scenes.reduce((sum, s) => sum + s.duration, 0)
-      if (calculatedDuration > 0) {
-        setTechnical(prev => ({ ...prev, totalDuration: calculatedDuration }))
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [scenes, isManualDuration]) // 장면이 변경될 때만 실행
 
   const handleGenerate = () => {
     if (scenes.some(s => !s.description.trim())) {
@@ -233,6 +221,8 @@ function VideoPromptGenerator() {
       s.id === id ? { ...s, motion: { ...s.motion, ...updates } } : s
     ))
   }
+
+  const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0)
 
   return (
     <div className="prompt-generator">
@@ -423,43 +413,15 @@ function VideoPromptGenerator() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="total-duration">총 길이 (초)</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <input
-                id="total-duration"
-                type="number"
-                min="1"
-                max="120"
-                step="1"
-                value={technical.totalDuration}
-                onChange={(e) => {
-                  const value = parseInt(e.target.value) || 1
-                  setTechnical({ ...technical, totalDuration: Math.min(120, Math.max(1, value)) })
-                  setIsManualDuration(true)
-                }}
-                className="option-select"
-                style={{ width: '100px' }}
-              />
-              <span style={{ fontSize: '0.9rem', opacity: 0.7 }}>초</span>
-              <button
-                type="button"
-                onClick={() => {
-                  const calculatedDuration = scenes.reduce((sum, s) => sum + s.duration, 0)
-                  setTechnical({ ...technical, totalDuration: calculatedDuration || 1 })
-                  setIsManualDuration(false)
-                }}
-                className="copy-button"
-                style={{ padding: '6px 12px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
-              >
-                장면 합계로 설정
-              </button>
-            </div>
-            <small style={{ display: 'block', marginTop: '4px', opacity: 0.6, fontSize: '0.85rem' }}>
-              {!isManualDuration 
-                ? `자동 계산: ${scenes.reduce((sum, s) => sum + s.duration, 0)}초 (장면 합계)`
-                : `수동 설정: ${technical.totalDuration}초`
-              }
-            </small>
+            <label>총 길이: {totalDuration}초</label>
+            <input
+              type="range"
+              min="5"
+              max="120"
+              value={technical.totalDuration}
+              onChange={(e) => setTechnical({ ...technical, totalDuration: parseInt(e.target.value) })}
+              className="option-select"
+            />
           </div>
         </div>
 
