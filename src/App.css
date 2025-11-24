@@ -37,31 +37,25 @@
   padding: 16px 24px;
   background: #ffffff;
   border: none;
-  border-bottom: 2px solid #000000;
+  border-bottom: 2px solid transparent;
   color: #000000;
   font-size: 0.9rem;
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
   position: relative;
   top: 1px;
 }
 
 .tab-button:hover:not(:disabled) {
-  background: #000000;
-  color: #ffffff;
+  background: #f5f5f5;
 }
 
 .tab-button.active {
   border-bottom: 2px solid #000000;
   font-weight: 500;
-}
-
-.tab-button.active:hover:not(:disabled) {
-  background: #000000;
-  color: #ffffff;
 }
 
 .tab-button:disabled {
