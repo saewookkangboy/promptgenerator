@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { ContentType, DetailedOptions } from '../types'
-import { generatePrompts } from '../utils/promptGenerator'
+import { BasePromptOptions, PromptResult } from '../types/prompt.types'
+import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
 import ResultCard from './ResultCard'
 import './PromptGenerator.css'
 
@@ -54,7 +55,7 @@ function PromptGenerator() {
     occupation: '',
     conversational: false,
   })
-  const [results, setResults] = useState<ReturnType<typeof generatePrompts> | null>(null)
+  const [results, setResults] = useState<PromptResult | null>(null)
 
   const handleGenerate = () => {
     if (!userPrompt.trim()) {
@@ -62,14 +63,28 @@ function PromptGenerator() {
       return
     }
 
-    const options: DetailedOptions = {
-      age: detailedOptions.age || undefined,
-      gender: detailedOptions.gender || undefined,
-      occupation: detailedOptions.occupation || undefined,
+    // 새로운 구조로 변환
+    const baseOptions: BasePromptOptions & { contentType: ContentType; detailedOptions: DetailedOptions } = {
+      category: 'text',
+      userInput: userPrompt,
+      contentType: contentType,
+      detailedOptions: {
+        age: detailedOptions.age || undefined,
+        gender: detailedOptions.gender || undefined,
+        occupation: detailedOptions.occupation || undefined,
+        conversational: detailedOptions.conversational,
+      },
+      targetAudience: {
+        age: detailedOptions.age,
+        gender: detailedOptions.gender,
+        occupation: detailedOptions.occupation,
+      },
       conversational: detailedOptions.conversational,
     }
 
-    const generated = generatePrompts(userPrompt, contentType, options)
+    // 팩토리를 통해 생성기 가져오기
+    const generator = PromptGeneratorFactory.create('text')
+    const generated = generator.generate(baseOptions)
     setResults(generated)
   }
 
@@ -209,7 +224,7 @@ function PromptGenerator() {
           <div className="hashtags-card">
             <h3>해시태그</h3>
             <div className="hashtags-container">
-              {results.hashtags.map((tag, index) => (
+              {results.hashtags.map((tag: string, index: number) => (
                 <span key={index} className="hashtag">
                   {tag}
                 </span>

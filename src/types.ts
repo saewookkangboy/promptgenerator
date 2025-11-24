@@ -1,20 +1,3 @@
-export type ContentType = 
-  | 'blog'
-  | 'linkedin'
-  | 'facebook'
-  | 'instagram'
-  | 'youtube'
-
-export interface DetailedOptions {
-  age?: string
-  gender?: string
-  occupation?: string
-  conversational: boolean
-}
-
-export interface PromptResult {
-  metaPrompt: string
-  contextPrompt: string
-  hashtags: string[]
-}
+// 하위 호환성을 위해 기존 타입 재export
+export type { ContentType, DetailedOptions, PromptResult } from './types/prompt.types'
 
