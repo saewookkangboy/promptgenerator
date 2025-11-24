@@ -222,8 +222,6 @@ function VideoPromptGenerator() {
     ))
   }
 
-  const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0)
-
   return (
     <div className="prompt-generator">
       <div className="input-section">
@@ -413,13 +411,15 @@ function VideoPromptGenerator() {
           </div>
 
           <div className="form-group">
-            <label>총 길이: {totalDuration}초</label>
+            <label>총 길이: {technical.totalDuration}초</label>
             <input
               type="range"
               min="5"
               max="120"
+              step="1"
               value={technical.totalDuration}
-              onChange={(e) => setTechnical({ ...technical, totalDuration: parseInt(e.target.value) })}
+              onChange={(e) => setTechnical({ ...technical, totalDuration: parseInt(e.target.value) || 5 })}
+              onInput={(e) => setTechnical({ ...technical, totalDuration: parseInt((e.target as HTMLInputElement).value) || 5 })}
               className="option-select"
             />
           </div>
