@@ -176,19 +176,34 @@ function finalizeEnglishExpression(text: string): string {
 /**
  * 프롬프트 결과에 영문 버전 추가
  */
-export function addEnglishVersion(result: any): any {
+interface EnglishOverrides {
+  metaPrompt?: string
+  contextPrompt?: string
+  fullPrompt?: string
+}
+
+export function addEnglishVersion<T extends Record<string, any>>(result: T, overrides: EnglishOverrides = {}): T {
   if (!result.metaPrompt && !result.fullPrompt) {
     return result
   }
 
-  const koreanText = result.fullPrompt || result.metaPrompt || ''
-  const englishVersion = convertToNativeEnglish(koreanText)
+  const englishMetaPrompt =
+    overrides.metaPrompt ??
+    (result.metaPrompt ? convertToNativeEnglish(result.metaPrompt) : undefined)
+
+  const englishContextPrompt =
+    overrides.contextPrompt ??
+    (result.contextPrompt ? convertToNativeEnglish(result.contextPrompt) : undefined)
+
+  const englishVersion =
+    overrides.fullPrompt ??
+    convertToNativeEnglish(result.fullPrompt || result.metaPrompt || '')
 
   return {
     ...result,
     englishVersion,
-    englishMetaPrompt: result.metaPrompt ? convertToNativeEnglish(result.metaPrompt) : undefined,
-    englishContextPrompt: result.contextPrompt ? convertToNativeEnglish(result.contextPrompt) : undefined,
+    englishMetaPrompt,
+    englishContextPrompt,
   }
 }
 

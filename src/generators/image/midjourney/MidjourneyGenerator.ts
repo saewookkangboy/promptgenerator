@@ -11,6 +11,8 @@ export class MidjourneyGenerator extends ImagePromptGenerator {
     const parameters = this.buildParameters(options)
     const fullPrompt = `${prompt} ${parameters}`.trim()
     
+    const englishContextPrompt = this.buildEnglishContextPrompt(options)
+
     const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options),
@@ -25,7 +27,11 @@ export class MidjourneyGenerator extends ImagePromptGenerator {
     }
 
     // 영문 버전 추가
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: prompt,
+      contextPrompt: englishContextPrompt,
+      fullPrompt,
+    })
   }
 
   private buildPrompt(options: ImagePromptOptions): string {
@@ -132,6 +138,23 @@ export class MidjourneyGenerator extends ImagePromptGenerator {
 ${options.negativePrompt && options.negativePrompt.length > 0 ? `제외 요소: ${options.negativePrompt.join(', ')}` : ''}
 ${midjourney?.chaos ? `창의성 (Chaos): ${midjourney.chaos}` : ''}
 ${midjourney?.seed ? `시드: ${midjourney.seed}` : ''}`
+  }
+
+  private buildEnglishContextPrompt(options: ImagePromptOptions): string {
+    const midjourney = options.modelSpecific?.midjourney
+
+    return `Image generation context (Midjourney):
+
+Model: Midjourney ${midjourney?.version || 6}
+Subject: ${options.subject}
+Style: ${options.style.artStyle}${options.style.customStyle ? ` (${options.style.customStyle})` : ''}
+Composition: ${options.composition.framing}, ${options.composition.rule}
+Lighting: ${options.lighting.type}, ${options.lighting.direction}
+Color palette: ${options.color.mood}
+Aspect ratio: ${options.technical.aspectRatio}
+${options.negativePrompt && options.negativePrompt.length > 0 ? `Exclude: ${options.negativePrompt.join(', ')}` : ''}
+${midjourney?.chaos ? `Creativity (Chaos): ${midjourney.chaos}` : ''}
+${midjourney?.seed ? `Seed: ${midjourney.seed}` : ''}`
   }
 }
 

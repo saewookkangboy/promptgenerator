@@ -15,6 +15,9 @@ export class SoraGenerator extends VideoPromptGenerator {
     
     const fullPrompt = scenes.map(s => s.prompt).join('\n\n---\n\n')
     const metaPrompt = this.buildMetaPrompt(options)
+    const englishMetaPrompt = this.buildEnglishMetaPrompt(options, scenes)
+    const englishContextPrompt = this.buildEnglishContextPrompt(options)
+    const englishFullPrompt = convertToNativeEnglish(fullPrompt)
     
     const result = {
       metaPrompt,
@@ -34,7 +37,11 @@ export class SoraGenerator extends VideoPromptGenerator {
     }
 
     // 영문 버전 추가
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: englishMetaPrompt,
+      contextPrompt: englishContextPrompt,
+      fullPrompt: englishFullPrompt,
+    })
   }
 
   private buildScenePrompt(scene: VideoPromptOptions['scenes'][0], options: VideoPromptOptions): string {
@@ -191,6 +198,66 @@ ${options.hasReferenceImage ? '참조 이미지의 스타일과 구도를 반영
 ${options.overallStyle.contextualTone || options.overallStyle.qualitativeTone ? '톤앤매너를 일관되게 유지하여 전체적인 분위기를 조성하세요.' : ''}`
 
     return context
+  }
+
+  private buildEnglishMetaPrompt(
+    options: VideoPromptOptions,
+    scenes: Array<{ order: number; prompt: string; duration: number }>
+  ): string {
+    const toneParts: string[] = []
+    if (options.overallStyle.contextualTone) {
+      toneParts.push(`Contextual tone: ${options.overallStyle.contextualTone}`)
+    }
+    if (options.overallStyle.qualitativeTone) {
+      toneParts.push(`Qualitative tone: ${options.overallStyle.qualitativeTone}`)
+    }
+
+    return `Video generation prompt (OpenAI Sora 2):
+
+Genre: ${options.overallStyle.genre}
+Mood: ${options.overallStyle.mood}
+Color grading: ${options.overallStyle.colorGrading}
+${options.overallStyle.cinematic ? 'Cinematic quality required' : ''}
+${toneParts.join('\n')}
+
+Total duration: ${options.technical.totalDuration} seconds
+Resolution: ${options.technical.resolution}
+Frame rate: ${options.technical.fps}fps
+Aspect ratio: ${options.technical.aspectRatio}
+${options.hasReferenceImage && options.referenceImageDescription ? `Reference image: ${options.referenceImageDescription}` : ''}
+
+Scene outline (${scenes.length} total):
+${scenes
+  .map(scene => `- Scene ${scene.order}: ${convertToNativeEnglish(scene.prompt)} (${scene.duration}s)`)
+  .join('\n')}`
+  }
+
+  private buildEnglishContextPrompt(options: VideoPromptOptions): string {
+    const sora = options.modelSpecific?.sora
+    const toneParts: string[] = []
+    if (options.overallStyle.contextualTone) {
+      toneParts.push(`Contextual tone: ${options.overallStyle.contextualTone}`)
+    }
+    if (options.overallStyle.qualitativeTone) {
+      toneParts.push(`Qualitative tone: ${options.overallStyle.qualitativeTone}`)
+    }
+
+    return `Video generation context (OpenAI Sora 2):
+
+Model: OpenAI Sora 2
+Overall style: ${options.overallStyle.genre}, ${options.overallStyle.mood}
+Technical specs: ${options.technical.resolution}, ${options.technical.fps}fps
+Aspect ratio: ${options.technical.aspectRatio}
+Total scenes: ${options.scenes.length}
+Total duration: ${options.technical.totalDuration} seconds
+Consistency: ${sora?.consistency || 'high'}
+Max duration: ${sora?.maxDuration || options.technical.totalDuration} seconds
+${toneParts.join('\n')}
+${options.hasReferenceImage && options.referenceImageDescription ? `Reference image: ${options.referenceImageDescription}` : ''}
+
+Ensure each scene flows naturally and supports the overall narrative.
+Use the reference image to maintain visual consistency when provided.
+Keep the requested tone and mood consistent throughout the video.`
   }
 }
 

@@ -10,23 +10,42 @@ import './PromptGenerator.css'
 // 장면 프롬프트 표시 컴포넌트
 function ScenePromptDisplay({ scene, index }: { scene: any; index: number }) {
   const [showEnglish, setShowEnglish] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const displayText = showEnglish && scene.englishPrompt ? scene.englishPrompt : scene.prompt
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(displayText)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch (error) {
+      alert('복사에 실패했습니다. 텍스트를 직접 선택하여 복사해주세요.')
+    }
+  }
   
   return (
     <div>
-      <div style={{ marginBottom: '8px' }}>
+      <div style={{ marginBottom: '8px', display: 'flex', gap: '6px' }}>
         {scene.englishPrompt && (
           <button
             id={`scene-${index}-toggle`}
             onClick={() => setShowEnglish(!showEnglish)}
             className="copy-button"
-            style={{ padding: '4px 8px', fontSize: '0.75rem', marginBottom: '8px' }}
+            style={{ padding: '4px 8px', fontSize: '0.75rem' }}
           >
             {showEnglish ? '한국어' : 'English'}
           </button>
         )}
+        <button
+          onClick={handleCopy}
+          className={`copy-button ${copied ? 'copied' : ''}`}
+          style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+        >
+          {copied ? '✓ 복사됨' : '복사'}
+        </button>
       </div>
       <pre style={{ margin: 0, fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
-        {showEnglish && scene.englishPrompt ? scene.englishPrompt : scene.prompt}
+        {displayText}
       </pre>
       {showEnglish && scene.englishPrompt && (
         <div style={{ marginTop: '4px', fontSize: '0.75rem', opacity: 0.7 }}>
@@ -536,6 +555,9 @@ function VideoPromptGenerator() {
               <h3>장면별 프롬프트</h3>
               {results.scenes.map((scene: any, index: number) => (
                 <div key={scene.order || index} style={{ marginBottom: '16px', padding: '12px', border: '1px solid #000000' }}>
+                  <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>
+                    장면 {scene.order} ({scene.duration}초)
+                  </h4>
                   <ScenePromptDisplay scene={scene} index={index} />
                 </div>
               ))}

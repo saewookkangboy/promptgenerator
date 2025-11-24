@@ -4,26 +4,44 @@ import { BasePromptGenerator } from '../base/BasePromptGenerator'
 import { BasePromptOptions, PromptResult, ContentType, DetailedOptions } from '../../types/prompt.types'
 import { addEnglishVersion } from '../../utils/englishTranslator'
 
-const CONTENT_TYPE_INFO: Record<ContentType, { name: string; requirements: string }> = {
+const CONTENT_TYPE_INFO: Record<
+  ContentType,
+  {
+    name: string
+    englishName: string
+    requirements: string
+    requirementsEn: string
+  }
+> = {
   blog: {
     name: '블로그 콘텐츠',
+    englishName: 'Blog Content',
     requirements: 'SEO, GEO, AEO에 맞춰서 2000~3000자 텍스트 작성, 타겟 질문 포함',
+    requirementsEn: 'Write a 2000-3000 character article optimized for SEO, GEO, and AEO. Include direct answers to potential reader questions.',
   },
   linkedin: {
     name: '링크드인 뉴스피드 콘텐츠',
+    englishName: 'LinkedIn Newsfeed Content',
     requirements: '전문적이고 비즈니스 중심의 콘텐츠',
+    requirementsEn: 'Provide professional, business-focused insights that encourage networking and discussion.',
   },
   facebook: {
     name: '페이스북 뉴스피드 콘텐츠',
+    englishName: 'Facebook Newsfeed Content',
     requirements: '친근하고 공유하기 좋은 콘텐츠',
+    requirementsEn: 'Craft friendly, shareable content that encourages reactions and comments.',
   },
   instagram: {
     name: '인스타그램 뉴스피드 콘텐츠',
+    englishName: 'Instagram Feed Content',
     requirements: '시각적이고 간결한 콘텐츠',
+    requirementsEn: 'Deliver concise, visually-driven storytelling that pairs well with imagery and hashtags.',
   },
   youtube: {
     name: '유튜브 영상 제목 및 설명 텍스트',
+    englishName: 'YouTube Title and Description',
     requirements: '검색 최적화된 제목과 상세한 설명',
+    requirementsEn: 'Provide search-optimized titles and detailed descriptions that drive watch time and engagement.',
   },
 }
 
@@ -101,6 +119,22 @@ ${baseOptions.conversational ? '- 대화체 사용 (구어체, 친근한 표현)
     // 해시태그 생성
     const hashtags = this.generateHashtags(baseOptions.userInput, contentType)
 
+    const targetAudienceEn = this.buildTargetAudienceEnglish(baseOptions.targetAudience)
+    const toneAndStyleEn = this.buildToneAndStyleEnglish(baseOptions)
+    const englishMetaPrompt = this.buildEnglishMetaPrompt(
+      baseOptions,
+      typeInfo,
+      targetAudienceEn,
+      toneAndStyleEn
+    )
+    const englishContextPrompt = this.buildEnglishContextPrompt(
+      baseOptions,
+      contentType,
+      typeInfo,
+      targetAudienceEn,
+      toneAndStyleEn
+    )
+
     const result = {
       metaPrompt,
       contextPrompt,
@@ -109,7 +143,10 @@ ${baseOptions.conversational ? '- 대화체 사용 (구어체, 친근한 표현)
     }
 
     // 영문 버전 추가
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: englishMetaPrompt,
+      contextPrompt: englishContextPrompt,
+    })
   }
 
   /**
@@ -184,6 +221,143 @@ ${baseOptions.conversational ? '- 대화체 사용 (구어체, 친근한 표현)
 - 첫 2-3줄에 핵심 정보
 - 상세 설명
 - 관련 링크 및 정보`
+      default:
+        return ''
+    }
+  }
+
+  /**
+   * 영어 메타 프롬프트 생성
+   */
+  private buildEnglishMetaPrompt(
+    options: BasePromptOptions,
+    typeInfo: (typeof CONTENT_TYPE_INFO)[ContentType],
+    targetAudienceEn: string,
+    toneAndStyleEn: string
+  ): string {
+    return `You are a ${typeInfo.englishName} specialist.
+Use the subject and requirements below to craft high-quality content.
+
+Subject: ${options.userInput}
+${targetAudienceEn ? `Target audience: ${targetAudienceEn}` : ''}
+
+Requirements:
+- ${typeInfo.requirementsEn}
+- Capture the reader's attention and encourage engagement
+- Provide a clear structure that is easy to follow
+- Deliver actionable value to the audience
+${toneAndStyleEn ? `- Tone & Style: ${toneAndStyleEn}` : ''}
+
+When writing, consider:
+1. The reader's needs and interests${options.targetAudience ? ' (reflect the audience profile)' : ''}
+2. A focused, memorable core message
+3. A tone that matches the reader's expectations${options.conversational ? ' (use conversational language)' : ''}
+4. A clear call-to-action or next step`
+  }
+
+  /**
+   * 영어 컨텍스트 프롬프트 생성
+   */
+  private buildEnglishContextPrompt(
+    options: BasePromptOptions,
+    contentType: ContentType,
+    typeInfo: (typeof CONTENT_TYPE_INFO)[ContentType],
+    targetAudienceEn: string,
+    toneAndStyleEn: string
+  ): string {
+    return `Content creation context:
+
+Content type: ${typeInfo.englishName}
+Original subject: ${options.userInput}
+${targetAudienceEn ? `Target audience: ${targetAudienceEn}` : ''}
+${toneAndStyleEn ? `Tone & Style: ${toneAndStyleEn}` : ''}
+
+Guidelines:
+${this.getContentGuidelinesEn(contentType)}
+
+Structure requirements:
+${this.getStructureRequirementsEn(contentType)}
+
+Style guide:
+- Use natural, easy-to-read language
+${options.conversational ? '- Conversational tone (friendly, spoken language)' : '- Polished, professional tone'}
+- Separate content into clear paragraphs or sections
+- Highlight the core message
+- Encourage reader engagement`
+  }
+
+  /**
+   * 콘텐츠 가이드라인 (영문)
+   */
+  private getContentGuidelinesEn(contentType: ContentType): string {
+    switch (contentType) {
+      case 'blog':
+        return `- SEO optimization: incorporate relevant keywords naturally
+- GEO optimization: include local insights and location-based terms
+- AEO optimization: answer potential reader questions directly
+- Length: 2000-3000 characters
+- Include answers to questions the target audience might ask`
+      case 'linkedin':
+        return `- Maintain a professional, trustworthy tone
+- Share industry insights and expertise
+- Encourage networking and community discussion
+- Highlight tangible business value`
+      case 'facebook':
+        return `- Friendly, conversational tone
+- Provide content worth sharing
+- Ask questions that invite reactions and comments
+- Pair text with visuals or links`
+      case 'instagram':
+        return `- Keep messages concise and impactful
+- Align copy with visual storytelling
+- Optimize the use of hashtags
+- Include emotional or sensory details`
+      case 'youtube':
+        return `- Craft search-optimized titles with core keywords
+- Make titles clickable and curiosity-driven
+- Provide detailed descriptions with key timestamps
+- Include relevant links and CTAs`
+      default:
+        return ''
+    }
+  }
+
+  /**
+   * 구조 요구사항 (영문)
+   */
+  private getStructureRequirementsEn(contentType: ContentType): string {
+    switch (contentType) {
+      case 'blog':
+        return `1. Compelling headline
+2. Introduction that hooks the reader
+3. Body sections with clear subheadings
+4. Answers to key audience questions
+5. Conclusion with a call-to-action`
+      case 'linkedin':
+        return `1. Strong opening line
+2. Core message or insight
+3. Supporting evidence or experience
+4. Closing question or discussion prompt`
+      case 'facebook':
+        return `1. Attention-grabbing first sentence
+2. Main value proposition
+3. Social proof or emotional hook
+4. Engagement-driving statement`
+      case 'instagram':
+        return `1. Impactful opening sentence
+2. Core message in 2-3 lines
+3. Storytelling or descriptive detail
+4. Call-to-action or question`
+      case 'youtube':
+        return `Title:
+- Include primary keyword
+- Keep within 60 characters
+- Emphasize curiosity or value
+
+Description:
+- Summarize value in first 2-3 lines
+- Provide detailed context
+- Add relevant links or resources`
       default:
         return ''
     }

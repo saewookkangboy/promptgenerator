@@ -72,6 +72,96 @@ export abstract class BasePromptGenerator {
   }
 
   /**
+   * 타겟 독자 정보를 영어 문장으로 변환
+   */
+  protected buildTargetAudienceEnglish(audience?: BasePromptOptions['targetAudience']): string {
+    if (!audience) return ''
+
+    const parts: string[] = []
+    const ageMap: Record<string, string> = {
+      '10대': 'teens',
+      '20대': 'people in their twenties',
+      '30대': 'people in their thirties',
+      '40대': 'people in their forties',
+      '50대': 'people in their fifties',
+      '60대 이상': 'people aged 60+',
+    }
+
+    const genderMap: Record<string, string> = {
+      남성: 'male readers',
+      여성: 'female readers',
+      무관: 'any gender',
+    }
+
+    const occupationMap: Record<string, string> = {
+      학생: 'students',
+      직장인: 'office workers',
+      '개발자/프로그래머': 'software developers',
+      디자이너: 'design professionals',
+      마케터: 'marketers',
+      기획자: 'product planners',
+      '경영진/CEO': 'executives or CEOs',
+      자영업자: 'small business owners',
+      프리랜서: 'freelancers',
+      전문직: 'specialized professionals',
+      기타: 'various occupations',
+    }
+
+    if (audience.age) {
+      parts.push(ageMap[audience.age] || audience.age)
+    }
+
+    if (audience.gender) {
+      parts.push(genderMap[audience.gender] || audience.gender)
+    }
+
+    if (audience.occupation) {
+      parts.push(occupationMap[audience.occupation] || audience.occupation)
+    }
+
+    if (audience.interests && audience.interests.length > 0) {
+      parts.push(`interests: ${audience.interests.join(', ')}`)
+    }
+
+    return parts.length > 0 ? parts.join(', ') : ''
+  }
+
+  /**
+   * 톤앤매너를 영어 문장으로 변환
+   */
+  protected buildToneAndStyleEnglish(options: BasePromptOptions): string {
+    const styles: string[] = []
+
+    if (options.conversational) {
+      styles.push('Use a conversational tone')
+    }
+
+    if (options.tone) {
+      styles.push(options.tone)
+    }
+
+    if (options.targetAudience?.age) {
+      const ageNum = parseInt(options.targetAudience.age)
+      if (ageNum < 30) {
+        styles.push('Use expressions that resonate with younger readers')
+      } else if (ageNum >= 50) {
+        styles.push('Use a mature, respectful tone for older readers')
+      }
+    }
+
+    if (options.targetAudience?.occupation) {
+      const occ = options.targetAudience.occupation
+      if (['개발자', '엔지니어', '프로그래머'].some(o => occ.includes(o))) {
+        styles.push('Incorporate precise technical language')
+      } else if (['마케터', '기획자', '비즈니스'].some(o => occ.includes(o))) {
+        styles.push('Highlight business insights and strategic value')
+      }
+    }
+
+    return styles.length > 0 ? styles.join('. ') : ''
+  }
+
+  /**
    * 해시태그 생성 (기본 구현)
    */
   protected generateHashtags(input: string, category: string): string[] {

@@ -15,6 +15,9 @@ export class VeoGenerator extends VideoPromptGenerator {
     
     const fullPrompt = scenes.map(s => s.prompt).join('\n\n---\n\n')
     const metaPrompt = this.buildMetaPrompt(options)
+    const englishMetaPrompt = this.buildEnglishMetaPrompt(options, scenes)
+    const englishContextPrompt = this.buildEnglishContextPrompt(options)
+    const englishFullPrompt = convertToNativeEnglish(fullPrompt)
     
     const result = {
       metaPrompt,
@@ -34,7 +37,11 @@ export class VeoGenerator extends VideoPromptGenerator {
     }
 
     // 영문 버전 추가
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: englishMetaPrompt,
+      contextPrompt: englishContextPrompt,
+      fullPrompt: englishFullPrompt,
+    })
   }
 
   private buildScenePrompt(scene: VideoPromptOptions['scenes'][0], options: VideoPromptOptions): string {
@@ -191,6 +198,66 @@ ${options.hasReferenceImage ? '참조 이미지의 스타일과 구도를 반영
 ${options.overallStyle.contextualTone || options.overallStyle.qualitativeTone ? '톤앤매너를 일관되게 유지하여 전체적인 분위기를 조성하세요.' : ''}`
 
     return context
+  }
+
+  private buildEnglishMetaPrompt(
+    options: VideoPromptOptions,
+    scenes: Array<{ order: number; prompt: string; duration: number }>
+  ): string {
+    const toneParts: string[] = []
+    if (options.overallStyle.contextualTone) {
+      toneParts.push(`Contextual tone: ${options.overallStyle.contextualTone}`)
+    }
+    if (options.overallStyle.qualitativeTone) {
+      toneParts.push(`Qualitative tone: ${options.overallStyle.qualitativeTone}`)
+    }
+
+    return `Video generation prompt (Google Veo 3):
+
+Genre: ${options.overallStyle.genre}
+Mood: ${options.overallStyle.mood}
+Color grading: ${options.overallStyle.colorGrading}
+${options.overallStyle.cinematic ? 'Cinematic quality required' : ''}
+${toneParts.join('\n')}
+
+Total duration: ${options.technical.totalDuration} seconds
+Resolution: ${options.technical.resolution}
+Frame rate: ${options.technical.fps}fps
+Aspect ratio: ${options.technical.aspectRatio}
+${options.hasReferenceImage && options.referenceImageDescription ? `Reference image: ${options.referenceImageDescription}` : ''}
+
+Scene outline (${scenes.length} total):
+${scenes
+  .map(scene => `- Scene ${scene.order}: ${convertToNativeEnglish(scene.prompt)} (${scene.duration}s)`)
+  .join('\n')}`
+  }
+
+  private buildEnglishContextPrompt(options: VideoPromptOptions): string {
+    const veo = options.modelSpecific?.veo
+    const toneParts: string[] = []
+    if (options.overallStyle.contextualTone) {
+      toneParts.push(`Contextual tone: ${options.overallStyle.contextualTone}`)
+    }
+    if (options.overallStyle.qualitativeTone) {
+      toneParts.push(`Qualitative tone: ${options.overallStyle.qualitativeTone}`)
+    }
+
+    return `Video generation context (Google Veo 3):
+
+Model: Google Veo 3
+Overall style: ${options.overallStyle.genre}, ${options.overallStyle.mood}
+Technical specs: ${options.technical.resolution}, ${options.technical.fps}fps
+Aspect ratio: ${options.technical.aspectRatio}
+Total scenes: ${options.scenes.length}
+Total duration: ${options.technical.totalDuration} seconds
+Quality setting: ${veo?.quality || 'high'}
+Extended duration: ${veo?.extendedDuration ? 'enabled' : 'disabled'}
+${toneParts.join('\n')}
+${options.hasReferenceImage && options.referenceImageDescription ? `Reference image: ${options.referenceImageDescription}` : ''}
+
+Veo 3 supports ultra-high-resolution and long-form shots.
+Ensure each scene flows naturally and maintains the requested mood.
+Honor the reference image and tonal guidelines throughout the video.`
   }
 }
 

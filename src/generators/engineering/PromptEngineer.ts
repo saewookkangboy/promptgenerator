@@ -3,7 +3,7 @@
 import { BasePromptGenerator } from '../base/BasePromptGenerator'
 import { EngineeringPromptOptions, OptimizedPrompt, EngineeringConfig } from '../../types/engineering.types'
 import { PromptResult } from '../../types/prompt.types'
-import { addEnglishVersion } from '../../utils/englishTranslator'
+import { addEnglishVersion, convertToNativeEnglish } from '../../utils/englishTranslator'
 
 export class PromptEngineer extends BasePromptGenerator {
   generate(options: EngineeringPromptOptions): PromptResult {
@@ -38,6 +38,15 @@ ${steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}
 각 단계를 차근차근 진행하며 최종 답변을 도출하세요.
 ${config?.reasoning ? '각 단계에서 추론 과정을 명시적으로 설명하세요.' : ''}`
 
+    const englishBase = convertToNativeEnglish(options.basePrompt)
+    const englishSteps = steps.map((step, i) => `Step ${i + 1}: ${convertToNativeEnglish(step)}`)
+    const englishMeta = `${englishBase}
+
+Think through the problem step by step using the plan below:
+${englishSteps.join('\n')}
+
+Provide your reasoning at each stage${config?.reasoning ? ' and explicitly describe your thought process.' : '.'}`
+
     const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Chain of Thought'),
@@ -46,7 +55,10 @@ ${config?.reasoning ? '각 단계에서 추론 과정을 명시적으로 설명�
       method: 'cot',
       steps,
     }
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: englishMeta,
+      contextPrompt: this.buildEnglishContextPrompt(options, 'Chain of Thought'),
+    })
   }
 
   /**
@@ -75,6 +87,21 @@ ${examplesText}
 위 예시들의 패턴을 따라 새로운 입력에 대한 출력을 생성하세요.
 예시와 동일한 형식과 스타일을 유지하세요.`
 
+    const englishBase = convertToNativeEnglish(options.basePrompt)
+    const englishExamples = examples.map((ex, i) =>
+      `Example ${i + 1}:
+Input: ${convertToNativeEnglish(ex.input)}
+Output: ${convertToNativeEnglish(ex.output)}${ex.explanation ? `\nExplanation: ${convertToNativeEnglish(ex.explanation)}` : ''}`
+    ).join('\n\n')
+
+    const englishMeta = `${englishBase}
+
+Review the examples below:
+
+${englishExamples}
+
+Follow the observed structure and tone when responding to new inputs.`
+
     const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Few-shot Learning'),
@@ -83,7 +110,10 @@ ${examplesText}
       method: 'few-shot',
       examples: examples.length,
     }
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: englishMeta,
+      contextPrompt: this.buildEnglishContextPrompt(options, 'Few-shot Learning'),
+    })
   }
 
   /**
@@ -107,6 +137,14 @@ ${options.basePrompt}
 ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
 전문 용어를 적절히 사용하고, 해당 분야의 베스트 프랙티스를 반영하세요.`
 
+    const englishBase = convertToNativeEnglish(options.basePrompt)
+    const englishExpertise = config.expertise.map(exp => convertToNativeEnglish(exp)).join('\n- ')
+    const englishMeta = `You are ${config.role}.
+- ${englishExpertise}
+${config.perspective ? `Perspective: ${convertToNativeEnglish(config.perspective)}\n` : ''}Task:\n${englishBase}
+
+Respond from the perspective of ${config.role}, using the appropriate terminology and best practices.`
+
     const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Role-based Prompting'),
@@ -115,7 +153,10 @@ ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
       method: 'role-based',
       role: config.role,
     }
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: englishMeta,
+      contextPrompt: this.buildEnglishContextPrompt(options, 'Role-based Prompting'),
+    })
   }
 
   /**
@@ -124,6 +165,8 @@ ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
   private generateZeroShot(options: EngineeringPromptOptions): PromptResult {
     const prompt = options.basePrompt
 
+    const englishBase = convertToNativeEnglish(prompt)
+
     const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Zero-shot Learning'),
@@ -131,7 +174,10 @@ ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
       fullPrompt: prompt,
       method: 'zero-shot',
     }
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: `${englishBase}\n\nDeliver the most accurate and helpful response by relying on relevant knowledge and structured reasoning.`,
+      contextPrompt: this.buildEnglishContextPrompt(options, 'Zero-shot Learning'),
+    })
   }
 
   /**
@@ -142,6 +188,8 @@ ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
     
     const prompt = optimization.optimized
 
+    const englishOptimized = convertToNativeEnglish(prompt)
+
     const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Optimized Prompt', optimization),
@@ -150,7 +198,10 @@ ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
       method: 'optimize',
       optimization,
     }
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: englishOptimized,
+      contextPrompt: this.buildEnglishContextPrompt(options, 'Optimized Prompt', optimization),
+    })
   }
 
   /**
@@ -349,6 +400,50 @@ ${optimization.suggestions.length > 0 ? `- 제안: ${optimization.suggestions.jo
 - 역할: ${options.engineeringConfig.roleBased.role}
 - 전문성: ${options.engineeringConfig.roleBased.expertise.join(', ')}
 `
+      }
+    }
+
+    return context
+  }
+
+  private buildEnglishContextPrompt(
+    options: EngineeringPromptOptions,
+    method: string,
+    optimization?: OptimizedPrompt
+  ): string {
+    let context = `Prompt engineering context:
+
+Method: ${method}
+Original prompt: ${convertToNativeEnglish(options.basePrompt)}
+`
+
+    if (optimization) {
+      const englishImprovements = optimization.improvements.map(imp => convertToNativeEnglish(imp)).join(', ')
+      const englishSuggestions = optimization.suggestions.map(sug => convertToNativeEnglish(sug)).join(', ')
+      context += `\nOptimization results:
+- Original: ${convertToNativeEnglish(optimization.original)}
+- Optimized: ${convertToNativeEnglish(optimization.optimized)}
+- Score: ${optimization.score}/100
+- Improvements: ${englishImprovements || 'N/A'}
+${englishSuggestions ? `- Suggestions: ${englishSuggestions}` : ''}\n`
+    }
+
+    if (options.engineeringConfig) {
+      if (options.engineeringConfig.cot) {
+        context += `\nChain of Thought settings:
+- Number of steps: ${options.engineeringConfig.cot.steps?.length || 0}
+- Reasoning required: ${options.engineeringConfig.cot.reasoning ? 'Yes' : 'No'}`
+      }
+
+      if (options.engineeringConfig.fewShot) {
+        context += `\n\nFew-shot settings:
+- Examples provided: ${options.engineeringConfig.fewShot.examples?.length || 0}`
+      }
+
+      if (options.engineeringConfig.roleBased) {
+        context += `\n\nRole-based settings:
+- Role: ${options.engineeringConfig.roleBased.role}
+- Expertise: ${options.engineeringConfig.roleBased.expertise.map(exp => convertToNativeEnglish(exp)).join(', ')}`
       }
     }
 

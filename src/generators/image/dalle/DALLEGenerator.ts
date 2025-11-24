@@ -8,7 +8,8 @@ import { addEnglishVersion } from '../../../utils/englishTranslator'
 export class DALLEGenerator extends ImagePromptGenerator {
   generate(options: ImagePromptOptions): PromptResult {
     const prompt = this.buildPrompt(options)
-    
+    const englishContextPrompt = this.buildEnglishContextPrompt(options)
+
     const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options),
@@ -23,7 +24,11 @@ export class DALLEGenerator extends ImagePromptGenerator {
     }
 
     // 영문 버전 추가
-    return addEnglishVersion(result)
+    return addEnglishVersion(result, {
+      metaPrompt: prompt,
+      contextPrompt: englishContextPrompt,
+      fullPrompt: prompt,
+    })
   }
 
   private buildPrompt(options: ImagePromptOptions): string {
@@ -144,6 +149,24 @@ export class DALLEGenerator extends ImagePromptGenerator {
 ${options.negativePrompt && options.negativePrompt.length > 0 ? `제외 요소: ${options.negativePrompt.join(', ')}` : ''}
 
 DALL-E는 자연어 프롬프트를 선호하므로, 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.`
+  }
+
+  private buildEnglishContextPrompt(options: ImagePromptOptions): string {
+    const dalle = options.modelSpecific?.dalle
+
+    return `Image generation context (DALL-E 3):
+
+Model: DALL-E 3
+Subject: ${options.subject}
+Style: ${options.style.artStyle}${options.style.customStyle ? ` (${options.style.customStyle})` : ''}
+Composition: ${options.composition.framing}
+Lighting: ${options.lighting.type}
+Color palette: ${options.color.mood}
+Size: ${dalle?.size || '1024x1024'}
+Style mode: ${dalle?.style || 'vivid'}
+${options.negativePrompt && options.negativePrompt.length > 0 ? `Exclude: ${options.negativePrompt.join(', ')}` : ''}
+
+DALL-E prefers natural language prompts. Use the prompt as-is or adjust wording to match your creative direction.`
   }
 }
 
