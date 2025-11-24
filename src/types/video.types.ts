@@ -15,8 +15,9 @@ export interface VideoPromptOptions extends BasePromptOptions {
   scenes: VideoScene[]
   overallStyle: VideoStyle
   technical: VideoTechnicalSettings
+  hasReferenceImage?: boolean // 참조 이미지 유무
+  referenceImageDescription?: string // 참조 이미지 설명
   modelSpecific?: VideoModelSpecificOptions
-  hasReferenceImage?: boolean
 }
 
 export interface VideoScene {
@@ -52,6 +53,8 @@ export interface VideoStyle {
   mood: 'tense' | 'peaceful' | 'dynamic' | 'melancholic' | 'energetic' | 'mysterious'
   colorGrading: 'warm' | 'cool' | 'high-contrast' | 'desaturated' | 'vibrant' | 'monochrome'
   cinematic?: boolean
+  contextualTone?: string // 문맥적 톤앤매너
+  qualitativeTone?: string // 정성적 톤앤매너
 }
 
 export interface VideoTechnicalSettings {
@@ -74,13 +77,5 @@ export interface VideoModelSpecificOptions {
     style: string
     motion: number // 0-100
   }
-}
-
-export interface VideoToneProfile {
-  contextTone: string
-  emotionalTone: string
-  descriptiveKeywords: string[]
-  sensoryFocus: string
-  pacing: string
 }
 

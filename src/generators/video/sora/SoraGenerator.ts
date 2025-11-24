@@ -1,28 +1,26 @@
 // Sora 프롬프트 생성기
 
 import { VideoPromptGenerator } from '../VideoPromptGenerator'
-import { VideoPromptOptions, VideoToneProfile } from '../../../types/video.types'
+import { VideoPromptOptions } from '../../../types/video.types'
 import { PromptResult } from '../../../types/prompt.types'
 
 export class SoraGenerator extends VideoPromptGenerator {
   generate(options: VideoPromptOptions): PromptResult {
-    const toneProfile = this.analyzeTone(options)
     const scenes = options.scenes.map((scene, index) => ({
       order: index + 1,
-      prompt: this.buildScenePrompt(scene, toneProfile),
+      prompt: this.buildScenePrompt(scene, options),
       duration: scene.duration,
     }))
     
     const fullPrompt = scenes.map(s => s.prompt).join('\n\n---\n\n')
-    const metaPrompt = this.buildMetaPrompt(options, toneProfile)
+    const metaPrompt = this.buildMetaPrompt(options)
     
     return {
       metaPrompt,
-      contextPrompt: this.buildContextPrompt(options, toneProfile),
+      contextPrompt: this.buildContextPrompt(options),
       hashtags: this.generateHashtags(options.userInput, 'video'),
       fullPrompt,
       scenes,
-      toneProfile,
       modelSpecific: {
         sora: {
           maxDuration: options.technical.totalDuration,
@@ -32,11 +30,17 @@ export class SoraGenerator extends VideoPromptGenerator {
     }
   }
 
-  private buildScenePrompt(scene: VideoPromptOptions['scenes'][0], toneProfile: VideoToneProfile): string {
+  private buildScenePrompt(scene: VideoPromptOptions['scenes'][0], options: VideoPromptOptions): string {
     const parts: string[] = []
     
-    // 기본 장면 설명
-    parts.push(`${scene.description} (include tactile, auditory, and atmospheric cues for ${toneProfile.contextTone.toLowerCase()})`)
+    // 기본 장면 설명 (상세하게 확장)
+    const detailedDescription = this.enhanceDescription(scene.description, options)
+    parts.push(detailedDescription)
+    
+    // 참조 이미지 정보
+    if (options.hasReferenceImage && options.referenceImageDescription) {
+      parts.push(`based on reference image: ${options.referenceImageDescription}`)
+    }
     
     // 카메라 설정
     const camera = this.formatCamera(scene.camera)
@@ -46,19 +50,85 @@ export class SoraGenerator extends VideoPromptGenerator {
     const motion = this.formatMotion(scene.motion)
     if (motion) parts.push(motion)
     
+    // 톤앤매너 반영
+    const toneAndManner = this.formatToneAndManner(options.overallStyle)
+    if (toneAndManner) parts.push(toneAndManner)
+    
     // 전환 효과
     if (scene.transition) {
       const transition = this.formatTransition(scene.transition)
       if (transition) parts.push(transition)
     }
     
-    parts.push(`Tone & Emotion: ${toneProfile.contextTone}, ${toneProfile.emotionalTone}`)
-    parts.push(`Descriptive focus: ${toneProfile.descriptiveKeywords.join(', ')}`)
-    
     return parts.filter(Boolean).join(', ')
   }
 
-  private buildMetaPrompt(options: VideoPromptOptions, toneProfile: VideoToneProfile): string {
+  /**
+   * 설명을 상세하게 확장
+   */
+  private enhanceDescription(description: string, options: VideoPromptOptions): string {
+    let enhanced = description
+    
+    // 문맥적 톤앤매너 반영
+    if (options.overallStyle.contextualTone) {
+      enhanced = `${enhanced}, ${options.overallStyle.contextualTone}`
+    }
+    
+    // 정성적 톤앤매너 반영
+    if (options.overallStyle.qualitativeTone) {
+      enhanced = `${enhanced}, ${options.overallStyle.qualitativeTone}`
+    }
+    
+    // 장르에 따른 상세 묘사 추가
+    const genreEnhancements: Record<string, string> = {
+      'action': 'dynamic action, intense movement, high energy',
+      'drama': 'emotional depth, character-driven, nuanced performance',
+      'comedy': 'light-hearted, humorous, playful atmosphere',
+      'horror': 'suspenseful, eerie, atmospheric tension',
+      'sci-fi': 'futuristic, technological, otherworldly',
+      'documentary': 'realistic, authentic, observational',
+      'music-video': 'rhythmic, stylized, visually striking',
+    }
+    
+    if (genreEnhancements[options.overallStyle.genre]) {
+      enhanced = `${enhanced}, ${genreEnhancements[options.overallStyle.genre]}`
+    }
+    
+    // 분위기에 따른 상세 묘사 추가
+    const moodEnhancements: Record<string, string> = {
+      'tense': 'building tension, suspenseful pacing, dramatic moments',
+      'peaceful': 'tranquil atmosphere, gentle pacing, serene mood',
+      'dynamic': 'energetic movement, fast-paced, vibrant energy',
+      'melancholic': 'somber tone, reflective mood, emotional depth',
+      'energetic': 'high energy, fast-paced, vibrant',
+      'mysterious': 'enigmatic atmosphere, subtle hints, intriguing',
+    }
+    
+    if (moodEnhancements[options.overallStyle.mood]) {
+      enhanced = `${enhanced}, ${moodEnhancements[options.overallStyle.mood]}`
+    }
+    
+    return enhanced
+  }
+
+  /**
+   * 톤앤매너 포맷팅
+   */
+  private formatToneAndManner(style: VideoPromptOptions['overallStyle']): string {
+    const parts: string[] = []
+    
+    if (style.contextualTone) {
+      parts.push(`contextual tone: ${style.contextualTone}`)
+    }
+    
+    if (style.qualitativeTone) {
+      parts.push(`qualitative tone: ${style.qualitativeTone}`)
+    }
+    
+    return parts.join(', ')
+  }
+
+  private buildMetaPrompt(options: VideoPromptOptions): string {
     const style = this.formatStyle(options.overallStyle)
     
     return `동영상 생성 프롬프트 (Sora 2):
@@ -74,11 +144,6 @@ ${options.overallStyle.cinematic ? '영화적 품질' : ''}
 아스펙트 비율: ${options.technical.aspectRatio}
 
 전체 스타일: ${style}
-톤: ${toneProfile.contextTone}
-감정선: ${toneProfile.emotionalTone}
-감각 묘사 가이드: ${toneProfile.sensoryFocus}
-페이싱: ${toneProfile.pacing}
-${options.hasReferenceImage ? '- 참고 사진 또는 스틸컷 정보가 있으므로 장면 묘사 시 해당 이미지를 기반으로 정확한 색감과 구도를 반영' : '- 참고 사진 없이 텍스트 묘사만으로 감각적 디테일을 강화'}
 
 장면 구성 (${options.scenes.length}개):
 ${options.scenes.map((scene, i) => 
@@ -86,10 +151,10 @@ ${options.scenes.map((scene, i) =>
 ).join('\n')}`
   }
 
-  private buildContextPrompt(options: VideoPromptOptions, toneProfile: VideoToneProfile): string {
+  private buildContextPrompt(options: VideoPromptOptions): string {
     const sora = options.modelSpecific?.sora
     
-    return `동영상 생성 컨텍스트 (OpenAI Sora 2):
+    let context = `동영상 생성 컨텍스트 (OpenAI Sora 2):
 
 모델: OpenAI Sora 2
 전체 스타일: ${options.overallStyle.genre}, ${options.overallStyle.mood}
@@ -99,13 +164,26 @@ ${options.scenes.map((scene, i) =>
 총 길이: ${options.technical.totalDuration}초
 일관성: ${sora?.consistency || 'high'}
 최대 길이: ${sora?.maxDuration || options.technical.totalDuration}초
-톤앤매너: ${toneProfile.contextTone} / ${toneProfile.emotionalTone}
-핵심 묘사 키워드: ${toneProfile.descriptiveKeywords.join(', ')}
-감각 묘사 지침: ${toneProfile.sensoryFocus}
-${options.hasReferenceImage ? '참조 이미지가 제공되어 있으므로, 장면에서 해당 이미지를 기반으로 색채, 구도, 피사체 특징을 충실히 반영합니다.' : '참조 이미지가 없으므로 텍스트로 제시된 분위기와 감정선을 중심으로 장면을 구성합니다.'}
+`
 
-각 장면은 자연스럽게 연결되며, 전체적인 스토리 흐름을 유지합니다.
-Sora는 자연어 프롬프트를 선호하므로, 각 장면의 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.`
+    if (options.hasReferenceImage && options.referenceImageDescription) {
+      context += `\n참조 이미지: ${options.referenceImageDescription}`
+    }
+
+    if (options.overallStyle.contextualTone) {
+      context += `\n문맥적 톤앤매너: ${options.overallStyle.contextualTone}`
+    }
+
+    if (options.overallStyle.qualitativeTone) {
+      context += `\n정성적 톤앤매너: ${options.overallStyle.qualitativeTone}`
+    }
+
+    context += `\n\n각 장면은 자연스럽게 연결되며, 전체적인 스토리 흐름을 유지합니다.
+Sora는 자연어 프롬프트를 선호하므로, 각 장면의 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.
+${options.hasReferenceImage ? '참조 이미지의 스타일과 구도를 반영하여 일관된 비주얼을 유지하세요.' : ''}
+${options.overallStyle.contextualTone || options.overallStyle.qualitativeTone ? '톤앤매너를 일관되게 유지하여 전체적인 분위기를 조성하세요.' : ''}`
+
+    return context
   }
 }
 

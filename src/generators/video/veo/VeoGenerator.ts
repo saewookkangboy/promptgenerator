@@ -1,28 +1,26 @@
 // Veo 프롬프트 생성기
 
 import { VideoPromptGenerator } from '../VideoPromptGenerator'
-import { VideoPromptOptions, VideoToneProfile } from '../../../types/video.types'
+import { VideoPromptOptions } from '../../../types/video.types'
 import { PromptResult } from '../../../types/prompt.types'
 
 export class VeoGenerator extends VideoPromptGenerator {
   generate(options: VideoPromptOptions): PromptResult {
-    const toneProfile = this.analyzeTone(options)
     const scenes = options.scenes.map((scene, index) => ({
       order: index + 1,
-      prompt: this.buildScenePrompt(scene, toneProfile),
+      prompt: this.buildScenePrompt(scene, options),
       duration: scene.duration,
     }))
     
     const fullPrompt = scenes.map(s => s.prompt).join('\n\n---\n\n')
-    const metaPrompt = this.buildMetaPrompt(options, toneProfile)
+    const metaPrompt = this.buildMetaPrompt(options)
     
     return {
       metaPrompt,
-      contextPrompt: this.buildContextPrompt(options, toneProfile),
+      contextPrompt: this.buildContextPrompt(options),
       hashtags: this.generateHashtags(options.userInput, 'video'),
       fullPrompt,
       scenes,
-      toneProfile,
       modelSpecific: {
         veo: {
           quality: options.modelSpecific?.veo?.quality || 'high',
@@ -32,11 +30,17 @@ export class VeoGenerator extends VideoPromptGenerator {
     }
   }
 
-  private buildScenePrompt(scene: VideoPromptOptions['scenes'][0], toneProfile: VideoToneProfile): string {
+  private buildScenePrompt(scene: VideoPromptOptions['scenes'][0], options: VideoPromptOptions): string {
     const parts: string[] = []
     
-    // 기본 장면 설명
-    parts.push(`${scene.description} (describe micro-expressions, environment texture, and lighting variations for ${toneProfile.contextTone.toLowerCase()})`)
+    // 기본 장면 설명 (상세하게 확장)
+    const detailedDescription = this.enhanceDescription(scene.description, options)
+    parts.push(detailedDescription)
+    
+    // 참조 이미지 정보
+    if (options.hasReferenceImage && options.referenceImageDescription) {
+      parts.push(`based on reference image: ${options.referenceImageDescription}`)
+    }
     
     // 카메라 설정
     const camera = this.formatCamera(scene.camera)
@@ -46,20 +50,85 @@ export class VeoGenerator extends VideoPromptGenerator {
     const motion = this.formatMotion(scene.motion)
     if (motion) parts.push(motion)
     
+    // 톤앤매너 반영
+    const toneAndManner = this.formatToneAndManner(options.overallStyle)
+    if (toneAndManner) parts.push(toneAndManner)
+    
     // 전환 효과
     if (scene.transition) {
       const transition = this.formatTransition(scene.transition)
       if (transition) parts.push(transition)
     }
     
-    parts.push(`Tone focus: ${toneProfile.contextTone}`)
-    parts.push(`Emotion direction: ${toneProfile.emotionalTone}`)
-    parts.push(`Descriptive cues: ${toneProfile.descriptiveKeywords.join(', ')}`)
-    
     return parts.filter(Boolean).join(', ')
   }
 
-  private buildMetaPrompt(options: VideoPromptOptions, toneProfile: VideoToneProfile): string {
+  /**
+   * 설명을 상세하게 확장
+   */
+  private enhanceDescription(description: string, options: VideoPromptOptions): string {
+    let enhanced = description
+    
+    // 문맥적 톤앤매너 반영
+    if (options.overallStyle.contextualTone) {
+      enhanced = `${enhanced}, ${options.overallStyle.contextualTone}`
+    }
+    
+    // 정성적 톤앤매너 반영
+    if (options.overallStyle.qualitativeTone) {
+      enhanced = `${enhanced}, ${options.overallStyle.qualitativeTone}`
+    }
+    
+    // 장르에 따른 상세 묘사 추가
+    const genreEnhancements: Record<string, string> = {
+      'action': 'dynamic action, intense movement, high energy',
+      'drama': 'emotional depth, character-driven, nuanced performance',
+      'comedy': 'light-hearted, humorous, playful atmosphere',
+      'horror': 'suspenseful, eerie, atmospheric tension',
+      'sci-fi': 'futuristic, technological, otherworldly',
+      'documentary': 'realistic, authentic, observational',
+      'music-video': 'rhythmic, stylized, visually striking',
+    }
+    
+    if (genreEnhancements[options.overallStyle.genre]) {
+      enhanced = `${enhanced}, ${genreEnhancements[options.overallStyle.genre]}`
+    }
+    
+    // 분위기에 따른 상세 묘사 추가
+    const moodEnhancements: Record<string, string> = {
+      'tense': 'building tension, suspenseful pacing, dramatic moments',
+      'peaceful': 'tranquil atmosphere, gentle pacing, serene mood',
+      'dynamic': 'energetic movement, fast-paced, vibrant energy',
+      'melancholic': 'somber tone, reflective mood, emotional depth',
+      'energetic': 'high energy, fast-paced, vibrant',
+      'mysterious': 'enigmatic atmosphere, subtle hints, intriguing',
+    }
+    
+    if (moodEnhancements[options.overallStyle.mood]) {
+      enhanced = `${enhanced}, ${moodEnhancements[options.overallStyle.mood]}`
+    }
+    
+    return enhanced
+  }
+
+  /**
+   * 톤앤매너 포맷팅
+   */
+  private formatToneAndManner(style: VideoPromptOptions['overallStyle']): string {
+    const parts: string[] = []
+    
+    if (style.contextualTone) {
+      parts.push(`contextual tone: ${style.contextualTone}`)
+    }
+    
+    if (style.qualitativeTone) {
+      parts.push(`qualitative tone: ${style.qualitativeTone}`)
+    }
+    
+    return parts.join(', ')
+  }
+
+  private buildMetaPrompt(options: VideoPromptOptions): string {
     const style = this.formatStyle(options.overallStyle)
     
     return `동영상 생성 프롬프트 (Google Veo 3):
@@ -75,11 +144,6 @@ ${options.overallStyle.cinematic ? '영화적 품질' : ''}
 아스펙트 비율: ${options.technical.aspectRatio}
 
 전체 스타일: ${style}
-톤: ${toneProfile.contextTone}
-감정선: ${toneProfile.emotionalTone}
-감각/질감 지침: ${toneProfile.sensoryFocus}
-페이싱: ${toneProfile.pacing}
-${options.hasReferenceImage ? '- 참고 사진을 기반으로 실제 촬영 질감과 동일한 디테일을 재현' : '- 텍스트 묘사를 기반으로 분위기와 감정선을 정교하게 재현'}
 
 장면 구성 (${options.scenes.length}개):
 ${options.scenes.map((scene, i) => 
@@ -87,10 +151,10 @@ ${options.scenes.map((scene, i) =>
 ).join('\n')}`
   }
 
-  private buildContextPrompt(options: VideoPromptOptions, toneProfile: VideoToneProfile): string {
+  private buildContextPrompt(options: VideoPromptOptions): string {
     const veo = options.modelSpecific?.veo
     
-    return `동영상 생성 컨텍스트 (Google Veo 3):
+    let context = `동영상 생성 컨텍스트 (Google Veo 3):
 
 모델: Google Veo 3
 전체 스타일: ${options.overallStyle.genre}, ${options.overallStyle.mood}
@@ -100,13 +164,26 @@ ${options.scenes.map((scene, i) =>
 총 길이: ${options.technical.totalDuration}초
 품질: ${veo?.quality || 'high'}
 확장 길이: ${veo?.extendedDuration ? '활성화' : '비활성화'}
-톤앤매너: ${toneProfile.contextTone} / ${toneProfile.emotionalTone}
-핵심 묘사 키워드: ${toneProfile.descriptiveKeywords.join(', ')}
-감각 묘사 지침: ${toneProfile.sensoryFocus}
-${options.hasReferenceImage ? '참조 사진이 있으므로 동일한 피사체 특성과 색감을 유지하세요.' : '참조 사진이 없으므로 텍스트 기반 감각 묘사를 충실히 반영하세요.'}
+`
 
-Veo 3는 초고해상도와 긴 컷을 지원합니다.
-각 장면은 자연스럽게 연결되며, 전체적인 스토리 흐름을 유지합니다.`
+    if (options.hasReferenceImage && options.referenceImageDescription) {
+      context += `\n참조 이미지: ${options.referenceImageDescription}`
+    }
+
+    if (options.overallStyle.contextualTone) {
+      context += `\n문맥적 톤앤매너: ${options.overallStyle.contextualTone}`
+    }
+
+    if (options.overallStyle.qualitativeTone) {
+      context += `\n정성적 톤앤매너: ${options.overallStyle.qualitativeTone}`
+    }
+
+    context += `\n\nVeo 3는 초고해상도와 긴 컷을 지원합니다.
+각 장면은 자연스럽게 연결되며, 전체적인 스토리 흐름을 유지합니다.
+${options.hasReferenceImage ? '참조 이미지의 스타일과 구도를 반영하여 일관된 비주얼을 유지하세요.' : ''}
+${options.overallStyle.contextualTone || options.overallStyle.qualitativeTone ? '톤앤매너를 일관되게 유지하여 전체적인 분위기를 조성하세요.' : ''}`
+
+    return context
   }
 }
 

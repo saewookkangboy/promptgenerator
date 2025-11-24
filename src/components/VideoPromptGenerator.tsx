@@ -68,7 +68,11 @@ function VideoPromptGenerator() {
     mood: 'peaceful',
     colorGrading: 'warm',
     cinematic: true,
+    contextualTone: '',
+    qualitativeTone: '',
   })
+  const [hasReferenceImage, setHasReferenceImage] = useState(false)
+  const [referenceImageDescription, setReferenceImageDescription] = useState('')
   const [technical, setTechnical] = useState<VideoTechnicalSettings>({
     totalDuration: 30,
     fps: 24,
@@ -92,7 +96,6 @@ function VideoPromptGenerator() {
       },
     },
   ])
-  const [hasReferenceImage, setHasReferenceImage] = useState(false)
   const [results, setResults] = useState<PromptResult | null>(null)
 
   const handleGenerate = () => {
@@ -109,6 +112,7 @@ function VideoPromptGenerator() {
       overallStyle,
       technical,
       hasReferenceImage,
+      referenceImageDescription: hasReferenceImage ? referenceImageDescription : undefined,
       modelSpecific: {
         sora: {
           maxDuration: technical.totalDuration,
@@ -251,6 +255,39 @@ function VideoPromptGenerator() {
               <span>영화적 품질</span>
             </label>
           </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="contextual-tone">문맥적 톤앤매너 (선택사항)</label>
+          <input
+            id="contextual-tone"
+            type="text"
+            value={overallStyle.contextualTone || ''}
+            onChange={(e) => setOverallStyle({ ...overallStyle, contextualTone: e.target.value })}
+            placeholder="예: 서정적, 서사적, 서술적, 대화적"
+            className="prompt-input"
+          />
+          <small style={{ display: 'block', marginTop: '4px', opacity: 0.6, fontSize: '0.85rem' }}>
+            장면의 문맥적 특성을 설명하세요 (서정적, 서사적, 서술적, 대화적 등)
+          </small>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="qualitative-tone">정성적 톤앤매너 (선택사항)</label>
+          <input
+            id="qualitative-tone"
+            type="text"
+            value={overallStyle.qualitativeTone || ''}
+            onChange={(e) => setOverallStyle({ ...overallStyle, qualitativeTone: e.target.value })}
+            placeholder="예: 따뜻한, 차가운, 부드러운, 강렬한, 우아한"
+            className="prompt-input"
+          />
+          <small style={{ display: 'block', marginTop: '4px', opacity: 0.6, fontSize: '0.85rem' }}>
+            장면의 정성적 특성을 설명하세요 (따뜻한, 차가운, 부드러운, 강렬한 등)
+          </small>
+        </div>
+
+        <div className="detailed-options-section">
           <div className="form-group checkbox-group">
             <label className="checkbox-label">
               <input
@@ -259,9 +296,26 @@ function VideoPromptGenerator() {
                 onChange={(e) => setHasReferenceImage(e.target.checked)}
                 className="checkbox-input"
               />
-              <span>참고 사진/스틸컷 제공</span>
+              <span>참조 이미지 있음</span>
             </label>
           </div>
+
+          {hasReferenceImage && (
+            <div className="form-group" style={{ marginTop: '12px' }}>
+              <label htmlFor="reference-image">참조 이미지 설명</label>
+              <textarea
+                id="reference-image"
+                value={referenceImageDescription}
+                onChange={(e) => setReferenceImageDescription(e.target.value)}
+                placeholder="예: 고양이가 창가에서 햇빛을 받으며 자고 있는 사진을 참조하여"
+                className="prompt-input"
+                rows={3}
+              />
+              <small style={{ display: 'block', marginTop: '4px', opacity: 0.6, fontSize: '0.85rem' }}>
+                참조할 이미지의 내용을 상세히 설명하세요. 이 설명이 프롬프트에 반영됩니다.
+              </small>
+            </div>
+          )}
         </div>
 
         <div className="options-grid">
@@ -440,23 +494,6 @@ function VideoPromptGenerator() {
               title="전체 프롬프트 (복사용)"
               content={results.fullPrompt}
             />
-          )}
-          {results.toneProfile && (
-            <div className="hashtags-card">
-              <h3>톤 & 묘사 가이드</h3>
-              <p style={{ marginBottom: '8px' }}>
-                <strong>톤앤매너:</strong> {results.toneProfile.contextTone} / {results.toneProfile.emotionalTone}
-              </p>
-              <p style={{ marginBottom: '8px' }}>
-                <strong>핵심 키워드:</strong> {results.toneProfile.descriptiveKeywords?.join(', ')}
-              </p>
-              <p style={{ marginBottom: '8px' }}>
-                <strong>감각 묘사:</strong> {results.toneProfile.sensoryFocus}
-              </p>
-              <p style={{ marginBottom: '0' }}>
-                <strong>페이싱:</strong> {results.toneProfile.pacing}
-              </p>
-            </div>
           )}
           {results.scenes && Array.isArray(results.scenes) && (
             <div className="hashtags-card">

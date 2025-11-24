@@ -1,14 +1,7 @@
 // 동영상 프롬프트 생성기 기본 클래스
 
 import { BasePromptGenerator } from '../base/BasePromptGenerator'
-import {
-  VideoPromptOptions,
-  CameraSettings,
-  MotionSettings,
-  TransitionSettings,
-  VideoStyle,
-  VideoToneProfile,
-} from '../../types/video.types'
+import { VideoPromptOptions, CameraSettings, MotionSettings, TransitionSettings, VideoStyle } from '../../types/video.types'
 import { PromptResult } from '../../types/prompt.types'
 
 export abstract class VideoPromptGenerator extends BasePromptGenerator {
@@ -154,69 +147,6 @@ export abstract class VideoPromptGenerator extends BasePromptGenerator {
     }
     
     return parts.filter(Boolean).join(', ')
-  }
-
-  /**
-   * 톤 분석
-   */
-  protected analyzeTone(options: VideoPromptOptions): VideoToneProfile {
-    const combinedText = `${options.userInput} ${options.scenes.map(scene => scene.description).join(' ')}`.toLowerCase()
-
-    const toneMap: { label: string; keywords: string[] }[] = [
-      { label: '따뜻하고 서정적인 톤', keywords: ['sunset', 'golden', 'nostalgic', '평온', '잔잔', '따뜻'] },
-      { label: '차갑고 미니멀한 톤', keywords: ['neon', 'cyber', '차가운', '도시', 'minimal'] },
-      { label: '역동적이고 에너제틱한 톤', keywords: ['fast', 'dynamic', 'energetic', '격렬', '스피드'] },
-      { label: '어둡고 미스터리한 톤', keywords: ['dark', 'mysterious', 'shadow', '비밀', '긴장'] },
-    ]
-
-    const emotionMap: { label: string; keywords: string[] }[] = [
-      { label: '희망적이고 고무적인 감정선', keywords: ['hope', 'bright', 'uplifting', '희망', '긍정'] },
-      { label: '감성적이고 서정적인 감정선', keywords: ['tender', 'emotional', 'poetic', '감성', '서정'] },
-      { label: '긴장감 넘치는 감정선', keywords: ['tense', 'thrill', 'chase', '긴박', '위기'] },
-      { label: '우울하고 내면적인 감정선', keywords: ['melancholic', 'solitude', '비', '눈물'] },
-    ]
-
-    const detectLabel = (maps: { label: string; keywords: string[] }[], fallback: string) => {
-      for (const entry of maps) {
-        if (entry.keywords.some(keyword => combinedText.includes(keyword))) {
-          return entry.label
-        }
-      }
-      return fallback
-    }
-
-    const moodFallbackMap: Record<VideoStyle['mood'], string> = {
-      tense: '긴장감 있는 서스펜스 톤',
-      peaceful: '차분하고 평온한 톤',
-      dynamic: '리드미컬하고 역동적인 톤',
-      melancholic: '감성적이고 쓸쓸한 톤',
-      energetic: '강렬하고 에너지 넘치는 톤',
-      mysterious: '어둡고 미스터리한 톤',
-    }
-
-    const contextTone = detectLabel(toneMap, moodFallbackMap[options.overallStyle.mood])
-    const emotionalTone = detectLabel(emotionMap, moodFallbackMap[options.overallStyle.mood])
-
-    const descriptiveKeywords = toneMap
-      .filter(entry => entry.label === contextTone)
-      .flatMap(entry => entry.keywords.slice(0, 3))
-      .slice(0, 3)
-
-    const sensoryFocus = contextTone.includes('따뜻') || emotionalTone.includes('감성')
-      ? '빛, 공기감, 촉감과 같은 감각 묘사를 강조'
-      : '질감, 대비, 음향과 같은 시각/청각 디테일을 강조'
-
-    const pacing = options.overallStyle.mood === 'dynamic' || options.overallStyle.genre === 'action'
-      ? '빠른 호흡과 리듬감을 유지'
-      : '호흡 조절과 감정선 축적을 중시'
-
-    return {
-      contextTone,
-      emotionalTone,
-      descriptiveKeywords: descriptiveKeywords.length > 0 ? descriptiveKeywords : ['detail-rich', 'immersive'],
-      sensoryFocus,
-      pacing,
-    }
   }
 }
 
