@@ -7,6 +7,36 @@ import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFac
 import ResultCard from './ResultCard'
 import './PromptGenerator.css'
 
+// 장면 프롬프트 표시 컴포넌트
+function ScenePromptDisplay({ scene, index }: { scene: any; index: number }) {
+  const [showEnglish, setShowEnglish] = useState(false)
+  
+  return (
+    <div>
+      <div style={{ marginBottom: '8px' }}>
+        {scene.englishPrompt && (
+          <button
+            id={`scene-${index}-toggle`}
+            onClick={() => setShowEnglish(!showEnglish)}
+            className="copy-button"
+            style={{ padding: '4px 8px', fontSize: '0.75rem', marginBottom: '8px' }}
+          >
+            {showEnglish ? '한국어' : 'English'}
+          </button>
+        )}
+      </div>
+      <pre style={{ margin: 0, fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>
+        {showEnglish && scene.englishPrompt ? scene.englishPrompt : scene.prompt}
+      </pre>
+      {showEnglish && scene.englishPrompt && (
+        <div style={{ marginTop: '4px', fontSize: '0.75rem', opacity: 0.7 }}>
+          Native English Version
+        </div>
+      )}
+    </div>
+  )
+}
+
 const VIDEO_MODELS: { value: VideoModel; label: string }[] = [
   { value: 'sora', label: 'OpenAI Sora 2' },
   { value: 'veo', label: 'Google Veo 3' },
@@ -484,15 +514,21 @@ function VideoPromptGenerator() {
           <ResultCard
             title="메타 프롬프트"
             content={results.metaPrompt}
+            englishVersion={results.englishMetaPrompt}
+            showEnglishToggle={true}
           />
           <ResultCard
             title="컨텍스트 프롬프트"
             content={results.contextPrompt}
+            englishVersion={results.englishContextPrompt}
+            showEnglishToggle={true}
           />
           {results.fullPrompt && (
             <ResultCard
               title="전체 프롬프트 (복사용)"
               content={results.fullPrompt}
+              englishVersion={results.englishVersion}
+              showEnglishToggle={true}
             />
           )}
           {results.scenes && Array.isArray(results.scenes) && (
@@ -500,18 +536,7 @@ function VideoPromptGenerator() {
               <h3>장면별 프롬프트</h3>
               {results.scenes.map((scene: any, index: number) => (
                 <div key={scene.order || index} style={{ marginBottom: '16px', padding: '12px', border: '1px solid #000000' }}>
-                  <h4 style={{ margin: '0 0 8px 0', fontSize: '0.9rem' }}>장면 {scene.order} ({scene.duration}초)</h4>
-                  <pre style={{ margin: 0, fontSize: '0.85rem', whiteSpace: 'pre-wrap' }}>{scene.prompt}</pre>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(scene.prompt)
-                      alert('장면 프롬프트가 복사되었습니다!')
-                    }}
-                    className="copy-button"
-                    style={{ marginTop: '8px', padding: '6px 12px', fontSize: '0.85rem' }}
-                  >
-                    복사
-                  </button>
+                  <ScenePromptDisplay scene={scene} index={index} />
                 </div>
               ))}
             </div>

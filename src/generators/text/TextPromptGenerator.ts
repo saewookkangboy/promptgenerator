@@ -2,6 +2,7 @@
 
 import { BasePromptGenerator } from '../base/BasePromptGenerator'
 import { BasePromptOptions, PromptResult, ContentType, DetailedOptions } from '../../types/prompt.types'
+import { addEnglishVersion } from '../../utils/englishTranslator'
 
 const CONTENT_TYPE_INFO: Record<ContentType, { name: string; requirements: string }> = {
   blog: {
@@ -100,12 +101,15 @@ ${baseOptions.conversational ? '- 대화체 사용 (구어체, 친근한 표현)
     // 해시태그 생성
     const hashtags = this.generateHashtags(baseOptions.userInput, contentType)
 
-    return {
+    const result = {
       metaPrompt,
       contextPrompt,
       hashtags,
       // contentType은 PromptResult의 확장 필드로 추가됨
     }
+
+    // 영문 버전 추가
+    return addEnglishVersion(result)
   }
 
   /**

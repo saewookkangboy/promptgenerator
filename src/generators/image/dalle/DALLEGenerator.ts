@@ -3,12 +3,13 @@
 import { ImagePromptGenerator } from '../ImagePromptGenerator'
 import { ImagePromptOptions } from '../../../types/image.types'
 import { PromptResult } from '../../../types/prompt.types'
+import { addEnglishVersion } from '../../../utils/englishTranslator'
 
 export class DALLEGenerator extends ImagePromptGenerator {
   generate(options: ImagePromptOptions): PromptResult {
     const prompt = this.buildPrompt(options)
     
-    return {
+    const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options),
       hashtags: this.generateHashtags(options.subject, 'image'),
@@ -20,6 +21,9 @@ export class DALLEGenerator extends ImagePromptGenerator {
         }
       }
     }
+
+    // 영문 버전 추가
+    return addEnglishVersion(result)
   }
 
   private buildPrompt(options: ImagePromptOptions): string {

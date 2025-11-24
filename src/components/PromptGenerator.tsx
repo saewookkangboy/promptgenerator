@@ -201,10 +201,14 @@ function PromptGenerator() {
           <ResultCard
             title="메타 프롬프트"
             content={results.metaPrompt}
+            englishVersion={results.englishMetaPrompt}
+            showEnglishToggle={true}
           />
           <ResultCard
             title="컨텍스트 프롬프트"
             content={results.contextPrompt}
+            englishVersion={results.englishContextPrompt}
+            showEnglishToggle={true}
           />
           <div className="hashtags-card">
             <h3>해시태그</h3>

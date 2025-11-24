@@ -1,17 +1,35 @@
 import { useState } from 'react'
+import { convertToNativeEnglish } from '../utils/englishTranslator'
 import './ResultCard.css'
 
 interface ResultCardProps {
   title: string
   content: string
+  englishVersion?: string
+  showEnglishToggle?: boolean
 }
 
-function ResultCard({ title, content }: ResultCardProps) {
+function ResultCard({ title, content, englishVersion, showEnglishToggle = false }: ResultCardProps) {
   const [copied, setCopied] = useState(false)
+  const [showEnglish, setShowEnglish] = useState(false)
+  const [englishContent, setEnglishContent] = useState<string | null>(null)
+
+  const handleToggleEnglish = () => {
+    if (!showEnglish && !englishContent) {
+      // 영어 버전이 없으면 생성
+      const translated = convertToNativeEnglish(content)
+      setEnglishContent(translated)
+    }
+    setShowEnglish(!showEnglish)
+  }
+
+  const displayContent = showEnglish 
+    ? (englishVersion || englishContent || convertToNativeEnglish(content))
+    : content
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(content)
+      await navigator.clipboard.writeText(displayContent)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
@@ -23,19 +41,34 @@ function ResultCard({ title, content }: ResultCardProps) {
     <div className="result-card">
       <div className="result-card-header">
         <h3>{title}</h3>
-        <button
-          onClick={handleCopy}
-          className={`copy-button ${copied ? 'copied' : ''}`}
-        >
-          {copied ? '✓ 복사됨' : '복사'}
-        </button>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          {showEnglishToggle && (
+            <button
+              onClick={handleToggleEnglish}
+              className="copy-button"
+              style={{ fontSize: '0.85rem', padding: '6px 12px' }}
+            >
+              {showEnglish ? '한국어' : 'English'}
+            </button>
+          )}
+          <button
+            onClick={handleCopy}
+            className={`copy-button ${copied ? 'copied' : ''}`}
+          >
+            {copied ? '✓ 복사됨' : '복사'}
+          </button>
+        </div>
       </div>
       <div className="result-card-content">
-        <pre>{content}</pre>
+        <pre>{displayContent}</pre>
+        {showEnglish && (
+          <div style={{ marginTop: '12px', padding: '8px', background: '#f5f5f5', fontSize: '0.85rem', opacity: 0.8 }}>
+            Native English Version
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
 export default ResultCard
-

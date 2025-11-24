@@ -3,6 +3,7 @@
 import { BasePromptGenerator } from '../base/BasePromptGenerator'
 import { EngineeringPromptOptions, OptimizedPrompt, EngineeringConfig } from '../../types/engineering.types'
 import { PromptResult } from '../../types/prompt.types'
+import { addEnglishVersion } from '../../utils/englishTranslator'
 
 export class PromptEngineer extends BasePromptGenerator {
   generate(options: EngineeringPromptOptions): PromptResult {
@@ -37,7 +38,7 @@ ${steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}
 각 단계를 차근차근 진행하며 최종 답변을 도출하세요.
 ${config?.reasoning ? '각 단계에서 추론 과정을 명시적으로 설명하세요.' : ''}`
 
-    return {
+    const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Chain of Thought'),
       hashtags: this.generateHashtags(options.basePrompt, 'engineering'),
@@ -45,6 +46,7 @@ ${config?.reasoning ? '각 단계에서 추론 과정을 명시적으로 설명�
       method: 'cot',
       steps,
     }
+    return addEnglishVersion(result)
   }
 
   /**
@@ -73,7 +75,7 @@ ${examplesText}
 위 예시들의 패턴을 따라 새로운 입력에 대한 출력을 생성하세요.
 예시와 동일한 형식과 스타일을 유지하세요.`
 
-    return {
+    const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Few-shot Learning'),
       hashtags: this.generateHashtags(options.basePrompt, 'engineering'),
@@ -81,6 +83,7 @@ ${examplesText}
       method: 'few-shot',
       examples: examples.length,
     }
+    return addEnglishVersion(result)
   }
 
   /**
@@ -104,7 +107,7 @@ ${options.basePrompt}
 ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
 전문 용어를 적절히 사용하고, 해당 분야의 베스트 프랙티스를 반영하세요.`
 
-    return {
+    const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Role-based Prompting'),
       hashtags: this.generateHashtags(options.basePrompt, 'engineering'),
@@ -112,6 +115,7 @@ ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
       method: 'role-based',
       role: config.role,
     }
+    return addEnglishVersion(result)
   }
 
   /**
@@ -120,13 +124,14 @@ ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
   private generateZeroShot(options: EngineeringPromptOptions): PromptResult {
     const prompt = options.basePrompt
 
-    return {
+    const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Zero-shot Learning'),
       hashtags: this.generateHashtags(options.basePrompt, 'engineering'),
       fullPrompt: prompt,
       method: 'zero-shot',
     }
+    return addEnglishVersion(result)
   }
 
   /**
@@ -137,7 +142,7 @@ ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
     
     const prompt = optimization.optimized
 
-    return {
+    const result = {
       metaPrompt: prompt,
       contextPrompt: this.buildContextPrompt(options, 'Optimized Prompt', optimization),
       hashtags: this.generateHashtags(options.basePrompt, 'engineering'),
@@ -145,6 +150,7 @@ ${config.role}의 관점과 전문성을 바탕으로 답변해주세요.
       method: 'optimize',
       optimization,
     }
+    return addEnglishVersion(result)
   }
 
   /**

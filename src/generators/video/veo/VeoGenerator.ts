@@ -3,6 +3,7 @@
 import { VideoPromptGenerator } from '../VideoPromptGenerator'
 import { VideoPromptOptions } from '../../../types/video.types'
 import { PromptResult } from '../../../types/prompt.types'
+import { addEnglishVersion, convertToNativeEnglish } from '../../../utils/englishTranslator'
 
 export class VeoGenerator extends VideoPromptGenerator {
   generate(options: VideoPromptOptions): PromptResult {
@@ -15,12 +16,15 @@ export class VeoGenerator extends VideoPromptGenerator {
     const fullPrompt = scenes.map(s => s.prompt).join('\n\n---\n\n')
     const metaPrompt = this.buildMetaPrompt(options)
     
-    return {
+    const result = {
       metaPrompt,
       contextPrompt: this.buildContextPrompt(options),
       hashtags: this.generateHashtags(options.userInput, 'video'),
       fullPrompt,
-      scenes,
+      scenes: scenes.map(scene => ({
+        ...scene,
+        englishPrompt: convertToNativeEnglish(scene.prompt),
+      })),
       modelSpecific: {
         veo: {
           quality: options.modelSpecific?.veo?.quality || 'high',
@@ -28,6 +32,9 @@ export class VeoGenerator extends VideoPromptGenerator {
         }
       }
     }
+
+    // 영문 버전 추가
+    return addEnglishVersion(result)
   }
 
   private buildScenePrompt(scene: VideoPromptOptions['scenes'][0], options: VideoPromptOptions): string {

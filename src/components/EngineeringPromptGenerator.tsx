@@ -416,15 +416,21 @@ function EngineeringPromptGenerator() {
           <ResultCard
             title="메타 프롬프트"
             content={results.metaPrompt}
+            englishVersion={results.englishMetaPrompt}
+            showEnglishToggle={true}
           />
           <ResultCard
             title="컨텍스트 프롬프트"
             content={results.contextPrompt}
+            englishVersion={results.englishContextPrompt}
+            showEnglishToggle={true}
           />
           {results.fullPrompt && (
             <ResultCard
               title="전체 프롬프트 (복사용)"
               content={results.fullPrompt}
+              englishVersion={results.englishVersion}
+              showEnglishToggle={true}
             />
           )}
           {results.optimization && (
