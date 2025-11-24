@@ -227,13 +227,30 @@
 #### 디자인 시스템
 - **Black/White 미니멀 디자인**: 검은색과 흰색만 사용한 미니멀한 디자인
 - **타이포그래피**: IBM Plex Sans KR, Noto Sans KR 폰트 사용
-- **반응형 디자인**: 모바일 및 데스크톱 최적화
+- **반응형 디자인**: 모바일/태블릿/데스크톱 완벽 지원
+  - 모바일: 480px 이하 최적화
+  - 태블릿: 768px 이하 최적화
+  - 데스크톱: 1200px 최대 너비
+- **접근성 향상**
+  - 키보드 네비게이션 지원 (focus-visible)
+  - ARIA 레이블 및 역할 속성
+  - 스크린 리더 지원
+  - 애니메이션 감소 설정 지원 (prefers-reduced-motion)
+- **성능 최적화**
+  - CSS 애니메이션 최적화
+  - 불필요한 리렌더링 방지
+  - 코드 스플리팅 및 지연 로딩
 
 #### 사용자 인터페이스
 - **탭 기반 네비게이션**: 텍스트/이미지/동영상/엔지니어링 탭
+  - 전체 밑줄 그리드 디자인
+  - Hover 시 검정 배경 + 흰색 텍스트
 - **접을 수 있는 상세 옵션**: 깔끔한 UI를 위한 접기/펼치기 기능
 - **원클릭 복사**: 모든 프롬프트에 원클릭 복사 기능
-- **실시간 미리보기**: 프롬프트 생성 전 설정 확인 가능
+- **로딩 상태 표시**: 프롬프트 생성 중 로딩 스피너 표시
+- **에러 처리**: 사용자 친화적인 에러 메시지 표시
+- **입력 검증**: 실시간 입력 검증 및 피드백
+- **버튼 상태 관리**: 생성 중 버튼 비활성화 및 로딩 표시
 
 ---
 
@@ -401,10 +418,16 @@ src/
 │   ├── VideoPromptGenerator.tsx     # 동영상 생성 UI
 │   ├── EngineeringPromptGenerator.tsx # 엔지니어링 UI
 │   ├── ResultCard.tsx               # 결과 표시 카드
+│   ├── LoadingSpinner.tsx           # 로딩 스피너 컴포넌트
+│   ├── ErrorMessage.tsx             # 에러 메시지 컴포넌트
 │   └── *.css                        # 스타일 파일
 │
 ├── utils/                   # 유틸리티
-│   └── englishTranslator.ts # 영어 번역 유틸리티
+│   ├── englishTranslator.ts # 영어 번역 유틸리티
+│   ├── validation.ts        # 입력 검증 유틸리티
+│   ├── hooks.ts             # 공통 React 훅
+│   ├── constants.ts         # 공통 상수
+│   └── notifications.ts     # 알림 유틸리티
 │
 ├── App.tsx                  # 메인 앱 컴포넌트
 ├── main.tsx                 # 진입점
@@ -458,6 +481,32 @@ src/
 - 실시간 언어 토글 UI
 - AI 모델 최적화된 영어 표현
 - 동영상 장면별 영어 프롬프트 및 복사 기능
+
+### 서비스 최적화 (최신)
+- **디자인 최적화**
+  - 향상된 반응형 디자인 (모바일/태블릿/데스크톱)
+  - 접근성 개선 (키보드 네비게이션, ARIA, 스크린 리더)
+  - 애니메이션 최적화 (fade-in 효과, reduced-motion 지원)
+  - 모바일 UX 개선 (터치 친화적 인터랙션)
+- **기능 최적화**
+  - 로딩 상태 표시 (LoadingSpinner 컴포넌트)
+  - 에러 처리 개선 (ErrorMessage 컴포넌트로 alert 대체)
+  - 입력 검증 시스템 (validation.ts)
+  - 버튼 상태 관리 (생성 중 비활성화)
+  - 사용자 친화적 피드백
+- **소스코드 최적화**
+  - 성능 최적화 (useMemo, useCallback)
+  - 코드 재사용성 향상 (공통 훅 및 유틸리티)
+  - 타입 안정성 개선
+  - 중앙화된 상수 관리
+  - SEO 개선 (meta 태그 추가)
+- **새로운 컴포넌트 및 유틸리티**
+  - LoadingSpinner: 로딩 상태 표시
+  - ErrorMessage: 에러 메시지 표시
+  - validation.ts: 입력 검증 유틸리티
+  - hooks.ts: 공통 React 훅 (useCopyToClipboard, useLocalStorage, useDebounce)
+  - constants.ts: 공통 상수 관리
+  - notifications.ts: 알림 유틸리티
 
 ---
 
