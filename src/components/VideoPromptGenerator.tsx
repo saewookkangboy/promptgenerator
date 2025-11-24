@@ -92,6 +92,7 @@ function VideoPromptGenerator() {
       },
     },
   ])
+  const [hasReferenceImage, setHasReferenceImage] = useState(false)
   const [results, setResults] = useState<PromptResult | null>(null)
 
   const handleGenerate = () => {
@@ -107,6 +108,7 @@ function VideoPromptGenerator() {
       scenes,
       overallStyle,
       technical,
+      hasReferenceImage,
       modelSpecific: {
         sora: {
           maxDuration: technical.totalDuration,
@@ -247,6 +249,17 @@ function VideoPromptGenerator() {
                 className="checkbox-input"
               />
               <span>영화적 품질</span>
+            </label>
+          </div>
+          <div className="form-group checkbox-group">
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={hasReferenceImage}
+                onChange={(e) => setHasReferenceImage(e.target.checked)}
+                className="checkbox-input"
+              />
+              <span>참고 사진/스틸컷 제공</span>
             </label>
           </div>
         </div>
@@ -427,6 +440,23 @@ function VideoPromptGenerator() {
               title="전체 프롬프트 (복사용)"
               content={results.fullPrompt}
             />
+          )}
+          {results.toneProfile && (
+            <div className="hashtags-card">
+              <h3>톤 & 묘사 가이드</h3>
+              <p style={{ marginBottom: '8px' }}>
+                <strong>톤앤매너:</strong> {results.toneProfile.contextTone} / {results.toneProfile.emotionalTone}
+              </p>
+              <p style={{ marginBottom: '8px' }}>
+                <strong>핵심 키워드:</strong> {results.toneProfile.descriptiveKeywords?.join(', ')}
+              </p>
+              <p style={{ marginBottom: '8px' }}>
+                <strong>감각 묘사:</strong> {results.toneProfile.sensoryFocus}
+              </p>
+              <p style={{ marginBottom: '0' }}>
+                <strong>페이싱:</strong> {results.toneProfile.pacing}
+              </p>
+            </div>
           )}
           {results.scenes && Array.isArray(results.scenes) && (
             <div className="hashtags-card">

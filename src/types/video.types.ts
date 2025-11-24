@@ -16,6 +16,7 @@ export interface VideoPromptOptions extends BasePromptOptions {
   overallStyle: VideoStyle
   technical: VideoTechnicalSettings
   modelSpecific?: VideoModelSpecificOptions
+  hasReferenceImage?: boolean
 }
 
 export interface VideoScene {
@@ -73,5 +74,13 @@ export interface VideoModelSpecificOptions {
     style: string
     motion: number // 0-100
   }
+}
+
+export interface VideoToneProfile {
+  contextTone: string
+  emotionalTone: string
+  descriptiveKeywords: string[]
+  sensoryFocus: string
+  pacing: string
 }
 

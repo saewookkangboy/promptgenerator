@@ -131,3 +131,4 @@ ${midjourney?.seed ? `시드: ${midjourney.seed}` : ''}`
   }
 }
 
+
