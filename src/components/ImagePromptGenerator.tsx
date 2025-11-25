@@ -5,6 +5,7 @@ import { ImagePromptOptions, ImageModel, ImageStyle, Composition, Lighting, Colo
 import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
 import { validateRequired } from '../utils/validation'
+import { savePromptRecord } from '../utils/storage'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -142,6 +143,13 @@ function ImagePromptGenerator() {
         const generator = PromptGeneratorFactory.createImageGenerator(model)
         const generated = generator.generate(options) as PromptResult
         setResults(generated)
+        
+        // Admin 기록 저장
+        savePromptRecord({
+          category: 'image',
+          userInput: subject,
+          model: model,
+        })
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)
       } finally {

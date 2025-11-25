@@ -5,6 +5,7 @@ import { EngineeringPromptOptions, EngineeringConfig } from '../types/engineerin
 import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
 import { validateRequired } from '../utils/validation'
+import { savePromptRecord } from '../utils/storage'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -113,6 +114,12 @@ function EngineeringPromptGenerator() {
         const generator = PromptGeneratorFactory.create('engineering')
         const generated = generator.generate(options)
         setResults(generated)
+        
+        // Admin 기록 저장
+        savePromptRecord({
+          category: 'engineering',
+          userInput: basePrompt,
+        })
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)
       } finally {

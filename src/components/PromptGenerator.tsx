@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { ContentType, DetailedOptions } from '../types'
 import { generatePrompts } from '../utils/promptGenerator'
 import { validatePrompt } from '../utils/validation'
+import { savePromptRecord } from '../utils/storage'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -84,6 +85,12 @@ function PromptGenerator() {
 
         const generated = generatePrompts(userPrompt, contentType, options)
         setResults(generated)
+        
+        // Admin 기록 저장
+        savePromptRecord({
+          category: 'text',
+          userInput: userPrompt,
+        })
       } catch (err) {
         setError('프롬프트 생성 중 오류가 발생했습니다.')
       } finally {

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react'
 import { VideoPromptOptions, VideoModel, VideoScene, CameraSettings, MotionSettings, VideoStyle, VideoTechnicalSettings } from '../types/video.types'
 import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
+import { savePromptRecord } from '../utils/storage'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -186,6 +187,13 @@ function VideoPromptGenerator() {
         const generator = PromptGeneratorFactory.createVideoGenerator(model)
         const generated = generator.generate(options)
         setResults(generated)
+        
+        // Admin 기록 저장
+        savePromptRecord({
+          category: 'video',
+          userInput: scenes.map(s => s.description).join(' '),
+          model: model,
+        })
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)
       } finally {

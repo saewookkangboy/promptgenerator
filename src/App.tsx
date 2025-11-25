@@ -1,20 +1,79 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import PromptGenerator from './components/PromptGenerator'
 import ImagePromptGenerator from './components/ImagePromptGenerator'
 import VideoPromptGenerator from './components/VideoPromptGenerator'
 import EngineeringPromptGenerator from './components/EngineeringPromptGenerator'
+import AdminLogin from './components/AdminLogin'
+import AdminDashboard from './components/AdminDashboard'
+import { getAdminAuth, incrementVisitCount } from './utils/storage'
 import './App.css'
 
 type TabType = 'text' | 'image' | 'video' | 'engineering'
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('text')
+  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
+
+  useEffect(() => {
+    // 방문수 증가
+    incrementVisitCount()
+    
+    // Admin 인증 상태 확인
+    setIsAdminAuthenticated(getAdminAuth())
+  }, [])
+
+  const handleAdminLogin = () => {
+    setIsAdminAuthenticated(true)
+  }
+
+  const handleAdminLogout = () => {
+    setIsAdminAuthenticated(false)
+  }
+
+  // Admin 모드 토글
+  const toggleAdminMode = () => {
+    setIsAdmin(!isAdmin)
+    if (!isAdmin) {
+      setIsAdminAuthenticated(getAdminAuth())
+    }
+  }
+
+  // Admin 모드
+  if (isAdmin) {
+    if (!isAdminAuthenticated) {
+      return (
+        <div className="app">
+          <AdminLogin onLogin={handleAdminLogin} />
+        </div>
+      )
+    }
+    return (
+      <div className="app">
+        <AdminDashboard 
+          onLogout={handleAdminLogout}
+          onBackToMain={() => setIsAdmin(false)}
+        />
+      </div>
+    )
+  }
 
   return (
     <div className="app">
       <header className="app-header">
-        <h1>프롬프트 생성기</h1>
-        <p>텍스트, 이미지, 동영상 생성용 프롬프트를 생성합니다</p>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ flex: 1 }}>
+            <h1>프롬프트 생성기</h1>
+            <p>텍스트, 이미지, 동영상 생성용 프롬프트를 생성합니다</p>
+          </div>
+          <button
+            onClick={toggleAdminMode}
+            className="admin-toggle-button"
+            title="Admin 모드"
+          >
+            Admin
+          </button>
+        </div>
       </header>
       
       <div className="tabs">

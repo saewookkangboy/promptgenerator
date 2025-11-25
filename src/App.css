@@ -206,3 +206,34 @@
   }
 }
 
+.admin-toggle-button {
+  padding: 8px 16px;
+  background: #f5f5f5;
+  color: #666666;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.admin-toggle-button:hover {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+@media (max-width: 768px) {
+  .app-header > div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 16px;
+  }
+
+  .admin-toggle-button {
+    align-self: flex-end;
+  }
+}
+
