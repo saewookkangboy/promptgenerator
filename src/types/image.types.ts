@@ -7,7 +7,12 @@ export type ImageModel =
   | 'dalle' 
   | 'stable-diffusion' 
   | 'imagen' 
+  | 'imagen-3' // Google Imagen 3 (Nano Banana Pro)
   | 'firefly'
+  | 'leonardo' // Leonardo AI
+  | 'flux' // Flux
+  | 'ideogram' // Ideogram
+  | 'comfyui' // ComfyUI
 
 export interface ImagePromptOptions extends BasePromptOptions {
   category: 'image'
@@ -63,20 +68,73 @@ export interface ModelSpecificOptions {
     seed?: number
     style?: 'raw' | 'default'
     quality?: number // 0.25, 0.5, 1, 2
+    stylize?: number // 0-1000
+    tile?: boolean
+    weird?: number // 0-3000
   }
   stableDiffusion?: {
     cfgScale: number // 1-20
     steps: number // 10-150
-    sampler: 'euler' | 'dpm' | 'ddim' | 'plms'
+    sampler: 'euler' | 'dpm' | 'ddim' | 'plms' | 'k_euler' | 'k_dpm_2'
     lora?: string[]
+    controlnet?: string
+    strength?: number // 0-1
+    guidanceScale?: number // 1-20
   }
   dalle?: {
     style: 'vivid' | 'natural'
     size: '1024x1024' | '1792x1024' | '1024x1792'
+    quality?: 'standard' | 'hd'
   }
   imagen?: {
     safetyFilter?: 'block_few' | 'block_some' | 'block_most'
     personGeneration?: 'allow_all' | 'allow_adult' | 'dont_allow'
+  }
+  imagen3?: {
+    // Google Imagen 3 (Nano Banana Pro) 프롬프트 엔지니어링 옵션
+    promptStructure?: 'simple' | 'structured' | 'detailed'
+    styleReference?: string // 스타일 참조 이미지 설명
+    aspectRatio?: '1:1' | '4:3' | '16:9' | '21:9' | '9:16'
+    safetyFilter?: 'block_few' | 'block_some' | 'block_most'
+    personGeneration?: 'allow_all' | 'allow_adult' | 'dont_allow'
+    outputFormat?: 'png' | 'jpeg'
+    guidanceScale?: number // 1-20
+    numInferenceSteps?: number // 20-100
+    seed?: number
+    negativePrompt?: string
+  }
+  firefly?: {
+    styleReference?: string
+    commercialUse?: boolean
+    contentType?: 'photo' | 'graphic' | 'art'
+    aspectRatio?: '1:1' | '4:3' | '16:9' | '21:9' | '9:16'
+  }
+  leonardo?: {
+    model?: 'leonardo-diffusion' | 'leonardo-photoreal' | 'leonardo-anime'
+    presetStyle?: string
+    guidanceScale?: number // 1-20
+    numInferenceSteps?: number // 20-100
+    seed?: number
+  }
+  flux?: {
+    promptStrength?: number // 0-1
+    styleReference?: string
+    guidanceScale?: number // 1-20
+    numInferenceSteps?: number // 20-100
+    seed?: number
+  }
+  ideogram?: {
+    style?: 'auto' | 'photorealistic' | 'artistic' | 'cinematic'
+    aspectRatio?: '1:1' | '4:3' | '16:9' | '21:9' | '9:16'
+    magicPrompt?: boolean // 자동 프롬프트 개선
+  }
+  comfyui?: {
+    workflow?: string
+    lora?: string[]
+    controlnet?: string
+    cfgScale?: number
+    steps?: number
+    sampler?: string
   }
 }
 

@@ -4,10 +4,16 @@ import { BasePromptOptions } from './prompt.types'
 
 export type VideoModel = 
   | 'sora' 
+  | 'sora-2' // OpenAI Sora 2
   | 'veo' 
+  | 'veo-3' // Google Veo 3
   | 'runway' 
+  | 'runway-gen3' // Runway Gen-3
   | 'pika' 
+  | 'pika-2' // Pika Labs 2.0
   | 'stable-video'
+  | 'kling' // Kling AI
+  | 'luma' // Luma Dream Machine
 
 export interface VideoPromptOptions extends BasePromptOptions {
   category: 'video'
@@ -68,14 +74,80 @@ export interface VideoModelSpecificOptions {
   sora?: {
     maxDuration: number
     consistency: 'high' | 'medium' | 'low'
+    aspectRatio?: '16:9' | '9:16' | '1:1'
+  }
+  sora2?: {
+    // OpenAI Sora 2 프롬프트 엔지니어링 옵션
+    maxDuration: number // 최대 60초
+    consistency: 'high' | 'medium' | 'low'
+    aspectRatio?: '16:9' | '9:16' | '1:1' | '21:9'
+    promptStructure?: 'simple' | 'detailed' | 'scene-by-scene'
+    styleReference?: string
+    motionControl?: 'subtle' | 'moderate' | 'dynamic'
+    temporalConsistency?: number // 0-1
   }
   veo?: {
     quality: 'standard' | 'high'
     extendedDuration?: boolean
   }
+  veo3?: {
+    // Google Veo 3 프롬프트 엔지니어링 옵션
+    quality: 'standard' | 'high' | 'ultra'
+    extendedDuration?: boolean // 최대 60초
+    aspectRatio?: '16:9' | '9:16' | '1:1' | '21:9'
+    promptStructure?: 'simple' | 'structured' | 'detailed'
+    styleReference?: string
+    motionControl?: 'precise' | 'natural' | 'dynamic'
+    frameConsistency?: number // 0-1
+    seed?: number
+  }
   runway?: {
     style: string
     motion: number // 0-100
+  }
+  runwayGen3?: {
+    // Runway Gen-3 프롬프트 엔지니어링 옵션
+    style?: 'cinematic' | 'realistic' | 'artistic' | 'documentary'
+    motion: number // 0-100
+    aspectRatio?: '16:9' | '9:16' | '1:1' | '21:9'
+    promptStructure?: 'simple' | 'detailed'
+    styleReference?: string
+    interpolation?: boolean // 프레임 보간
+    seed?: number
+  }
+  pika?: {
+    motion?: number // 0-100
+    aspectRatio?: '16:9' | '9:16' | '1:1'
+  }
+  pika2?: {
+    // Pika Labs 2.0 프롬프트 엔지니어링 옵션
+    motion?: number // 0-100
+    aspectRatio?: '16:9' | '9:16' | '1:1'
+    promptStrength?: number // 0-1
+    styleReference?: string
+    frameRate?: 24 | 30 | 60
+    seed?: number
+  }
+  stableVideo?: {
+    motionBuckets?: number // 1-127
+    condAugStrength?: number // 0-1
+    decodingT?: number // 1-12
+  }
+  kling?: {
+    // Kling AI 프롬프트 엔지니어링 옵션
+    aspectRatio?: '16:9' | '9:16' | '1:1'
+    duration?: 5 | 10 | 15 | 30
+    style?: 'realistic' | 'artistic' | 'cinematic'
+    motionControl?: 'subtle' | 'moderate' | 'dynamic'
+    seed?: number
+  }
+  luma?: {
+    // Luma Dream Machine 프롬프트 엔지니어링 옵션
+    aspectRatio?: '16:9' | '9:16' | '1:1'
+    duration?: 5 | 10 | 15
+    style?: 'realistic' | 'artistic' | 'cinematic'
+    motionControl?: 'subtle' | 'moderate' | 'dynamic'
+    seed?: number
   }
 }
 

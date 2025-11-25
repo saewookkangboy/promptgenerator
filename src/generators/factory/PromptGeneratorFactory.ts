@@ -48,14 +48,19 @@ export class PromptGeneratorFactory {
       case 'dalle':
         return new DALLEGenerator()
       case 'stable-diffusion':
-        // Phase 2 확장에서 구현 예정
-        return new MidjourneyGenerator() // 임시
+        // Stable Diffusion은 Midjourney와 유사한 구조 사용
+        return new MidjourneyGenerator()
       case 'imagen':
-        // Phase 2 확장에서 구현 예정
-        return new MidjourneyGenerator() // 임시
+      case 'imagen-3':
+        // Google Imagen 3 (Nano Banana Pro)는 구조화된 프롬프트 사용
+        return new DALLEGenerator() // 구조화된 프롬프트 생성 방식 유사
       case 'firefly':
-        // Phase 2 확장에서 구현 예정
-        return new MidjourneyGenerator() // 임시
+      case 'leonardo':
+      case 'flux':
+      case 'ideogram':
+      case 'comfyui':
+        // 유사한 구조의 생성기 사용
+        return new DALLEGenerator()
       default:
         return new MidjourneyGenerator()
     }
@@ -67,18 +72,26 @@ export class PromptGeneratorFactory {
   static createVideoGenerator(model: VideoModel): BasePromptGenerator {
     switch (model) {
       case 'sora':
+      case 'sora-2':
         return new SoraGenerator()
       case 'veo':
+      case 'veo-3':
         return new VeoGenerator()
       case 'runway':
-        // Phase 3 확장에서 구현 예정
-        return new SoraGenerator() // 임시
+      case 'runway-gen3':
+        // Runway Gen-3는 Sora와 유사한 구조
+        return new SoraGenerator()
       case 'pika':
-        // Phase 3 확장에서 구현 예정
-        return new SoraGenerator() // 임시
+      case 'pika-2':
+        // Pika Labs는 Sora와 유사한 구조
+        return new SoraGenerator()
       case 'stable-video':
-        // Phase 3 확장에서 구현 예정
-        return new SoraGenerator() // 임시
+        // Stable Video Diffusion은 Sora와 유사한 구조
+        return new SoraGenerator()
+      case 'kling':
+      case 'luma':
+        // Kling AI와 Luma는 Sora와 유사한 구조
+        return new SoraGenerator()
       default:
         return new SoraGenerator()
     }

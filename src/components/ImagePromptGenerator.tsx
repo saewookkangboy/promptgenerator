@@ -17,7 +17,12 @@ const IMAGE_MODELS: { value: ImageModel; label: string }[] = [
   { value: 'dalle', label: 'DALL-E 3' },
   { value: 'stable-diffusion', label: 'Stable Diffusion' },
   { value: 'imagen', label: 'Google Imagen' },
+  { value: 'imagen-3', label: 'Google Imagen 3 (Nano Banana Pro)' },
   { value: 'firefly', label: 'Adobe Firefly' },
+  { value: 'leonardo', label: 'Leonardo AI' },
+  { value: 'flux', label: 'Flux' },
+  { value: 'ideogram', label: 'Ideogram' },
+  { value: 'comfyui', label: 'ComfyUI' },
 ]
 
 const ART_STYLES = [
@@ -105,6 +110,9 @@ function ImagePromptGenerator() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  
+  // 모델별 고급 옵션 state
+  const [modelSpecific, setModelSpecific] = useState<any>({})
 
   const handleGenerate = useCallback(() => {
     const validation = validateRequired(subject, '주제')
@@ -130,14 +138,14 @@ function ImagePromptGenerator() {
           technical,
           negativePrompt: negativePrompt.length > 0 ? negativePrompt : undefined,
           modelSpecific: {
-            midjourney: {
-              version: 6,
-              chaos: 0,
-            },
-            dalle: {
-              style: 'vivid',
-              size: '1024x1024',
-            },
+            ...modelSpecific,
+            midjourney: modelSpecific.midjourney || { version: 6, chaos: 0 },
+            dalle: modelSpecific.dalle || { style: 'vivid', size: '1024x1024' },
+            imagen3: modelSpecific.imagen3 || { promptStructure: 'structured', guidanceScale: 7.5, numInferenceSteps: 50 },
+            stableDiffusion: modelSpecific.stableDiffusion || { cfgScale: 7, steps: 50, sampler: 'euler' },
+            flux: modelSpecific.flux || { promptStrength: 0.8 },
+            leonardo: modelSpecific.leonardo || { model: 'leonardo-diffusion', guidanceScale: 7 },
+            ideogram: modelSpecific.ideogram || { style: 'auto', magicPrompt: false },
           },
         }
 
@@ -422,6 +430,360 @@ function ImagePromptGenerator() {
                         {item} ×
                       </span>
                     ))}
+                  </div>
+                )}
+              </div>
+
+              {/* 모델별 프롬프트 엔지니어링 옵션 */}
+              <div className="model-specific-options" style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #000' }}>
+                <h4 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>모델별 고급 프롬프트 엔지니어링 옵션</h4>
+                
+                {/* Midjourney 옵션 */}
+                {model === 'midjourney' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="form-group">
+                      <label htmlFor="mj-version">버전</label>
+                      <select
+                        id="mj-version"
+                        value={modelSpecific.midjourney?.version || 6}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          midjourney: { ...modelSpecific.midjourney, version: parseInt(e.target.value) }
+                        })}
+                        className="option-select"
+                      >
+                        <option value={4}>v4</option>
+                        <option value={5}>v5</option>
+                        <option value={6}>v6</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="mj-chaos">Chaos: {modelSpecific.midjourney?.chaos || 0}</label>
+                      <input
+                        type="range"
+                        id="mj-chaos"
+                        min="0"
+                        max="100"
+                        value={modelSpecific.midjourney?.chaos || 0}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          midjourney: { ...modelSpecific.midjourney, chaos: parseInt(e.target.value) }
+                        })}
+                        className="option-select"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="mj-stylize">Stylize: {modelSpecific.midjourney?.stylize || 100}</label>
+                      <input
+                        type="range"
+                        id="mj-stylize"
+                        min="0"
+                        max="1000"
+                        value={modelSpecific.midjourney?.stylize || 100}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          midjourney: { ...modelSpecific.midjourney, stylize: parseInt(e.target.value) }
+                        })}
+                        className="option-select"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="mj-seed">Seed (선택사항)</label>
+                      <input
+                        type="number"
+                        id="mj-seed"
+                        value={modelSpecific.midjourney?.seed || ''}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          midjourney: { ...modelSpecific.midjourney, seed: e.target.value ? parseInt(e.target.value) : undefined }
+                        })}
+                        placeholder="랜덤 시드 번호"
+                        className="prompt-input"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Google Imagen 3 (Nano Banana Pro) 옵션 */}
+                {model === 'imagen-3' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="form-group">
+                      <label htmlFor="im3-structure">프롬프트 구조</label>
+                      <select
+                        id="im3-structure"
+                        value={modelSpecific.imagen3?.promptStructure || 'structured'}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          imagen3: { ...modelSpecific.imagen3, promptStructure: e.target.value }
+                        })}
+                        className="option-select"
+                      >
+                        <option value="simple">간단 (Simple)</option>
+                        <option value="structured">구조화 (Structured)</option>
+                        <option value="detailed">상세 (Detailed)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="im3-style-ref">스타일 참조 (선택사항)</label>
+                      <textarea
+                        id="im3-style-ref"
+                        value={modelSpecific.imagen3?.styleReference || ''}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          imagen3: { ...modelSpecific.imagen3, styleReference: e.target.value }
+                        })}
+                        placeholder="예: Van Gogh의 별이 빛나는 밤 스타일"
+                        className="prompt-input"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="im3-guidance">Guidance Scale: {modelSpecific.imagen3?.guidanceScale || 7.5}</label>
+                      <input
+                        type="range"
+                        id="im3-guidance"
+                        min="1"
+                        max="20"
+                        step="0.5"
+                        value={modelSpecific.imagen3?.guidanceScale || 7.5}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          imagen3: { ...modelSpecific.imagen3, guidanceScale: parseFloat(e.target.value) }
+                        })}
+                        className="option-select"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="im3-steps">Inference Steps: {modelSpecific.imagen3?.numInferenceSteps || 50}</label>
+                      <input
+                        type="range"
+                        id="im3-steps"
+                        min="20"
+                        max="100"
+                        value={modelSpecific.imagen3?.numInferenceSteps || 50}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          imagen3: { ...modelSpecific.imagen3, numInferenceSteps: parseInt(e.target.value) }
+                        })}
+                        className="option-select"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="im3-safety">안전 필터</label>
+                      <select
+                        id="im3-safety"
+                        value={modelSpecific.imagen3?.safetyFilter || 'block_some'}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          imagen3: { ...modelSpecific.imagen3, safetyFilter: e.target.value }
+                        })}
+                        className="option-select"
+                      >
+                        <option value="block_few">최소 차단</option>
+                        <option value="block_some">일부 차단</option>
+                        <option value="block_most">대부분 차단</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Stable Diffusion 옵션 */}
+                {model === 'stable-diffusion' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="form-group">
+                      <label htmlFor="sd-cfg">CFG Scale: {modelSpecific.stableDiffusion?.cfgScale || 7}</label>
+                      <input
+                        type="range"
+                        id="sd-cfg"
+                        min="1"
+                        max="20"
+                        value={modelSpecific.stableDiffusion?.cfgScale || 7}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          stableDiffusion: { ...modelSpecific.stableDiffusion, cfgScale: parseInt(e.target.value) }
+                        })}
+                        className="option-select"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="sd-steps">Steps: {modelSpecific.stableDiffusion?.steps || 50}</label>
+                      <input
+                        type="range"
+                        id="sd-steps"
+                        min="10"
+                        max="150"
+                        value={modelSpecific.stableDiffusion?.steps || 50}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          stableDiffusion: { ...modelSpecific.stableDiffusion, steps: parseInt(e.target.value) }
+                        })}
+                        className="option-select"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="sd-sampler">Sampler</label>
+                      <select
+                        id="sd-sampler"
+                        value={modelSpecific.stableDiffusion?.sampler || 'euler'}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          stableDiffusion: { ...modelSpecific.stableDiffusion, sampler: e.target.value }
+                        })}
+                        className="option-select"
+                      >
+                        <option value="euler">Euler</option>
+                        <option value="dpm">DPM</option>
+                        <option value="ddim">DDIM</option>
+                        <option value="plms">PLMS</option>
+                        <option value="k_euler">K_Euler</option>
+                        <option value="k_dpm_2">K_DPM_2</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* DALL-E 3 옵션 */}
+                {model === 'dalle' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="form-group">
+                      <label htmlFor="dalle-style">스타일</label>
+                      <select
+                        id="dalle-style"
+                        value={modelSpecific.dalle?.style || 'vivid'}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          dalle: { ...modelSpecific.dalle, style: e.target.value }
+                        })}
+                        className="option-select"
+                      >
+                        <option value="vivid">Vivid (생생한)</option>
+                        <option value="natural">Natural (자연스러운)</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="dalle-quality">품질</label>
+                      <select
+                        id="dalle-quality"
+                        value={modelSpecific.dalle?.quality || 'standard'}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          dalle: { ...modelSpecific.dalle, quality: e.target.value }
+                        })}
+                        className="option-select"
+                      >
+                        <option value="standard">Standard</option>
+                        <option value="hd">HD</option>
+                      </select>
+                    </div>
+                  </div>
+                )}
+
+                {/* Flux 옵션 */}
+                {model === 'flux' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="form-group">
+                      <label htmlFor="flux-strength">Prompt Strength: {modelSpecific.flux?.promptStrength || 0.8}</label>
+                      <input
+                        type="range"
+                        id="flux-strength"
+                        min="0"
+                        max="1"
+                        step="0.1"
+                        value={modelSpecific.flux?.promptStrength || 0.8}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          flux: { ...modelSpecific.flux, promptStrength: parseFloat(e.target.value) }
+                        })}
+                        className="option-select"
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="flux-style-ref">스타일 참조 (선택사항)</label>
+                      <textarea
+                        id="flux-style-ref"
+                        value={modelSpecific.flux?.styleReference || ''}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          flux: { ...modelSpecific.flux, styleReference: e.target.value }
+                        })}
+                        placeholder="예: cinematic lighting, film grain"
+                        className="prompt-input"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Leonardo AI 옵션 */}
+                {model === 'leonardo' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="form-group">
+                      <label htmlFor="leo-model">모델</label>
+                      <select
+                        id="leo-model"
+                        value={modelSpecific.leonardo?.model || 'leonardo-diffusion'}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          leonardo: { ...modelSpecific.leonardo, model: e.target.value }
+                        })}
+                        className="option-select"
+                      >
+                        <option value="leonardo-diffusion">Leonardo Diffusion</option>
+                        <option value="leonardo-photoreal">Leonardo Photoreal</option>
+                        <option value="leonardo-anime">Leonardo Anime</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="leo-guidance">Guidance Scale: {modelSpecific.leonardo?.guidanceScale || 7}</label>
+                      <input
+                        type="range"
+                        id="leo-guidance"
+                        min="1"
+                        max="20"
+                        value={modelSpecific.leonardo?.guidanceScale || 7}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          leonardo: { ...modelSpecific.leonardo, guidanceScale: parseInt(e.target.value) }
+                        })}
+                        className="option-select"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Ideogram 옵션 */}
+                {model === 'ideogram' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                    <div className="form-group">
+                      <label htmlFor="ideogram-style">스타일</label>
+                      <select
+                        id="ideogram-style"
+                        value={modelSpecific.ideogram?.style || 'auto'}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          ideogram: { ...modelSpecific.ideogram, style: e.target.value }
+                        })}
+                        className="option-select"
+                      >
+                        <option value="auto">Auto</option>
+                        <option value="photorealistic">Photorealistic</option>
+                        <option value="artistic">Artistic</option>
+                        <option value="cinematic">Cinematic</option>
+                      </select>
+                    </div>
+                    <div className="form-group">
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={modelSpecific.ideogram?.magicPrompt || false}
+                          onChange={(e) => setModelSpecific({
+                            ...modelSpecific,
+                            ideogram: { ...modelSpecific.ideogram, magicPrompt: e.target.checked }
+                          })}
+                        />
+                        {' '}Magic Prompt (자동 프롬프트 개선)
+                      </label>
+                    </div>
                   </div>
                 )}
               </div>

@@ -152,6 +152,8 @@ function VideoPromptGenerator() {
   const [results, setResults] = useState<PromptResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [showAdvanced, setShowAdvanced] = useState(false)
+  const [modelSpecific, setModelSpecific] = useState<any>({})
 
   const handleGenerate = useCallback(() => {
     if (scenes.some(s => !s.description.trim())) {
@@ -174,14 +176,16 @@ function VideoPromptGenerator() {
       hasReferenceImage,
       referenceImageDescription: hasReferenceImage ? referenceImageDescription : undefined,
       modelSpecific: {
-        sora: {
-          maxDuration: technical.totalDuration,
-          consistency: 'high',
-        },
-        veo: {
-          quality: 'high',
-          extendedDuration: false,
-        },
+        ...modelSpecific,
+        sora: modelSpecific.sora || { maxDuration: technical.totalDuration, consistency: 'high' },
+        sora2: modelSpecific.sora2 || { consistency: 'high', motionControl: 'moderate', promptStructure: 'detailed' },
+        veo: modelSpecific.veo || { quality: 'high', extendedDuration: false },
+        veo3: modelSpecific.veo3 || { quality: 'high', motionControl: 'natural', promptStructure: 'structured' },
+        runway: modelSpecific.runway || { style: 'cinematic', motion: 50 },
+        runwayGen3: modelSpecific.runwayGen3 || { style: 'cinematic', motion: 50, interpolation: false },
+        pika: modelSpecific.pika || { motion: 50 },
+        pika2: modelSpecific.pika2 || { motion: 50, promptStrength: 0.8 },
+        kling: modelSpecific.kling || { duration: 10, style: 'realistic' },
       },
     }
 
@@ -578,6 +582,278 @@ function VideoPromptGenerator() {
               </div>
             ))}
           </div>
+        </div>
+
+        <div className="detailed-options-section">
+          <button
+            type="button"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="toggle-options-button"
+          >
+            {showAdvanced ? '▼' : '▶'} 모델별 고급 프롬프트 엔지니어링 옵션 {showAdvanced ? '접기' : '펼치기'}
+          </button>
+
+          {showAdvanced && (
+            <div className="detailed-options" style={{ marginTop: '16px' }}>
+              {/* Sora 2 옵션 */}
+              {(model === 'sora-2' || model === 'sora') && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #000' }}>
+                  <h4 style={{ marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>Sora 2 프롬프트 엔지니어링 옵션</h4>
+                  <div className="form-group">
+                    <label htmlFor="sora2-consistency">일관성 (Consistency)</label>
+                    <select
+                      id="sora2-consistency"
+                      value={modelSpecific.sora2?.consistency || modelSpecific.sora?.consistency || 'high'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        sora2: { ...modelSpecific.sora2, consistency: e.target.value },
+                        sora: { ...modelSpecific.sora, consistency: e.target.value }
+                      })}
+                      className="option-select"
+                    >
+                      <option value="high">High (높음)</option>
+                      <option value="medium">Medium (중간)</option>
+                      <option value="low">Low (낮음)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="sora2-motion">모션 제어</label>
+                    <select
+                      id="sora2-motion"
+                      value={modelSpecific.sora2?.motionControl || 'moderate'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        sora2: { ...modelSpecific.sora2, motionControl: e.target.value }
+                      })}
+                      className="option-select"
+                    >
+                      <option value="subtle">Subtle (미묘한)</option>
+                      <option value="moderate">Moderate (중간)</option>
+                      <option value="dynamic">Dynamic (역동적)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="sora2-structure">프롬프트 구조</label>
+                    <select
+                      id="sora2-structure"
+                      value={modelSpecific.sora2?.promptStructure || 'detailed'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        sora2: { ...modelSpecific.sora2, promptStructure: e.target.value }
+                      })}
+                      className="option-select"
+                    >
+                      <option value="simple">Simple (간단)</option>
+                      <option value="detailed">Detailed (상세)</option>
+                      <option value="scene-by-scene">Scene-by-Scene (장면별)</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
+              {/* Veo 3 옵션 */}
+              {(model === 'veo-3' || model === 'veo') && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #000' }}>
+                  <h4 style={{ marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>Veo 3 프롬프트 엔지니어링 옵션</h4>
+                  <div className="form-group">
+                    <label htmlFor="veo3-quality">품질</label>
+                    <select
+                      id="veo3-quality"
+                      value={modelSpecific.veo3?.quality || modelSpecific.veo?.quality || 'high'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        veo3: { ...modelSpecific.veo3, quality: e.target.value },
+                        veo: { ...modelSpecific.veo, quality: e.target.value }
+                      })}
+                      className="option-select"
+                    >
+                      <option value="standard">Standard</option>
+                      <option value="high">High</option>
+                      <option value="ultra">Ultra</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="veo3-motion">모션 제어</label>
+                    <select
+                      id="veo3-motion"
+                      value={modelSpecific.veo3?.motionControl || 'natural'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        veo3: { ...modelSpecific.veo3, motionControl: e.target.value }
+                      })}
+                      className="option-select"
+                    >
+                      <option value="precise">Precise (정밀한)</option>
+                      <option value="natural">Natural (자연스러운)</option>
+                      <option value="dynamic">Dynamic (역동적)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="veo3-structure">프롬프트 구조</label>
+                    <select
+                      id="veo3-structure"
+                      value={modelSpecific.veo3?.promptStructure || 'structured'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        veo3: { ...modelSpecific.veo3, promptStructure: e.target.value }
+                      })}
+                      className="option-select"
+                    >
+                      <option value="simple">Simple (간단)</option>
+                      <option value="structured">Structured (구조화)</option>
+                      <option value="detailed">Detailed (상세)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={modelSpecific.veo3?.extendedDuration || false}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          veo3: { ...modelSpecific.veo3, extendedDuration: e.target.checked }
+                        })}
+                      />
+                      {' '}Extended Duration (최대 60초)
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Runway Gen-3 옵션 */}
+              {(model === 'runway-gen3' || model === 'runway') && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #000' }}>
+                  <h4 style={{ marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>Runway Gen-3 프롬프트 엔지니어링 옵션</h4>
+                  <div className="form-group">
+                    <label htmlFor="runway-style">스타일</label>
+                    <select
+                      id="runway-style"
+                      value={modelSpecific.runwayGen3?.style || modelSpecific.runway?.style || 'cinematic'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        runwayGen3: { ...modelSpecific.runwayGen3, style: e.target.value },
+                        runway: { ...modelSpecific.runway, style: e.target.value }
+                      })}
+                      className="option-select"
+                    >
+                      <option value="cinematic">Cinematic (영화적)</option>
+                      <option value="realistic">Realistic (리얼리즘)</option>
+                      <option value="artistic">Artistic (예술적)</option>
+                      <option value="documentary">Documentary (다큐멘터리)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="runway-motion">모션: {modelSpecific.runwayGen3?.motion || modelSpecific.runway?.motion || 50}</label>
+                    <input
+                      type="range"
+                      id="runway-motion"
+                      min="0"
+                      max="100"
+                      value={modelSpecific.runwayGen3?.motion || modelSpecific.runway?.motion || 50}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        runwayGen3: { ...modelSpecific.runwayGen3, motion: parseInt(e.target.value) },
+                        runway: { ...modelSpecific.runway, motion: parseInt(e.target.value) }
+                      })}
+                      className="option-select"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={modelSpecific.runwayGen3?.interpolation || false}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          runwayGen3: { ...modelSpecific.runwayGen3, interpolation: e.target.checked }
+                        })}
+                      />
+                      {' '}Frame Interpolation (프레임 보간)
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Pika Labs 2.0 옵션 */}
+              {(model === 'pika-2' || model === 'pika') && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #000' }}>
+                  <h4 style={{ marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>Pika Labs 2.0 프롬프트 엔지니어링 옵션</h4>
+                  <div className="form-group">
+                    <label htmlFor="pika2-motion">모션: {modelSpecific.pika2?.motion || modelSpecific.pika?.motion || 50}</label>
+                    <input
+                      type="range"
+                      id="pika2-motion"
+                      min="0"
+                      max="100"
+                      value={modelSpecific.pika2?.motion || modelSpecific.pika?.motion || 50}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        pika2: { ...modelSpecific.pika2, motion: parseInt(e.target.value) },
+                        pika: { ...modelSpecific.pika, motion: parseInt(e.target.value) }
+                      })}
+                      className="option-select"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="pika2-strength">Prompt Strength: {modelSpecific.pika2?.promptStrength || 0.8}</label>
+                    <input
+                      type="range"
+                      id="pika2-strength"
+                      min="0"
+                      max="1"
+                      step="0.1"
+                      value={modelSpecific.pika2?.promptStrength || 0.8}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        pika2: { ...modelSpecific.pika2, promptStrength: parseFloat(e.target.value) }
+                      })}
+                      className="option-select"
+                    />
+                  </div>
+                </div>
+              )}
+
+              {/* Kling AI 옵션 */}
+              {model === 'kling' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #000' }}>
+                  <h4 style={{ marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>Kling AI 프롬프트 엔지니어링 옵션</h4>
+                  <div className="form-group">
+                    <label htmlFor="kling-duration">길이</label>
+                    <select
+                      id="kling-duration"
+                      value={modelSpecific.kling?.duration || 10}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        kling: { ...modelSpecific.kling, duration: parseInt(e.target.value) }
+                      })}
+                      className="option-select"
+                    >
+                      <option value={5}>5초</option>
+                      <option value={10}>10초</option>
+                      <option value={15}>15초</option>
+                      <option value={30}>30초</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="kling-style">스타일</label>
+                    <select
+                      id="kling-style"
+                      value={modelSpecific.kling?.style || 'realistic'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        kling: { ...modelSpecific.kling, style: e.target.value }
+                      })}
+                      className="option-select"
+                    >
+                      <option value="realistic">Realistic</option>
+                      <option value="artistic">Artistic</option>
+                      <option value="cinematic">Cinematic</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         <button 
