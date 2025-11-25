@@ -3,50 +3,71 @@
 const axios = require('axios')
 const cheerio = require('cheerio')
 
-// 수집 소스 정의
+// 수집 소스 정의 (2024-2025 최신 URL - 재탐색 결과)
 const COLLECTION_SOURCES = {
   'openai-gpt-4': [
+    // OpenAI는 403 봇 차단이 심함 - 공개 블로그나 가이드 사용
+    'https://help.openai.com/en/articles/6654000-best-practices-for-prompt-engineering-with-openai-api',
     'https://platform.openai.com/docs/guides/prompt-engineering',
-    'https://platform.openai.com/docs/api-reference/chat',
   ],
   'openai-gpt-3.5': [
+    'https://help.openai.com/en/articles/6654000-best-practices-for-prompt-engineering-with-openai-api',
     'https://platform.openai.com/docs/guides/prompt-engineering',
   ],
   'claude-3': [
     'https://docs.anthropic.com/claude/docs',
+    'https://docs.anthropic.com/claude/prompt-engineering',
+    'https://www.anthropic.com/news',
   ],
   'claude-3.5': [
     'https://docs.anthropic.com/claude/docs',
+    'https://docs.anthropic.com/claude/prompt-engineering',
+    'https://www.anthropic.com/news/claude-3-5-sonnet',
   ],
   'gemini-pro': [
-    'https://ai.google.dev/docs/prompt_intro',
+    'https://ai.google.dev/gemini-api/docs',
+    'https://ai.google.dev/gemini-api/docs/prompt-intro',
+    'https://ai.google.dev/gemini-api/docs/get-started/python',
   ],
   'gemini-ultra': [
-    'https://ai.google.dev/docs/prompt_intro',
+    'https://ai.google.dev/gemini-api/docs',
+    'https://ai.google.dev/gemini-api/docs/prompt-intro',
   ],
   'gemini-nano-banana-pro': [
-    'https://ai.google.dev/docs',
+    'https://ai.google.dev/gemini-api/docs',
+    'https://ai.google.dev/gemini-api/docs/get-started',
   ],
   'midjourney': [
-    'https://docs.midjourney.com/docs',
+    'https://docs.midjourney.com',
+    'https://docs.midjourney.com/parameter-list',
+    'https://docs.midjourney.com/docs/prompts',
   ],
   'dalle-3': [
-    'https://platform.openai.com/docs/guides/images',
+    'https://help.openai.com/en/articles/6654000-best-practices-for-prompt-engineering-with-openai-api',
+    'https://platform.openai.com/docs/guides/images/introduction',
   ],
   'stable-diffusion': [
-    'https://stability.ai/docs',
+    'https://github.com/Stability-AI/StableDiffusion',
+    'https://github.com/Stability-AI/stablediffusion',
+    'https://stability.ai/news',
   ],
   'sora': [
-    'https://openai.com/research/video-generation-models-as-world-simulators',
+    'https://openai.com/sora',
+    'https://openai.com/index/video-generation-models-as-world-simulators',
   ],
   'veo-3': [
-    'https://deepmind.google/technologies/veo/',
+    'https://deepmind.google/technologies/veo',
+    'https://deepmind.google/discover/blog/veo-2-our-most-capable-video-generation-model',
   ],
   'llama-3': [
-    'https://llama.meta.com/docs',
+    'https://llama.meta.com/llama3',
+    'https://ai.meta.com/llama',
+    'https://github.com/meta-llama/llama3',
   ],
   'llama-3.1': [
-    'https://llama.meta.com/docs',
+    'https://llama.meta.com/llama3-1',
+    'https://ai.meta.com/llama',
+    'https://github.com/meta-llama/llama3',
   ],
 }
 
@@ -83,8 +104,8 @@ async function scrapeGuideFromURL(url, modelName) {
       timeout: 30000, // 30초 타임아웃
       maxRedirects: 10, // 리다이렉트 증가
       validateStatus: function (status) {
-        // 403, 404 등도 일단 받아서 처리
-        return status >= 200 && status < 500
+        // 200-299만 성공으로 처리
+        return status >= 200 && status < 300
       },
     })
     
