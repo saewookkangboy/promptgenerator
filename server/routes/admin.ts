@@ -91,7 +91,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
         totalPrompts,
         totalWorkspaces,
       },
-      tierDistribution: tierDistribution.map((t) => ({
+      tierDistribution: tierDistribution.map((t: { tier: string; _count: { id: number } }) => ({
         tier: t.tier,
         count: t._count.id,
       })),
