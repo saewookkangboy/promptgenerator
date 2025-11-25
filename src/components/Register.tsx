@@ -41,7 +41,14 @@ function Register({ onSwitchToLogin, onSuccess }: RegisterProps) {
       showNotification('회원가입 성공!', 'success')
       onSuccess?.()
     } catch (error: any) {
-      showNotification(error.message || '회원가입에 실패했습니다', 'error')
+      const errorMessage = error.message || '회원가입에 실패했습니다'
+      showNotification(errorMessage, 'error')
+      // 로컬 모드로 전환된 경우에도 성공으로 처리
+      if (errorMessage.includes('로컬 모드로 전환')) {
+        setTimeout(() => {
+          onSuccess?.()
+        }, 1000)
+      }
     } finally {
       setIsLoading(false)
     }

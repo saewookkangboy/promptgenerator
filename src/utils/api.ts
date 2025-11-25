@@ -36,25 +36,33 @@ async function apiRequest<T>(
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  })
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    })
 
-  if (!response.ok) {
-    const error = await response.json().catch(() => ({ error: '알 수 없는 오류가 발생했습니다' }))
-    
-    // 401 Unauthorized - 토큰 만료 또는 무효
-    if (response.status === 401) {
-      removeToken()
-      window.location.href = '/login'
-      throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.')
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ error: '알 수 없는 오류가 발생했습니다' }))
+      
+      // 401 Unauthorized - 토큰 만료 또는 무효
+      if (response.status === 401) {
+        removeToken()
+        window.location.href = '/login'
+        throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.')
+      }
+
+      throw new Error(error.error || `HTTP ${response.status}`)
     }
 
-    throw new Error(error.error || `HTTP ${response.status}`)
+    return response.json()
+  } catch (error: any) {
+    // 네트워크 오류 처리
+    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+      throw new Error('서버에 연결할 수 없습니다. API 서버가 실행 중인지 확인해주세요.')
+    }
+    throw error
   }
-
-  return response.json()
 }
 
 // 인증 API
