@@ -62,7 +62,7 @@ export class TextPromptGenerator extends BasePromptGenerator {
     const detailedOptions = 'detailedOptions' in options ? options.detailedOptions : undefined
     
     // BasePromptOptions로 변환
-    const baseOptions: BasePromptOptions = {
+    const baseOptions: BasePromptOptions & { toneStyles?: string[] } = {
       category: 'text',
       userInput: options.userInput,
       targetAudience: options.targetAudience || (detailedOptions ? {
@@ -71,6 +71,7 @@ export class TextPromptGenerator extends BasePromptGenerator {
         occupation: detailedOptions.occupation,
       } : undefined),
       conversational: options.conversational ?? detailedOptions?.conversational ?? false,
+      toneStyles: detailedOptions?.toneStyles,
     }
 
     const typeInfo = CONTENT_TYPE_INFO[contentType]

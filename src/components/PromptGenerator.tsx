@@ -1,5 +1,6 @@
 import { useState, useCallback, useMemo } from 'react'
 import { ContentType, DetailedOptions } from '../types'
+import { ToneStyle } from '../types/prompt.types'
 import { generatePrompts } from '../utils/promptGenerator'
 import { validatePrompt } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
@@ -51,6 +52,17 @@ const OCCUPATION_OPTIONS = [
   { value: '기타', label: '기타' },
 ]
 
+const TONE_STYLE_OPTIONS: { value: ToneStyle; label: string; description: string }[] = [
+  { value: 'conversational', label: '대화체', description: '구어체, 친근한 대화 형식' },
+  { value: 'formal', label: '격식체', description: '정중하고 격식 있는 표현' },
+  { value: 'friendly', label: '친근한 말투', description: '따뜻하고 친근한 톤' },
+  { value: 'professional', label: '전문적인 말투', description: '전문적이고 신뢰감 있는 표현' },
+  { value: 'casual', label: '캐주얼한 말투', description: '편안하고 부담 없는 표현' },
+  { value: 'polite', label: '정중한 말투', description: '예의 바르고 정중한 표현' },
+  { value: 'concise', label: '간결한 말투', description: '명확하고 간결한 표현' },
+  { value: 'explanatory', label: '설명적인 말투', description: '상세하고 이해하기 쉬운 설명' },
+]
+
 function PromptGenerator() {
   const [userPrompt, setUserPrompt] = useState('')
   const [contentType, setContentType] = useState<ContentType>('blog')
@@ -60,6 +72,7 @@ function PromptGenerator() {
     gender: '',
     occupation: '',
     conversational: false,
+    toneStyles: [],
   })
   const [results, setResults] = useState<ReturnType<typeof generatePrompts> | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -83,7 +96,8 @@ function PromptGenerator() {
           age: detailedOptions.age || undefined,
           gender: detailedOptions.gender || undefined,
           occupation: detailedOptions.occupation || undefined,
-          conversational: detailedOptions.conversational,
+          conversational: detailedOptions.conversational || (detailedOptions.toneStyles?.includes('conversational') ?? false),
+          toneStyles: detailedOptions.toneStyles && detailedOptions.toneStyles.length > 0 ? detailedOptions.toneStyles : undefined,
         }
 
         const generated = generatePrompts(userPrompt, contentType, options)
@@ -99,6 +113,7 @@ function PromptGenerator() {
             gender: detailedOptions.gender,
             occupation: detailedOptions.occupation,
             conversational: detailedOptions.conversational,
+            toneStyles: detailedOptions.toneStyles,
           },
         })
 
@@ -115,6 +130,7 @@ function PromptGenerator() {
               gender: detailedOptions.gender,
               occupation: detailedOptions.occupation,
               conversational: detailedOptions.conversational,
+            toneStyles: detailedOptions.toneStyles,
               contextPrompt: generated.contextPrompt,
               hashtags: generated.hashtags,
             },
@@ -240,21 +256,91 @@ function PromptGenerator() {
                   </select>
                 </div>
 
-                <div className="form-group checkbox-group">
-                  <label className="checkbox-label">
-                    <input
-                      type="checkbox"
-                      checked={detailedOptions.conversational}
-                      onChange={(e) =>
-                        setDetailedOptions({
-                          ...detailedOptions,
-                          conversational: e.target.checked,
-                        })
-                      }
-                      className="checkbox-input"
-                    />
-                    <span>대화체 사용</span>
-                  </label>
+                <div className="form-group">
+                  <label style={{ marginBottom: '12px', display: 'block', fontWeight: '500' }}>어투 및 말 표현</label>
+                  <div className="tone-styles-grid" style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr 1fr', 
+                    gap: '12px',
+                    marginTop: '8px'
+                  }}>
+                    {TONE_STYLE_OPTIONS.map((tone) => {
+                      const isSelected = detailedOptions.toneStyles?.includes(tone.value) || 
+                        (tone.value === 'conversational' && detailedOptions.conversational)
+                      return (
+                        <label
+                          key={tone.value}
+                          className="tone-style-option"
+                          style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            padding: '12px',
+                            border: '1px solid #000',
+                            cursor: 'pointer',
+                            backgroundColor: isSelected ? '#000' : '#fff',
+                            color: isSelected ? '#fff' : '#000',
+                            transition: 'all 0.2s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = '#f5f5f5'
+                            }
+                          }}
+                          onMouseLeave={(e) => {
+                            if (!isSelected) {
+                              e.currentTarget.style.backgroundColor = '#fff'
+                            }
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                            <input
+                              type="checkbox"
+                              checked={isSelected}
+                              onChange={(e) => {
+                                const currentStyles = detailedOptions.toneStyles || []
+                                
+                                if (e.target.checked) {
+                                  // 선택됨: 추가
+                                  if (tone.value === 'conversational') {
+                                    // 대화체는 하위 호환성을 위해 conversational도 true로 설정
+                                    setDetailedOptions({
+                                      ...detailedOptions,
+                                      conversational: true,
+                                      toneStyles: [...currentStyles, tone.value],
+                                    })
+                                  } else {
+                                    setDetailedOptions({
+                                      ...detailedOptions,
+                                      toneStyles: [...currentStyles, tone.value],
+                                    })
+                                  }
+                                } else {
+                                  // 선택 해제됨: 제거
+                                  if (tone.value === 'conversational') {
+                                    setDetailedOptions({
+                                      ...detailedOptions,
+                                      conversational: false,
+                                      toneStyles: currentStyles.filter(s => s !== tone.value),
+                                    })
+                                  } else {
+                                    setDetailedOptions({
+                                      ...detailedOptions,
+                                      toneStyles: currentStyles.filter(s => s !== tone.value),
+                                    })
+                                  }
+                                }
+                              }}
+                              style={{ margin: 0, cursor: 'pointer' }}
+                            />
+                            <span style={{ fontWeight: '500', fontSize: '14px' }}>{tone.label}</span>
+                          </div>
+                          <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '24px' }}>
+                            {tone.description}
+                          </span>
+                        </label>
+                      )
+                    })}
+                  </div>
                 </div>
               </div>
             </div>

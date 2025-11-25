@@ -116,7 +116,22 @@ function buildToneAndStyle(options?: DetailedOptions): string {
   
   const styles: string[] = []
   
-  if (options.conversational) {
+  // 새로운 toneStyles 옵션 처리
+  if (options.toneStyles && options.toneStyles.length > 0) {
+    const toneLabels: Record<string, string> = {
+      conversational: '대화체',
+      formal: '격식체',
+      friendly: '친근한 말투',
+      professional: '전문적인 말투',
+      casual: '캐주얼한 말투',
+      polite: '정중한 말투',
+      concise: '간결한 말투',
+      explanatory: '설명적인 말투',
+    }
+    const selectedTones = options.toneStyles.map(tone => toneLabels[tone] || tone).join(', ')
+    styles.push(selectedTones)
+  } else if (options.conversational) {
+    // 하위 호환성: conversational이 true이면 대화체로 처리
     styles.push('대화체 사용')
   }
   
