@@ -1,81 +1,42 @@
-// 프롬프트 가이드 자동 수집 스케줄러
+// 프롬프트 가이드 자동 수집 스케줄러 (클라이언트 사이드)
 
-import { collectAllGuides } from './prompt-guide-collector'
 import { GuideUpdateResult } from '../types/prompt-guide.types'
-import { getNextCollectionSchedule, setNextCollectionSchedule, cleanupOldGuides } from './prompt-guide-storage'
+import { getNextCollectionSchedule } from './prompt-guide-storage'
 
-const COLLECTION_INTERVAL_DAYS = 7 // 7일마다 수집
-const CLEANUP_INTERVAL_DAYS = 90 // 90일 이상 된 가이드 정리
-
-// 다음 수집 일정 계산
-export function calculateNextCollectionDate(): number {
-  return Date.now() + COLLECTION_INTERVAL_DAYS * 24 * 60 * 60 * 1000
-}
-
-// 스케줄러 초기화
+// 스케줄러 초기화 (클라이언트 사이드 - 서버 상태만 확인)
 export function initializeScheduler(): void {
-  const nextSchedule = getNextCollectionSchedule()
-  const now = Date.now()
+  // 클라이언트에서는 서버 스케줄러 상태만 확인
+  // 실제 수집은 서버에서 자동으로 수행됨
+  console.log('프롬프트 가이드 스케줄러 초기화 (서버 사이드에서 실행)')
   
-  // 다음 수집 일정이 지났거나 없으면 즉시 수집
-  if (nextSchedule === 0 || nextSchedule <= now) {
-    scheduleCollection()
-  } else {
-    // 다음 수집 일정까지 대기
-    const delay = nextSchedule - now
-    setTimeout(() => {
-      scheduleCollection()
-    }, delay)
-  }
+  // 서버 상태 확인 (선택사항)
+  checkServerStatus()
   
-  // 정기적인 체크 (매 시간)
+  // 정기적으로 서버 상태 확인 (1시간마다)
   setInterval(() => {
-    checkAndCollect()
-  }, 60 * 60 * 1000) // 1시간마다 체크
+    checkServerStatus()
+  }, 60 * 60 * 1000)
 }
 
-// 수집 실행
-async function scheduleCollection(): Promise<void> {
+// 서버 상태 확인
+async function checkServerStatus(): Promise<void> {
   try {
-    console.log('프롬프트 가이드 수집 시작...')
-    const results = await collectAllGuides()
+    const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
+    const response = await fetch(`${API_BASE_URL}/api/guides/status`)
     
-    // 결과 로깅
-    results.forEach(result => {
-      if (result.success) {
-        console.log(
-          `✓ ${result.modelName}: ${result.guidesAdded}개 추가, ${result.guidesUpdated}개 업데이트`
-        )
-      } else {
-        console.warn(`✗ ${result.modelName}: 수집 실패`, result.errors)
-      }
-    })
-    
-    // 다음 수집 일정 설정
-    const nextDate = calculateNextCollectionDate()
-    setNextCollectionSchedule(nextDate)
-    
-    // 오래된 가이드 정리
-    cleanupOldGuides(CLEANUP_INTERVAL_DAYS)
-    
-    console.log(`다음 수집 일정: ${new Date(nextDate).toLocaleString()}`)
+    if (response.ok) {
+      const status = await response.json()
+      console.log('서버 스케줄러 상태:', status)
+    }
   } catch (error) {
-    console.error('가이드 수집 중 오류:', error)
-  }
-}
-
-// 수집 필요 여부 확인 및 실행
-function checkAndCollect(): void {
-  const nextSchedule = getNextCollectionSchedule()
-  const now = Date.now()
-  
-  if (nextSchedule > 0 && nextSchedule <= now) {
-    scheduleCollection()
+    // 서버가 실행되지 않은 경우 무시
+    console.log('서버 연결 불가 (서버가 실행되지 않았을 수 있음)')
   }
 }
 
 // 수동 수집 트리거 (Admin에서 사용)
 export async function triggerManualCollection(): Promise<GuideUpdateResult[]> {
+  const { collectAllGuides } = await import('./prompt-guide-collector')
   return await collectAllGuides()
 }
 
@@ -97,4 +58,3 @@ export function getCollectionStatus(): {
     isOverdue: nextCollection > 0 && nextCollection <= now,
   }
 }
-

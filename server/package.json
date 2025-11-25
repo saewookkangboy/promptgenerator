@@ -1,0 +1,12 @@
+{
+  "name": "prompt-guide-scraper-server",
+  "version": "1.0.0",
+  "type": "commonjs",
+  "description": "프롬프트 가이드 수집 서버",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js"
+  }
+}
+

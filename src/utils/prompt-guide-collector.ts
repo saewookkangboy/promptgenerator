@@ -50,18 +50,18 @@ const COLLECTION_SOURCES: Record<ModelName, string[]> = {
   ],
 }
 
-// 웹 스크래핑을 통한 가이드 수집 (실제 구현은 서버 사이드에서 권장)
-export async function collectGuideFromWeb(
-  modelName: ModelName,
-  sourceUrl: string
-): Promise<Partial<PromptGuide>> {
+// 서버 API를 통한 가이드 수집
+const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
+
+// 서버 API를 통한 가이드 수집
+export async function collectGuideFromServer(
+  modelName: ModelName
+): Promise<Partial<PromptGuide> | null> {
   try {
-    // CORS 문제로 인해 실제로는 서버 사이드에서 수집해야 함
-    // 여기서는 구조만 제공
-    const response = await fetch(sourceUrl, {
-      mode: 'cors',
+    const response = await fetch(`${API_BASE_URL}/api/guides/collect/${modelName}`, {
+      method: 'POST',
       headers: {
-        'Accept': 'text/html',
+        'Content-Type': 'application/json',
       },
     })
     
@@ -69,66 +69,20 @@ export async function collectGuideFromWeb(
       throw new Error(`HTTP ${response.status}`)
     }
     
-    const html = await response.text()
+    const data = await response.json()
     
-    // HTML 파싱 (실제로는 더 정교한 파싱 필요)
-    return parseGuideFromHTML(html, modelName, sourceUrl)
+    if (data.success && data.result && data.result.guide) {
+      return data.result.guide
+    }
+    
+    return null
   } catch (error) {
-    console.error(`가이드 수집 실패 (${modelName}):`, error)
-    return {}
+    console.error(`서버 가이드 수집 실패 (${modelName}):`, error)
+    return null
   }
 }
 
-// HTML에서 가이드 정보 파싱
-function parseGuideFromHTML(
-  html: string,
-  modelName: ModelName,
-  sourceUrl: string
-): Partial<PromptGuide> {
-  // 실제 구현에서는 cheerio, jsdom 등의 라이브러리 사용
-  // 여기서는 기본 구조만 제공
-  
-  const parser = new DOMParser()
-  const doc = parser.parseFromString(html, 'text/html')
-  
-  // 메타 정보 추출
-  const title = doc.querySelector('title')?.textContent || ''
-  const description = doc.querySelector('meta[name="description"]')?.getAttribute('content') || ''
-  
-  // 가이드 내용 추출 (실제로는 더 정교한 파싱 필요)
-  const content: PromptGuide['content'] = {
-    bestPractices: extractBestPractices(doc),
-    tips: extractTips(doc),
-  }
-  
-  return {
-    modelName,
-    source: sourceUrl,
-    title,
-    description,
-    content,
-    metadata: {
-      collectedAt: Date.now(),
-      collectedBy: 'scraper',
-      confidence: 0.7, // 기본 신뢰도
-    },
-  }
-}
-
-// 모범 사례 추출
-function extractBestPractices(_doc: Document): string[] {
-  const practices: string[] = []
-  // 실제 구현에서는 특정 셀렉터로 추출
-  // 예: doc.querySelectorAll('.best-practice, .tip, .guideline')
-  return practices
-}
-
-// 팁 추출
-function extractTips(_doc: Document): string[] {
-  const tips: string[] = []
-  // 실제 구현에서는 특정 셀렉터로 추출
-  return tips
-}
+// HTML 파싱은 서버 사이드에서 처리됨
 
 // 수동 가이드 추가 (개발자가 직접 추가)
 export function addManualGuide(guide: Omit<PromptGuide, 'id' | 'metadata'>): PromptGuide {
@@ -146,80 +100,72 @@ export function addManualGuide(guide: Omit<PromptGuide, 'id' | 'metadata'>): Pro
   return fullGuide
 }
 
-// 모든 모델의 가이드 수집 (스케줄러에서 호출)
+// 모든 모델의 가이드 수집 (서버 API 호출)
 export async function collectAllGuides(): Promise<GuideUpdateResult[]> {
-  const results: GuideUpdateResult[] = []
-  
-  for (const [modelName, sources] of Object.entries(COLLECTION_SOURCES)) {
-    const result: GuideUpdateResult = {
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/guides/collect`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    if (!data.success) {
+      throw new Error(data.error || '수집 실패')
+    }
+    
+    // 서버 결과를 클라이언트 형식으로 변환
+    const results: GuideUpdateResult[] = []
+    
+    for (const serverResult of data.results || []) {
+      const result: GuideUpdateResult = {
+        success: serverResult.success,
+        modelName: serverResult.modelName as ModelName,
+        guidesAdded: 0,
+        guidesUpdated: 0,
+        errors: serverResult.error ? [serverResult.error] : [],
+      }
+      
+      if (serverResult.success && serverResult.guide) {
+        const existing = getLatestGuide(serverResult.modelName as ModelName)
+        const guide: PromptGuide = {
+          ...serverResult.guide,
+          id: `${serverResult.modelName}-${serverResult.guide.version}-${Date.now()}`,
+        }
+        
+        upsertGuides([guide])
+        
+        if (existing) {
+          result.guidesUpdated = 1
+        } else {
+          result.guidesAdded = 1
+        }
+      }
+      
+      results.push(result)
+    }
+    
+    return results
+  } catch (error: any) {
+    console.error('서버 가이드 수집 실패:', error)
+    // 서버 연결 실패 시 빈 결과 반환
+    return Object.keys(COLLECTION_SOURCES).map(modelName => ({
       success: false,
       modelName: modelName as ModelName,
       guidesAdded: 0,
       guidesUpdated: 0,
-      errors: [],
-    }
-    
-    try {
-      for (const sourceUrl of sources) {
-        try {
-          const guideData = await collectGuideFromWeb(
-            modelName as ModelName,
-            sourceUrl
-          )
-          
-          if (Object.keys(guideData).length > 0) {
-            const existing = getLatestGuide(modelName as ModelName)
-            const version = existing
-              ? incrementVersion(existing.version)
-              : '1.0.0'
-            
-            const guide: PromptGuide = {
-              id: `${modelName}-${version}-${Date.now()}`,
-              modelName: modelName as ModelName,
-              category: getCategoryFromModel(modelName as ModelName),
-              version,
-              title: guideData.title || `${modelName} 가이드`,
-              description: guideData.description || '',
-              lastUpdated: Date.now(),
-              source: guideData.source || sourceUrl,
-              content: guideData.content || {},
-              metadata: {
-                collectedAt: Date.now(),
-                collectedBy: 'scraper',
-                confidence: 0.7,
-              },
-            }
-            
-            upsertGuides([guide])
-            
-            if (existing) {
-              result.guidesUpdated++
-            } else {
-              result.guidesAdded++
-            }
-          }
-        } catch (error: any) {
-          result.errors?.push(`Source ${sourceUrl}: ${error.message}`)
-        }
-      }
-      
-      result.success = result.guidesAdded > 0 || result.guidesUpdated > 0
-    } catch (error: any) {
-      result.errors?.push(error.message)
-    }
-    
-    results.push(result)
+      errors: [error.message || '서버 연결 실패'],
+    }))
   }
-  
-  return results
 }
 
-// 버전 증가
-function incrementVersion(version: string): string {
-  const parts = version.split('.')
-  const minor = parseInt(parts[1] || '0', 10) + 1
-  return `${parts[0]}.${minor}.0`
-}
+// 버전 증가는 서버에서 처리됨
 
 // 모델명에서 카테고리 추출
 function getCategoryFromModel(modelName: ModelName): 'llm' | 'image' | 'video' {
