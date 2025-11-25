@@ -24,9 +24,14 @@ async function apiRequest<T>(
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string> || {}),
   }
 
+  // 기존 headers 병합
+  if (options.headers) {
+    Object.assign(headers, options.headers as Record<string, string>)
+  }
+
+  // Authorization 헤더 추가
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
