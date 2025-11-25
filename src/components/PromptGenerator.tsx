@@ -3,6 +3,9 @@ import { ContentType, DetailedOptions } from '../types'
 import { generatePrompts } from '../utils/promptGenerator'
 import { validatePrompt } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
+import { promptAPI } from '../utils/api'
+import { useAuth } from '../contexts/AuthContext'
+import { showNotification } from '../utils/notifications'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -49,6 +52,7 @@ const OCCUPATION_OPTIONS = [
 ]
 
 function PromptGenerator() {
+  const { user } = useAuth()
   const [userPrompt, setUserPrompt] = useState('')
   const [contentType, setContentType] = useState<ContentType>('blog')
   const [showDetailedOptions, setShowDetailedOptions] = useState(false)
@@ -74,7 +78,7 @@ function PromptGenerator() {
     setIsGenerating(true)
 
     // 비동기 처리 시뮬레이션 (실제로는 즉시 생성되지만 UX를 위해)
-    setTimeout(() => {
+    setTimeout(async () => {
       try {
         const options: DetailedOptions = {
           age: detailedOptions.age || undefined,
@@ -86,7 +90,7 @@ function PromptGenerator() {
         const generated = generatePrompts(userPrompt, contentType, options)
         setResults(generated)
         
-        // Admin 기록 저장
+        // 로컬 스토리지에 저장 (Admin 기록용)
         savePromptRecord({
           category: 'text',
           userInput: userPrompt,
@@ -98,8 +102,34 @@ function PromptGenerator() {
             conversational: detailedOptions.conversational,
           },
         })
+
+        // 서버에 저장 (로그인된 사용자인 경우)
+        if (user) {
+          try {
+            await promptAPI.create({
+              title: `${contentType} 프롬프트`,
+              content: generated.metaPrompt,
+              category: 'TEXT',
+              inputText: userPrompt,
+              options: {
+                contentType,
+                age: detailedOptions.age,
+                gender: detailedOptions.gender,
+                occupation: detailedOptions.occupation,
+                conversational: detailedOptions.conversational,
+                contextPrompt: generated.contextPrompt,
+                hashtags: generated.hashtags,
+              },
+            })
+            // 서버 저장 성공 (조용히 처리, 사용자에게 알림 없음)
+          } catch (serverError) {
+            // 서버 저장 실패해도 계속 진행 (로컬 저장은 성공)
+            console.warn('서버 저장 실패:', serverError)
+          }
+        }
       } catch (err) {
         setError('프롬프트 생성 중 오류가 발생했습니다.')
+        showNotification('프롬프트 생성 중 오류가 발생했습니다.', 'error')
       } finally {
         setIsGenerating(false)
       }
