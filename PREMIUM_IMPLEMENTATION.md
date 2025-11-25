@@ -30,6 +30,35 @@
 - **Wizard 진입 시 UX 복잡도 증가** → 토글 기본값을 "가이드 모드"로 두되, 사용자 선택 기억(로컬스토리지) 적용.
 - **템플릿 버전 관리 필요** → `version` 필드 추가해 Admin에서 rollback 가능하도록 설계.
 
+### 세부 UX 플로우 (와이어프레임 가이드)
+1. **Step 1 – 목표 & 채널**
+   - Component: `WizardStepHeader`, `ChannelSelectCardList`
+   - Input: 채널 선택, 사용 목적(드롭다운) → `selectedChannel`, `goal`
+   - Output: 우측 패널에 실시간 템플릿 프리뷰(목표/출력 구조 자동 반영)
+2. **Step 2 – 타겟 & 톤**
+   - Component: `AudienceFormGrid` (Age/Gender/Occupation/Interests), `ToneGrid`
+   - Interaction: Tone 카드 다중 선택 + 미리보기 문장
+   - Validation: 최소 하나의 타겟 또는 톤 선택 시 다음 단계 활성화
+3. **Step 3 – 자연어 프롬프트**
+   - Component: `PromptTextarea`, `GuidelineChips`, `TokenMeter`
+   - UX: 최근 프롬프트 히스토리 탭에서 drag&drop으로 컨텍스트 추가 가능
+4. **Step 4 – 구조화 결과**
+   - Component: `StructuredPromptCard` 2종 (메타/컨텍스트), `QualityBadge`
+   - Actions: Copy, Save as Template, Export(JSON)
+
+### 데이터/상태 흐름
+```
+WizardState {
+  channel: ContentType
+  goal: string
+  audience: { age?: string; gender?: string; occupation?: string; interests?: string[] }
+  toneStyles: ToneStyle[]
+  prompt: string
+  templatePreview: PromptTemplate
+}
+```
+상태 관리: `useReducer` + Context → 하위 컴포넌트에서 dispatch, 마지막 단계에서 generator 호출.
+
 ---
 
 ## 2. DeepL + LLM 요약 파이프라인
