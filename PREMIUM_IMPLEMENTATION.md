@@ -166,6 +166,76 @@ Client -> UI 렌더링 (배지/토큰절감/로그 링크)
    - 품질 점수가 임계값 미만이면 토스트 + 경고 배지.
    - Admin 대시보드에 실험 결과 요약 카드 추가.
 
+### 규칙 정의 예시
+| 규칙 | 기준 | 심각도 | 자동 수정 |
+|------|------|--------|-----------|
+| 최소 길이 | 메타 400자, 컨텍스트 300자 | warning | 제안만 |
+| 금지어 | `["금지", "비속어", ...]` | error | 해당 문장 하이라이트 |
+| 톤 일관성 | 선택한 ToneStyle이 본문에 최소 1회 언급 | warning | tone 힌트 삽입 |
+| CTA 포함 | “~하세요”, “참여” 등 존재 여부 | info | CTA 문장 템플릿 추천 |
+| 구조 체크 | 목록/숫자 항목 존재 여부 | info | 구조화 가이드 제안 |
+
+구현: `evaluatePrompt(result: PromptResult, config: QualityConfig): QualityReport`
+```ts
+interface QualityReport {
+  score: number // 0~100
+  issues: Array<{ rule: string; severity: 'info'|'warning'|'error'; message: string }>
+  recommendations: string[]
+  autoFixes?: Array<{ description: string; apply: () => string }>
+}
+```
+
+### LLM-as-a-Judge 프로토콜
+```
+System: "You are a prompt quality reviewer..."
+User: {
+  "meta": "...",
+  "context": "...",
+  "tone": ["formal","friendly"],
+  "rules": [...]
+}
+```
+모델 응답을 JSON Schema로 검증:
+```json
+{
+  "score": 4.2,
+  "summary": "Clear objective, missing CTA",
+  "suggestions": ["Add CTA", "Highlight target benefits"]
+}
+```
+비용 절감을 위해
+- 기본은 규칙 엔진만 실행
+- Admin/프로 플랜에서만 LLM 평가 스위치 노출
+
+### 실험 데이터 모델
+```
+prompt_experiments
+- id (uuid)
+- prompt_id
+- variant_label (A/B/C)
+- input_snapshot (JSON)
+- quality_score
+- metrics: { ctr, conversion, dwellTime, feedbackScore }
+- traffic_split (%)
+- started_at, ended_at
+- status (running, completed, archived)
+```
+
+### UI/UX 흐름
+1. 결과 카드 아래에 `QualityBadge`(점수/색상) + `View Report` 버튼.
+2. 클릭 시 Slide-over 패널에서 규칙별 이슈/추천/자동수정 버튼 제공.
+3. “실험에 추가” 버튼 → 모달에서 Variant 라벨, 트래픽 비율, KPI 선택.
+4. Admin 대시보드: 실험 목록 + 승자/지표 그래프(ECharts).
+
+### 분석 & 리포트
+- **자동 리포트**: 실험 종료 시 PDF/Slack 결과 요약.
+- **데이터 연계**: 외부 KPI(Web analytics, CRM)와 Webhook으로 연동 가능하도록 `metricsHooks[]` 설정.
+
+### 단계적 릴리즈
+1. 규칙 엔진 (클라이언트) + 단순 품질 점수
+2. 서버측 실험 API + 대시보드
+3. LLM-as-a-Judge + 자동 리포트
+
 ### 기술 스택 & 의존성
 - 규칙 엔진: TypeScript + JSON 규칙 파일.
 - LLM 검증: OpenAI/Anthropic API, 비용 제어를 위한 샘플링 설정.
