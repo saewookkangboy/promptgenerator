@@ -278,15 +278,16 @@ npm install
 
 ```bash
 DATABASE_URL="postgresql://YOUR_DB_URL"
-DEEPL_API_KEY="YOUR_DEEPL_API_KEY"
-OPENAI_API_KEY="YOUR_OPENAI_API_KEY" # DeepL 요약 파이프라인 압축용 (선택)
+GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
+GEMINI_MODEL="gemini-1.5-flash-latest" # 선택
+OPENAI_API_KEY="YOUR_OPENAI_API_KEY" # 요약 파이프라인 압축용 (선택)
 OPENAI_SUMMARIZE_MODEL="gpt-4o-mini" # 선택, 기본값 gpt-4o-mini
 ```
 
-### DeepL 호출 로그
+### 번역 호출 로그
 
-- 서버는 DeepL 번역 요청/응답 요약을 `logs/deepl.log` 파일에 JSON Lines 형식으로 기록합니다.
-- 로그에는 요청 수, 문자 수, 소요 시간, 응답 코드 등이 포함되어 추후 진단에 활용할 수 있습니다.
+- 서버는 Gemini 번역/요약 요청을 `logs/translation.log` 파일에 JSON Lines 형식으로 기록합니다.
+- 로그에는 요청 수, 문자 수, 소요 시간, 압축 여부, 응답 코드 등이 포함되어 추후 진단에 활용할 수 있습니다.
 
 ### 개발 서버 실행
 

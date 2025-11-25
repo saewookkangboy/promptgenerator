@@ -61,25 +61,25 @@ WizardState {
 
 ---
 
-## 2. DeepL + LLM 요약 파이프라인
+## 2. Gemini + LLM 요약 파이프라인
 
 ### 기능 목표
-- 한국어 입력 → DeepL 변환 → LLM 요약으로 **자연스러운 EN 템플릿 + 토큰 절감**을 동시에 달성.
+- 한국어 입력 → Gemini 번역 → LLM 요약으로 **자연스러운 EN 템플릿 + 토큰 절감**을 동시에 달성.
 - 번역/요약 결과에 대한 **로그 및 모니터링** 확보.
 
 ### 구현 범위
 1. **파이프라인 설계**
-   - `translateTextMap` → DeepL 번역 결과를 받아 `summarizeContext(text[])` (OpenAI/Anthropic API)로 후처리.
+   - `translateTextMap` → Gemini 번역 결과를 받아 `summarizeContext(text[])` (OpenAI/Anthropic API)로 후처리.
    - 요약 길이/토큰 사용량/응답시간을 `logs/pipeline.log`에 JSON 라인으로 기록.
 2. **Fallback 전략**
-   - DeepL 실패 시 기존 Native English 변환(`convertToNativeEnglish`) 사용.
+   - Gemini 실패 시 기존 Native English 변환(`convertToNativeEnglish`) 사용.
    - 요약 실패 시 번역 결과 그대로 사용하고, UI에 경고 토스트 출력.
 3. **UI 표시**
-   - 결과 카드에 “DeepL + Compress” 배지 표시, 토큰 절감률(%), 처리 시간(ms) 표시.
+   - 결과 카드에 “Gemini + Compress” 배지 표시, 토큰 절감률(%), 처리 시간(ms) 표시.
 
 ### 단계별 처리 흐름 (시퀀스)
 ```
-Client -> Server /api/translate -> DeepL -> Server
+Client -> Server /api/translate -> Gemini -> Server
 Server -> LLM Summarizer (optional) -> Server
 Server -> Client (translations + metadata)
 Client -> UI 렌더링 (배지/토큰절감/로그 링크)
@@ -87,7 +87,7 @@ Client -> UI 렌더링 (배지/토큰절감/로그 링크)
 
 1. **요청 수신**
    - `POST /api/translate` payload에 `texts[]`, `compress=true`, `context="meta|context|hashtags"` 등 메타정보 추가.
-2. **DeepL 변환**
+2. **Gemini 변환**
    - 병렬 호출(최대 batch 50개) → 실패 시 재시도(최대 2회, exponential backoff).
 3. **LLM 요약**
    - `compress=true`일 경우 `POST /api/llm/summarize`로 내부 호출.
@@ -125,7 +125,7 @@ Client -> UI 렌더링 (배지/토큰절감/로그 링크)
 - **Dashboards**
   - Grafana/Metabase에 `compressionRatio`, `successRate`, `avgLatency` 차트.
 - **Alerts**
-  - DeepL error rate > 10% → Slack 알림.
+  - Gemini error rate > 10% → Slack 알림.
   - LLM 비용이 하루 $10 이상 → 이메일 리포트.
 
 ### 보안/비용 고려
@@ -139,7 +139,7 @@ Client -> UI 렌더링 (배지/토큰절감/로그 링크)
 4. 부하/비용 테스트 → 운영 플래그 `ENABLE_LLM_COMPRESS`
 
 ### 기술 스택 & 의존성
-- DeepL REST API (기존 키 활용), OpenAI GPT-4o-mini 또는 Claude 3 Sonnet으로 요약.
+- Google Gemini Generative Language API, OpenAI GPT-4o-mini 또는 Claude 3 Sonnet으로 요약.
 - 서버에서 파이프라인 실행 → 클라이언트는 번역 완료된 데이터만 수신.
 
 ### 리스크 및 대응
@@ -251,7 +251,7 @@ prompt_experiments
 | 기능 | 예상 기간 | 필요 리소스 | 비고 |
 |------|-----------|-------------|------|
 | 템플릿 & Wizard | 2주 | 프론트 1, 백엔드 1 | 기존 타입 확장 완료, UI 집중 |
-| DeepL+LLM 파이프라인 | 2~3주 | 백엔드 1, DevOps 0.5 | 로그/모니터링 포함 |
+| Gemini+LLM 파이프라인 | 2~3주 | 백엔드 1, DevOps 0.5 | 로그/모니터링 포함 |
 | 품질 피드백 & 실험 | 3주 | 프론트 1, 백엔드 1, 데이터 0.5 | KPI 대시보드 포함 |
 
 총 6~8주, 2~3인 크로스 팀으로 스프린트 운영 시 충분히 단계적 롤아웃 가능.
@@ -260,7 +260,7 @@ prompt_experiments
 
 ## 다음 단계 권장 액션
 1. `PREMIUM_FEATURES.md`와 본 문서를 바탕으로 Phase 1 백로그 정식 확정.
-2. DeepL/LLM API 비용 예산 산정 및 한도 설정.
+2. Gemini/LLM API 비용 예산 산정 및 한도 설정.
 3. Wizard/템플릿 UI 와이어프레임, 품질 규칙 정의 세션 진행.
 
 필요 시 각 기능별 세부 작업 항목(Jira/Linear 티켓)으로 분할해 드릴 수 있습니다. 문의 주세요!

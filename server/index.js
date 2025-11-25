@@ -10,12 +10,14 @@ const path = require('path')
 const { collectAllGuides } = require('./scraper/guideScraper')
 const { initializeScheduler } = require('./scheduler/guideScheduler')
 
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest'
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 const OPENAI_SUMMARIZE_MODEL = process.env.OPENAI_SUMMARIZE_MODEL || 'gpt-4o-mini'
 
 // 로그 경로 설정
 const LOG_DIR = path.resolve(__dirname, '..', 'logs')
-const TRANSLATION_LOG_PATH = path.join(LOG_DIR, 'deepl.log')
+const TRANSLATION_LOG_PATH = path.join(LOG_DIR, 'translation.log')
 
 if (!fs.existsSync(LOG_DIR)) {
   fs.mkdirSync(LOG_DIR, { recursive: true })
@@ -28,7 +30,7 @@ function logTranslationEvent(event) {
   })
   fs.appendFile(TRANSLATION_LOG_PATH, `${entry}\n`, (err) => {
     if (err) {
-      console.error('DeepL 로그 기록 실패:', err.message)
+      console.error('번역 로그 기록 실패:', err.message)
     }
   })
 }
@@ -72,6 +74,48 @@ async function summarizeWithLLM(text, context = 'general') {
   }
 }
 
+async function translateWithGemini(text, context = 'general', compress = false) {
+  if (!GEMINI_API_KEY) {
+    throw new Error('Gemini API 키가 설정되지 않았습니다.')
+  }
+  if (!text) return ''
+
+  const instructions = [
+    'You are a senior localization specialist.',
+    'Translate the following content into natural, professional English suited for prompt engineering.',
+    'Preserve structure, bullet points, placeholders, and instructions.',
+  ]
+
+  if (compress) {
+    instructions.push('Keep the translation concise (≤120 tokens) while retaining CTAs and requirements.')
+  }
+
+  const payload = {
+    contents: [
+      {
+        parts: [
+          {
+            text: `${instructions.join(' ')}\nContext: ${context}\n\nText:\n${text}`,
+          },
+        ],
+      },
+    ],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: compress ? 320 : 512,
+    },
+  }
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`
+  const response = await axios.post(endpoint, payload)
+  const parts = response.data?.candidates?.[0]?.content?.parts
+  const translated = parts?.map((part) => part.text || '').join('').trim()
+  if (!translated) {
+    throw new Error('Gemini 번역 응답이 비어 있습니다.')
+  }
+  return translated
+}
+
 // Import new routes
 const promptsRouter = require('./routes/prompts')
 
@@ -87,17 +131,15 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-// DeepL 번역 프록시
+// Gemini 기반 번역 프록시
 app.post('/api/translate', async (req, res) => {
   const { texts, targetLang = 'EN-US', sourceLang, compress = false, context = 'general' } = req.body || {}
-  const apiKey = process.env.DEEPL_API_KEY
-
   if (!Array.isArray(texts) || texts.length === 0) {
     return res.status(400).json({ error: 'texts 배열을 전달해주세요.' })
   }
 
-  if (!apiKey) {
-    return res.status(500).json({ error: 'DeepL API 키가 설정되지 않았습니다.' })
+  if (!GEMINI_API_KEY) {
+    return res.status(500).json({ error: 'Gemini API 키가 설정되지 않았습니다.' })
   }
 
   const startTime = Date.now()
@@ -114,26 +156,16 @@ app.post('/api/translate', async (req, res) => {
   })
 
   try {
-    const params = new URLSearchParams()
-    texts.forEach((text) => {
+    let translations = []
+    for (const text of texts) {
       if (typeof text === 'string') {
-        params.append('text', text)
+        const translated = await translateWithGemini(text, context, compress)
+        translations.push(translated)
+      } else {
+        translations.push('')
       }
-    })
-
-    params.append('target_lang', targetLang)
-    if (sourceLang) {
-      params.append('source_lang', sourceLang)
     }
 
-    const response = await axios.post('https://api-free.deepl.com/v2/translate', params, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Authorization: `DeepL-Auth-Key ${apiKey}`,
-      },
-    })
-
-    let translations = response.data?.translations?.map((item) => item.text) || []
     let llmDurationMs = 0
 
     if (compress && OPENAI_API_KEY) {
@@ -178,9 +210,9 @@ app.post('/api/translate', async (req, res) => {
       compress,
     })
 
-    console.error('DeepL translation error:', detail)
+    console.error('Gemini translation error:', detail)
     res.status(status).json({
-      error: 'DeepL 번역 요청에 실패했습니다.',
+      error: '번역 요청에 실패했습니다.',
       detail,
     })
   }

@@ -132,7 +132,7 @@ function EngineeringPromptGenerator() {
         // PromptEngineer가 이미 영어 버전을 생성했는지 확인
         const hasEnglishVersions = generated.englishMetaPrompt && generated.englishContextPrompt
         
-        // 영어 버전이 없거나 DeepL로 개선하고 싶은 경우에만 번역 시도
+        // 영어 버전이 없거나 Gemini로 개선하고 싶은 경우에만 번역 시도
         if (!hasEnglishVersions) {
           try {
             const translationTargets: Record<string, string | undefined> = {}
@@ -156,7 +156,7 @@ function EngineeringPromptGenerator() {
               translationTargets.englishVersion = primaryContent
             }
 
-            // 번역 대상이 있는 경우에만 DeepL 호출
+            // 번역 대상이 있는 경우에만 Gemini 호출
             if (Object.keys(translationTargets).length > 0) {
               const translations = await translateTextMap(translationTargets, {
                 compress: true,
@@ -167,7 +167,7 @@ function EngineeringPromptGenerator() {
               }
             }
           } catch (translationError) {
-            console.warn('DeepL translation failed:', translationError)
+            console.warn('Gemini translation failed:', translationError)
             // 영어 버전이 이미 있으면 경고만 표시, 없으면 에러 표시
             if (!hasEnglishVersions) {
               showNotification('프롬프트 엔지니어링 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')

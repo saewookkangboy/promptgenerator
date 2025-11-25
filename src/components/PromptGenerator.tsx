@@ -198,7 +198,7 @@ function PromptGenerator() {
             }
           }
         } catch (translationError) {
-          console.warn('DeepL translation failed:', translationError)
+          console.warn('Gemini translation failed:', translationError)
           showNotification('영문 번역에 실패하여 기본 버전을 표시합니다.', 'warning')
           const fallback = buildNativeEnglishFallback(generated)
           enrichedResults = { ...generated, ...fallback }
@@ -559,7 +559,7 @@ function PromptGenerator() {
                 <p>선택한 채널에 맞춰 메타 템플릿이 자동 구성됩니다.</p>
                 <ul>
                   <li>목표/주제/타겟/제약/톤/출력 구조를 자동 정렬</li>
-                  <li>DeepL 번역까지 연동되어 양언어 템플릿 제공</li>
+                  <li>Gemini 번역과 요약으로 양언어 템플릿 제공</li>
                 </ul>
               </div>
             </div>

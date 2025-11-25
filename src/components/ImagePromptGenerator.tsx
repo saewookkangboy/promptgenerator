@@ -170,7 +170,7 @@ function ImagePromptGenerator() {
             enrichedResults = { ...generated, ...translations }
           }
         } catch (translationError) {
-          console.warn('DeepL translation failed:', translationError)
+          console.warn('Gemini translation failed:', translationError)
           showNotification('이미지 프롬프트 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')
           const fallback = buildNativeEnglishFallback(generated)
           enrichedResults = { ...generated, ...fallback }

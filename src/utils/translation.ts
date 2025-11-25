@@ -5,7 +5,7 @@ import { PromptResult } from '../types'
 type TextMap = Record<string, string | undefined | null>
 
 /**
- * DeepL을 통해 다수의 텍스트를 EN으로 번역하고 key 기반으로 반환
+ * Gemini 기반 번역 API를 호출하여 다수의 텍스트를 EN으로 변환
  */
 export async function translateTextMap(
   textMap: TextMap,
