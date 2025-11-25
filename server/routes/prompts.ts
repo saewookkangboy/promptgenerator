@@ -1,5 +1,6 @@
 // 프롬프트 관련 API 라우트
 import { Router, Response } from 'express'
+import { Prisma } from '@prisma/client'
 import { prisma } from '../db/prisma'
 import { authenticateToken, requireTier, AuthRequest } from '../middleware/auth'
 
@@ -229,7 +230,7 @@ router.patch('/:id', async (req: AuthRequest, res: Response) => {
           promptId: existingPrompt.id,
           versionNumber: existingPrompt.versionNumber + 1,
           content: existingPrompt.content,
-          options: existingPrompt.options,
+          options: existingPrompt.options as Prisma.InputJsonValue,
           createdById: req.user!.id,
         },
       })
@@ -251,17 +252,23 @@ router.patch('/:id', async (req: AuthRequest, res: Response) => {
       }
     }
 
+    const updateData: any = {
+      title,
+      content,
+      folderId,
+      versionNumber:
+        content && content !== existingPrompt.content
+          ? existingPrompt.versionNumber + 1
+          : existingPrompt.versionNumber,
+    }
+
+    if (options !== undefined) {
+      updateData.options = options
+    }
+
     const prompt = await prisma.prompt.update({
       where: { id: req.params.id },
-      data: {
-        title,
-        content,
-        options,
-        folderId,
-        versionNumber: content && content !== existingPrompt.content 
-          ? existingPrompt.versionNumber + 1 
-          : existingPrompt.versionNumber,
-      },
+      data: updateData,
       include: {
         folder: true,
         tags: {

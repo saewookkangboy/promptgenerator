@@ -291,6 +291,54 @@ export const adminAPI = {
     
     return apiRequest<{ logs: any[]; pagination: any }>(`/api/admin/audit-logs?${queryParams.toString()}`)
   },
+
+  getTemplates: async (params?: {
+    page?: number
+    limit?: number
+    category?: string
+    search?: string
+  }) => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value))
+        }
+      })
+    }
+    return apiRequest<{ templates: any[]; pagination: any }>(`/api/admin/templates?${queryParams.toString()}`)
+  },
+
+  getTemplate: async (id: string) => {
+    return apiRequest<any>(`/api/admin/templates/${id}`)
+  },
+
+  createTemplate: async (data: any) => {
+    return apiRequest<any>('/api/admin/templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  updateTemplate: async (id: string, data: any) => {
+    return apiRequest<any>(`/api/admin/templates/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  },
+
+  deleteTemplate: async (id: string) => {
+    return apiRequest<{ message: string }>(`/api/admin/templates/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  rollbackTemplate: async (id: string, version: number, changeSummary?: string) => {
+    return apiRequest<any>(`/api/admin/templates/${id}/rollback`, {
+      method: 'POST',
+      body: JSON.stringify({ version, changeSummary }),
+    })
+  },
 }
 
 // 번역 API

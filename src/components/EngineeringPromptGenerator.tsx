@@ -16,6 +16,13 @@ import './PromptGenerator.css'
 
 type EngineeringMethod = 'cot' | 'few-shot' | 'role-based' | 'zero-shot' | 'optimize'
 
+const ENGINEERING_WIZARD_STEPS = [
+  { id: 1, label: '방법 & 역할' },
+  { id: 2, label: '입력 & 예시' },
+  { id: 3, label: '구조 & 제약' },
+  { id: 4, label: '요약' },
+]
+
 function EngineeringPromptGenerator() {
   const [method, setMethod] = useState<EngineeringMethod>('zero-shot')
   const [basePrompt, setBasePrompt] = useState('')
@@ -24,6 +31,280 @@ function EngineeringPromptGenerator() {
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [hashtagsCopied, setHashtagsCopied] = useState(false)
+  const [useWizardMode, setUseWizardMode] = useState(true)
+  const [wizardStep, setWizardStep] = useState(1)
+  const wizardSteps = ENGINEERING_WIZARD_STEPS
+  const wizardStepCount = wizardSteps.length
+
+  const canProceedToNext = () => {
+    if (wizardStep === 1) {
+      return method !== undefined
+    }
+    if (wizardStep === 2) {
+      if (method === 'few-shot') {
+        return fewShotExamples.some((ex) => ex.input.trim() && ex.output.trim())
+      }
+      if (method === 'cot') {
+        return cotSteps.some((step) => step.trim())
+      }
+      return basePrompt.trim().length > 0
+    }
+    return basePrompt.trim().length > 0
+  }
+
+  const handleNextStep = () => {
+    if (wizardStep < wizardStepCount) {
+      if (!canProceedToNext()) return
+      setWizardStep((prev) => prev + 1)
+    } else {
+      handleGenerate()
+    }
+  }
+
+  const handlePrevStep = () => {
+    if (wizardStep > 1) {
+      setWizardStep((prev) => prev - 1)
+    }
+  }
+
+  const resetWizard = (mode: boolean) => {
+    setUseWizardMode(mode)
+    setWizardStep(1)
+  }
+
+  const renderWizardMethod = () => (
+    <div className="wizard-panel">
+      <div className="wizard-panel__header">
+        <h4>엔지니어링 방법 선택</h4>
+      </div>
+      <div className="wizard-toggle" style={{ gap: '8px', justifyContent: 'flex-start' }}>
+        {(['zero-shot', 'cot', 'few-shot', 'role-based', 'optimize'] as EngineeringMethod[]).map((option) => (
+          <button
+            key={option}
+            className={`wizard-toggle-button ${method === option ? 'active' : ''}`}
+            onClick={() => setMethod(option)}
+          >
+            {option.toUpperCase()}
+          </button>
+        ))}
+      </div>
+
+      {method === 'role-based' && (
+        <div className="wizard-preview-grid" style={{ marginTop: '16px' }}>
+          <div className="quality-panel">
+            <div className="form-group">
+              <label>역할</label>
+              <input value={role} onChange={(e) => setRole(e.target.value)} placeholder="예: Senior Growth Marketer" />
+            </div>
+            <div className="form-group">
+              <label>전문성</label>
+              {expertise.map((item, idx) => (
+                <input
+                  key={idx}
+                  value={item}
+                  onChange={(e) => {
+                    const next = [...expertise]
+                    next[idx] = e.target.value
+                    setExpertise(next)
+                  }}
+                  placeholder="예: A/B Testing, Product Analytics"
+                  style={{ marginBottom: '8px' }}
+                />
+              ))}
+              <button
+                className="copy-button"
+                style={{ padding: '4px 8px' }}
+                onClick={() => setExpertise([...expertise, ''])}
+              >
+                + 전문성 추가
+              </button>
+            </div>
+            <div className="form-group">
+              <label>관점/톤</label>
+              <input
+                value={perspective}
+                onChange={(e) => setPerspective(e.target.value)}
+                placeholder="예: 고객 중심, 데이터 기반"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const renderWizardInputs = () => (
+    <div className="wizard-panel">
+      <div className="form-group">
+        <label>기본 프롬프트</label>
+        <textarea
+          rows={4}
+          value={basePrompt}
+          onChange={(e) => setBasePrompt(e.target.value)}
+          placeholder="기본 문제 정의 또는 요구사항을 입력하세요."
+          className="prompt-input"
+        />
+      </div>
+
+      {method === 'cot' && (
+        <div className="wizard-preview-grid">
+          <div className="quality-panel">
+            <div className="form-group">
+              <label>Chain of Thought 단계</label>
+              {cotSteps.map((step, idx) => (
+                <input
+                  key={idx}
+                  value={step}
+                  onChange={(e) => {
+                    const next = [...cotSteps]
+                    next[idx] = e.target.value
+                    setCotSteps(next)
+                  }}
+                  placeholder={`단계 ${idx + 1}`}
+                  style={{ marginBottom: '8px' }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {method === 'few-shot' && (
+        <div className="wizard-preview-grid">
+          <div className="quality-panel">
+            <div className="wizard-panel__header" style={{ justifyContent: 'space-between' }}>
+              <h4>Few-shot 예시</h4>
+              <button
+                className="copy-button"
+                style={{ padding: '4px 8px' }}
+                onClick={() => setFewShotExamples([...fewShotExamples, { input: '', output: '', explanation: '' }])}
+              >
+                + 예시 추가
+              </button>
+            </div>
+            {fewShotExamples.map((example, idx) => (
+              <div key={idx} style={{ borderBottom: '1px solid #f0f0f0', paddingBottom: '12px', marginBottom: '12px' }}>
+                <label>입력</label>
+                <textarea
+                  rows={2}
+                  value={example.input}
+                  onChange={(e) => {
+                    const next = [...fewShotExamples]
+                    next[idx] = { ...next[idx], input: e.target.value }
+                    setFewShotExamples(next)
+                  }}
+                  className="prompt-input"
+                />
+                <label>출력</label>
+                <textarea
+                  rows={2}
+                  value={example.output}
+                  onChange={(e) => {
+                    const next = [...fewShotExamples]
+                    next[idx] = { ...next[idx], output: e.target.value }
+                    setFewShotExamples(next)
+                  }}
+                  className="prompt-input"
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const renderWizardStructure = () => (
+    <div className="wizard-panel">
+      {method === 'optimize' && (
+        <div className="wizard-preview-grid">
+          <div className="quality-panel">
+            <h4>최적화 옵션</h4>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={config.optimize?.clarity !== false}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    optimize: { ...config.optimize, clarity: e.target.checked },
+                  })
+                }
+              />
+              명확성 유지
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={config.optimize?.structure !== false}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    optimize: { ...config.optimize, structure: e.target.checked },
+                  })
+                }
+              />
+              구조 보강
+            </label>
+            <label className="checkbox-label">
+              <input
+                type="checkbox"
+                checked={config.optimize?.keywords !== false}
+                onChange={(e) =>
+                  setConfig({
+                    ...config,
+                    optimize: { ...config.optimize, keywords: e.target.checked },
+                  })
+                }
+              />
+              키워드 보호
+            </label>
+          </div>
+        </div>
+      )}
+
+      <div className="form-group">
+        <label>추가 제약 / Tone</label>
+        <textarea
+          rows={3}
+          value={config.optimize?.tone || ''}
+          onChange={(e) =>
+            setConfig({
+              ...config,
+              optimize: { ...config.optimize, tone: e.target.value },
+            })
+          }
+          placeholder="예: 논리적, 차분한 어조로 답변하도록 요청"
+          className="prompt-input"
+        />
+      </div>
+    </div>
+  )
+
+  const renderWizardSummary = () => (
+    <div className="wizard-panel">
+      <div className="wizard-preview-grid">
+        <div className="quality-panel">
+          <div className="quality-panel__header">
+            <div>
+              <p className="quality-panel__label">요약</p>
+              <div className="quality-panel__score" style={{ fontSize: '1rem', color: '#000' }}>
+                {method.toUpperCase()}
+              </div>
+            </div>
+          </div>
+          <div className="quality-panel__section">
+            <h4>핵심 정보</h4>
+            <ul>
+              <li>기본 프롬프트 길이: {basePrompt.length}자</li>
+              <li>Few-shot 예시: {fewShotExamples.filter((e) => e.input && e.output).length}개</li>
+              <li>CoT 단계: {cotSteps.filter((s) => s.trim()).length}개</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   // Few-shot 예시 관리
   const [fewShotExamples, setFewShotExamples] = useState<Array<{ input: string; output: string; explanation?: string }>>([
@@ -277,7 +558,62 @@ function EngineeringPromptGenerator() {
 
   return (
     <div className="prompt-generator">
-      <div className="input-section">
+      <div className="wizard-toggle">
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className={`wizard-toggle-button ${useWizardMode ? 'active' : ''}`}
+            onClick={() => resetWizard(true)}
+          >
+            가이드 모드
+          </button>
+          <button
+            className={`wizard-toggle-button ${!useWizardMode ? 'active' : ''}`}
+            onClick={() => resetWizard(false)}
+          >
+            고급 모드
+          </button>
+        </div>
+        <span style={{ fontSize: '0.85rem', color: '#666' }}>
+          {useWizardMode ? '엔지니어링 설정을 단계별로 구성합니다.' : '모든 세부 옵션을 한 화면에서 편집합니다.'}
+        </span>
+      </div>
+
+      {useWizardMode && (
+        <div className="wizard-section">
+          <div className="wizard-steps-indicator">
+            {wizardSteps.map((step) => (
+              <div
+                key={step.id}
+                className={`wizard-step ${wizardStep === step.id ? 'active' : wizardStep > step.id ? 'done' : ''}`}
+              >
+                <span className="wizard-step-number">{step.id}</span>
+                <span>{step.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {wizardStep === 1 && renderWizardMethod()}
+          {wizardStep === 2 && renderWizardInputs()}
+          {wizardStep === 3 && renderWizardStructure()}
+          {wizardStep === 4 && renderWizardSummary()}
+
+          <div className="wizard-navigation">
+            <button className="wizard-nav-button" onClick={handlePrevStep} disabled={wizardStep === 1 || isGenerating}>
+              이전 단계
+            </button>
+            <button
+              className="wizard-nav-button primary"
+              onClick={handleNextStep}
+              disabled={isGenerating || (wizardStep < wizardStepCount && !canProceedToNext())}
+            >
+              {wizardStep === wizardStepCount ? (isGenerating ? '생성 중...' : '프롬프트 생성하기') : '다음 단계'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!useWizardMode && (
+        <div className="input-section">
         <div className="form-group">
           <label htmlFor="method">프롬프트 엔지니어링 방법</label>
           <select
@@ -548,6 +884,7 @@ function EngineeringPromptGenerator() {
           {isGenerating ? '생성 중...' : '프롬프트 엔지니어링 생성하기'}
         </button>
       </div>
+      )}
 
       {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
       {isGenerating && <LoadingSpinner message="프롬프트를 엔지니어링하고 있습니다..." />}

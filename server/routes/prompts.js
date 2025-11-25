@@ -220,17 +220,20 @@ router.patch('/:id', async (req, res) => {
                 });
             }
         }
+        const updateData = {
+            title,
+            content,
+            folderId,
+            versionNumber: content && content !== existingPrompt.content
+                ? existingPrompt.versionNumber + 1
+                : existingPrompt.versionNumber,
+        };
+        if (options !== undefined) {
+            updateData.options = options;
+        }
         const prompt = await prisma_1.prisma.prompt.update({
             where: { id: req.params.id },
-            data: {
-                title,
-                content,
-                options,
-                folderId,
-                versionNumber: content && content !== existingPrompt.content
-                    ? existingPrompt.versionNumber + 1
-                    : existingPrompt.versionNumber,
-            },
+            data: updateData,
             include: {
                 folder: true,
                 tags: {

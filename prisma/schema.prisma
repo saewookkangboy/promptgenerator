@@ -288,6 +288,8 @@ model Template {
   authorId    String?  @map("author_id")
   usageCount  Int      @default(0) @map("usage_count")
   rating      Decimal  @default(0) @db.Decimal(3, 2)
+  version     Int      @default(1)
+  history     Json     @default("[]")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

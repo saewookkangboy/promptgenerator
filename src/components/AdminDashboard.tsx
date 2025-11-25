@@ -3,6 +3,7 @@ import { getStats, getPromptRecords, getVisitCount, clearAdminAuth, PromptRecord
 import { adminAPI } from '../utils/api'
 import VisitGraphModal from './VisitGraphModal'
 import GuideManager from './GuideManager'
+import TemplateManager from './TemplateManager'
 import './AdminDashboard.css'
 
 interface AdminDashboardProps {
@@ -17,7 +18,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'text' | 'image' | 'video' | 'engineering'>('all')
   const [isGraphModalOpen, setIsGraphModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<PromptRecord | null>(null)
-  const [activeSection, setActiveSection] = useState<'stats' | 'guides' | 'users' | 'prompts'>('stats')
+  const [activeSection, setActiveSection] = useState<'stats' | 'guides' | 'users' | 'prompts' | 'templates'>('stats')
   
   // 새로운 상태: 서버 통계
   const [serverStats, setServerStats] = useState<any>(null)
@@ -180,6 +181,12 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                 onClick={() => setActiveSection('guides')}
               >
                 가이드 관리
+              </button>
+              <button
+                className={`section-tab ${activeSection === 'templates' ? 'active' : ''}`}
+                onClick={() => setActiveSection('templates')}
+              >
+                템플릿 관리
               </button>
             </div>
 
@@ -459,6 +466,15 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                       ) : (
                         <span className="options-indicator empty">옵션 없음</span>
                       )}
+
+            {activeSection === 'templates' && (
+              <div className="admin-section">
+                <div className="admin-section-header">
+                  <h2>템플릿 관리</h2>
+                </div>
+                <TemplateManager />
+              </div>
+            )}
                     </td>
                     <td>{formatDate(record.timestamp)}</td>
                   </tr>

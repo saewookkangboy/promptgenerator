@@ -82,6 +82,13 @@ const ASPECT_RATIOS = [
   { value: '9:16', label: '9:16 (세로)' },
 ]
 
+const IMAGE_WIZARD_STEPS = [
+  { id: 1, label: '모델 & 주제' },
+  { id: 2, label: '스타일 & 구성' },
+  { id: 3, label: '고급 옵션' },
+  { id: 4, label: '요약 확인' },
+]
+
 function ImagePromptGenerator() {
   const [model, setModel] = useState<ImageModel>('midjourney')
   const [subject, setSubject] = useState('')
@@ -116,6 +123,533 @@ function ImagePromptGenerator() {
   
   // 모델별 고급 옵션 state
   const [modelSpecific, setModelSpecific] = useState<any>({})
+  const [useWizardMode, setUseWizardMode] = useState(true)
+  const [wizardStep, setWizardStep] = useState(1)
+
+  const wizardSteps = IMAGE_WIZARD_STEPS
+  const wizardStepCount = wizardSteps.length
+
+  const canProceedToNext = () => {
+    if (wizardStep === 1) {
+      return subject.trim().length > 0
+    }
+    return true
+  }
+
+  const handleNextStep = () => {
+    if (wizardStep < wizardStepCount) {
+      if (!canProceedToNext()) return
+      setWizardStep((prev) => prev + 1)
+    } else {
+      handleGenerate()
+    }
+  }
+
+  const handlePrevStep = () => {
+    if (wizardStep > 1) {
+      setWizardStep((prev) => prev - 1)
+    }
+  }
+
+  const resetWizard = (mode: boolean) => {
+    setUseWizardMode(mode)
+    setWizardStep(1)
+  }
+
+  const renderModelSelector = () => (
+    <div className="form-group">
+      <label htmlFor="image-model">이미지 생성 모델</label>
+      <select
+        id="image-model"
+        value={model}
+        onChange={(e) => setModel(e.target.value as ImageModel)}
+        className="content-type-select"
+      >
+        {IMAGE_MODELS.map((m) => (
+          <option key={m.value} value={m.value}>
+            {m.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+
+  const renderSubjectInput = () => (
+    <div className="form-group">
+      <label htmlFor="subject">주제 (Subject)</label>
+      <textarea
+        id="subject"
+        value={subject}
+        onChange={(e) => setSubject(e.target.value)}
+        placeholder="예: 고양이가 창가에서 햇빛을 받으며 자고 있는 모습"
+        className="prompt-input"
+        rows={3}
+      />
+    </div>
+  )
+
+  const renderArtStyleSelector = () => (
+    <div className="form-group">
+      <label htmlFor="art-style">아트 스타일</label>
+      <select
+        id="art-style"
+        value={style.artStyle}
+        onChange={(e) => setStyle({ ...style, artStyle: e.target.value as ImageStyle['artStyle'] })}
+        className="option-select"
+      >
+        {ART_STYLES.map((s) => (
+          <option key={s.value} value={s.value}>
+            {s.label}
+          </option>
+        ))}
+      </select>
+      {style.artStyle === 'custom' && (
+        <input
+          type="text"
+          value={style.customStyle || ''}
+          onChange={(e) => setStyle({ ...style, customStyle: e.target.value })}
+          placeholder="커스텀 스타일을 입력하세요"
+          className="prompt-input"
+          style={{ marginTop: '8px' }}
+        />
+      )}
+    </div>
+  )
+
+  const renderCompositionGrid = () => (
+    <div className="options-grid">
+      <div className="form-group">
+        <label htmlFor="framing">프레이밍</label>
+        <select
+          id="framing"
+          value={composition.framing}
+          onChange={(e) => setComposition({ ...composition, framing: e.target.value as Composition['framing'] })}
+          className="option-select"
+        >
+          {FRAMING_OPTIONS.map((f) => (
+            <option key={f.value} value={f.value}>
+              {f.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="composition-rule">구도 법칙</label>
+        <select
+          id="composition-rule"
+          value={composition.rule}
+          onChange={(e) => setComposition({ ...composition, rule: e.target.value as Composition['rule'] })}
+          className="option-select"
+        >
+          {COMPOSITION_RULES.map((r) => (
+            <option key={r.value} value={r.value}>
+              {r.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="lighting-type">조명 타입</label>
+        <select
+          id="lighting-type"
+          value={lighting.type}
+          onChange={(e) => setLighting({ ...lighting, type: e.target.value as Lighting['type'] })}
+          className="option-select"
+        >
+          {LIGHTING_TYPES.map((l) => (
+            <option key={l.value} value={l.value}>
+              {l.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="lighting-direction">조명 방향</label>
+        <select
+          id="lighting-direction"
+          value={lighting.direction}
+          onChange={(e) => setLighting({ ...lighting, direction: e.target.value as Lighting['direction'] })}
+          className="option-select"
+        >
+          <option value="front">앞</option>
+          <option value="side">옆</option>
+          <option value="back">뒤</option>
+          <option value="top">위</option>
+          <option value="bottom">아래</option>
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="color-mood">색상 분위기</label>
+        <select
+          id="color-mood"
+          value={color.mood}
+          onChange={(e) => setColor({ ...color, mood: e.target.value as ColorPalette['mood'] })}
+          className="option-select"
+        >
+          {COLOR_MOODS.map((c) => (
+            <option key={c.value} value={c.value}>
+              {c.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="form-group">
+        <label htmlFor="aspect-ratio">아스펙트 비율</label>
+        <select
+          id="aspect-ratio"
+          value={technical.aspectRatio}
+          onChange={(e) => setTechnical({ ...technical, aspectRatio: e.target.value as TechnicalSettings['aspectRatio'] })}
+          className="option-select"
+        >
+          {ASPECT_RATIOS.map((a) => (
+            <option key={a.value} value={a.value}>
+              {a.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    </div>
+  )
+
+  const renderAdvancedSection = (forceOpen = false) => (
+    <div className="detailed-options-section">
+      {!forceOpen && (
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="toggle-options-button"
+        >
+          {showAdvanced ? '▼' : '▶'} 고급 옵션 {showAdvanced ? '접기' : '펼치기'}
+        </button>
+      )}
+
+      {(forceOpen || showAdvanced) && (
+        <div className="detailed-options">
+          <div className="form-group">
+            <label htmlFor="lighting-intensity">조명 강도: {lighting.intensity}</label>
+            <input
+              type="range"
+              id="lighting-intensity"
+              min="0"
+              max="100"
+              value={lighting.intensity}
+              onChange={(e) => setLighting({ ...lighting, intensity: parseInt(e.target.value) })}
+              className="option-select"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="quality">품질: {technical.quality}</label>
+            <input
+              type="range"
+              id="quality"
+              min="1"
+              max="5"
+              value={technical.quality}
+              onChange={(e) => setTechnical({ ...technical, quality: parseInt(e.target.value) })}
+              className="option-select"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="negative-prompt">네거티브 프롬프트 (제외할 요소)</label>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <input
+                type="text"
+                id="negative-prompt"
+                value={negativeInput}
+                onChange={(e) => setNegativeInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addNegativePrompt()}
+                placeholder="예: blurry, low quality"
+                className="prompt-input"
+              />
+              <button onClick={addNegativePrompt} className="copy-button" style={{ whiteSpace: 'nowrap' }}>
+                추가
+              </button>
+            </div>
+            {negativePrompt.length > 0 && (
+              <div style={{ marginTop: '8px', display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                {negativePrompt.map((item, index) => (
+                  <span
+                    key={index}
+                    className="hashtag"
+                    onClick={() => removeNegativePrompt(index)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {item} ×
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="model-specific-options" style={{ marginTop: '24px', paddingTop: '24px', borderTop: '1px solid #000' }}>
+            <h4 style={{ marginBottom: '16px', fontSize: '16px', fontWeight: '600' }}>모델별 고급 프롬프트 엔지니어링 옵션</h4>
+            {/* Midjourney */}
+            {model === 'midjourney' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label htmlFor="mj-version">버전</label>
+                  <select
+                    id="mj-version"
+                    value={modelSpecific.midjourney?.version || 6}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        midjourney: { ...modelSpecific.midjourney, version: parseInt(e.target.value) },
+                      })
+                    }
+                    className="option-select"
+                  >
+                    <option value={4}>v4</option>
+                    <option value={5}>v5</option>
+                    <option value={6}>v6</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="mj-chaos">Chaos: {modelSpecific.midjourney?.chaos || 0}</label>
+                  <input
+                    type="range"
+                    id="mj-chaos"
+                    min="0"
+                    max="100"
+                    value={modelSpecific.midjourney?.chaos || 0}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        midjourney: { ...modelSpecific.midjourney, chaos: parseInt(e.target.value) },
+                      })
+                    }
+                    className="option-select"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="mj-stylize">Stylize: {modelSpecific.midjourney?.stylize || 100}</label>
+                  <input
+                    type="range"
+                    id="mj-stylize"
+                    min="0"
+                    max="1000"
+                    value={modelSpecific.midjourney?.stylize || 100}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        midjourney: { ...modelSpecific.midjourney, stylize: parseInt(e.target.value) },
+                      })
+                    }
+                    className="option-select"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="mj-seed">Seed (선택사항)</label>
+                  <input
+                    type="number"
+                    id="mj-seed"
+                    value={modelSpecific.midjourney?.seed || ''}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        midjourney: {
+                          ...modelSpecific.midjourney,
+                          seed: e.target.value ? parseInt(e.target.value) : undefined,
+                        },
+                      })
+                    }
+                    placeholder="랜덤 시드 번호"
+                    className="prompt-input"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Google Imagen 3 */}
+            {model === 'imagen-3' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label htmlFor="im3-structure">프롬프트 구조</label>
+                  <select
+                    id="im3-structure"
+                    value={modelSpecific.imagen3?.promptStructure || 'structured'}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        imagen3: { ...modelSpecific.imagen3, promptStructure: e.target.value },
+                      })
+                    }
+                    className="option-select"
+                  >
+                    <option value="simple">간단 (Simple)</option>
+                    <option value="structured">구조화 (Structured)</option>
+                    <option value="detailed">상세 (Detailed)</option>
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label htmlFor="im3-style-ref">스타일 참조 (선택사항)</label>
+                  <textarea
+                    id="im3-style-ref"
+                    value={modelSpecific.imagen3?.styleReference || ''}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        imagen3: { ...modelSpecific.imagen3, styleReference: e.target.value },
+                      })
+                    }
+                    placeholder="예: Van Gogh의 별이 빛나는 밤 스타일"
+                    className="prompt-input"
+                    rows={2}
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="im3-guidance">Guidance Scale: {modelSpecific.imagen3?.guidanceScale || 7.5}</label>
+                  <input
+                    type="range"
+                    id="im3-guidance"
+                    min="1"
+                    max="20"
+                    step="0.5"
+                    value={modelSpecific.imagen3?.guidanceScale || 7.5}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        imagen3: { ...modelSpecific.imagen3, guidanceScale: parseFloat(e.target.value) },
+                      })
+                    }
+                    className="option-select"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="im3-steps">Inference Steps: {modelSpecific.imagen3?.numInferenceSteps || 50}</label>
+                  <input
+                    type="range"
+                    id="im3-steps"
+                    min="20"
+                    max="100"
+                    value={modelSpecific.imagen3?.numInferenceSteps || 50}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        imagen3: { ...modelSpecific.imagen3, numInferenceSteps: parseInt(e.target.value) },
+                      })
+                    }
+                    className="option-select"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="im3-safety">안전 필터</label>
+                  <select
+                    id="im3-safety"
+                    value={modelSpecific.imagen3?.safetyFilter || 'block_some'}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        imagen3: { ...modelSpecific.imagen3, safetyFilter: e.target.value },
+                      })
+                    }
+                    className="option-select"
+                  >
+                    <option value="block_few">최소 차단</option>
+                    <option value="block_some">일부 차단</option>
+                    <option value="block_most">대부분 차단</option>
+                  </select>
+                </div>
+              </div>
+            )}
+
+            {/* Stable Diffusion */}
+            {model === 'stable-diffusion' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div className="form-group">
+                  <label htmlFor="sd-cfg">CFG Scale: {modelSpecific.stableDiffusion?.cfgScale || 7}</label>
+                  <input
+                    type="range"
+                    id="sd-cfg"
+                    min="1"
+                    max="20"
+                    value={modelSpecific.stableDiffusion?.cfgScale || 7}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        stableDiffusion: { ...modelSpecific.stableDiffusion, cfgScale: parseInt(e.target.value) },
+                      })
+                    }
+                    className="option-select"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="sd-steps">Sampling Steps: {modelSpecific.stableDiffusion?.steps || 50}</label>
+                  <input
+                    type="range"
+                    id="sd-steps"
+                    min="20"
+                    max="100"
+                    value={modelSpecific.stableDiffusion?.steps || 50}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        stableDiffusion: { ...modelSpecific.stableDiffusion, steps: parseInt(e.target.value) },
+                      })
+                    }
+                    className="option-select"
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="sd-sampler">Sampler</label>
+                  <select
+                    id="sd-sampler"
+                    value={modelSpecific.stableDiffusion?.sampler || 'euler'}
+                    onChange={(e) =>
+                      setModelSpecific({
+                        ...modelSpecific,
+                        stableDiffusion: { ...modelSpecific.stableDiffusion, sampler: e.target.value },
+                      })
+                    }
+                    className="option-select"
+                  >
+                    <option value="ddim">DDIM</option>
+                    <option value="euler">Euler</option>
+                    <option value="heun">Heun</option>
+                    <option value="dpm++">DPM++</option>
+                  </select>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
+  const renderWizardSummary = () => (
+    <div className="wizard-preview-grid">
+      <div className="quality-panel">
+        <div className="quality-panel__header">
+          <div>
+            <p className="quality-panel__label">요약</p>
+            <div className="quality-panel__score" style={{ fontSize: '1rem', color: '#000' }}>
+              선택한 옵션 정리
+            </div>
+          </div>
+        </div>
+        <div className="quality-panel__section">
+          <h4>핵심 설정</h4>
+          <ul>
+            <li>모델: {IMAGE_MODELS.find((m) => m.value === model)?.label || model}</li>
+            <li>주제: {subject || '-'}</li>
+            <li>스타일: {style.artStyle}</li>
+            <li>프레이밍/구도: {composition.framing} · {composition.rule}</li>
+            <li>조명: {lighting.type} / {lighting.direction}</li>
+            <li>색상 & 비율: {color.mood} · {technical.aspectRatio}</li>
+            <li>품질: {technical.quality} /100</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  )
 
   const handleGenerate = useCallback(() => {
     const validation = validateRequired(subject, '주제')
@@ -249,7 +783,83 @@ function ImagePromptGenerator() {
 
   return (
     <div className="prompt-generator">
-      <div className="input-section">
+      <div className="wizard-toggle">
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className={`wizard-toggle-button ${useWizardMode ? 'active' : ''}`}
+            onClick={() => resetWizard(true)}
+          >
+            가이드 모드
+          </button>
+          <button
+            className={`wizard-toggle-button ${!useWizardMode ? 'active' : ''}`}
+            onClick={() => resetWizard(false)}
+          >
+            고급 모드
+          </button>
+        </div>
+        <span style={{ fontSize: '0.85rem', color: '#666' }}>
+          {useWizardMode ? '단계별 안내에 따라 옵션을 설정하세요.' : '모든 옵션을 한 번에 설정합니다.'}
+        </span>
+      </div>
+
+      {useWizardMode && (
+        <div className="wizard-section">
+          <div className="wizard-steps-indicator">
+            {wizardSteps.map((step) => (
+              <div
+                key={step.id}
+                className={`wizard-step ${wizardStep === step.id ? 'active' : wizardStep > step.id ? 'done' : ''}`}
+              >
+                <span className="wizard-step-number">{step.id}</span>
+                <span>{step.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {wizardStep === 1 && (
+            <div className="wizard-panel">
+              {renderModelSelector()}
+              {renderSubjectInput()}
+              {renderArtStyleSelector()}
+            </div>
+          )}
+
+          {wizardStep === 2 && (
+            <div className="wizard-panel">
+              {renderCompositionGrid()}
+            </div>
+          )}
+
+          {wizardStep === 3 && (
+            <div className="wizard-panel">
+              {renderAdvancedSection(true)}
+            </div>
+          )}
+
+          {wizardStep === 4 && (
+            <div className="wizard-panel">
+              {renderWizardSummary()}
+            </div>
+          )}
+
+          <div className="wizard-navigation">
+            <button className="wizard-nav-button" onClick={handlePrevStep} disabled={wizardStep === 1 || isGenerating}>
+              이전 단계
+            </button>
+            <button
+              className="wizard-nav-button primary"
+              onClick={handleNextStep}
+              disabled={isGenerating || (wizardStep < wizardStepCount && !canProceedToNext())}
+            >
+              {wizardStep === wizardStepCount ? (isGenerating ? '생성 중...' : '이미지 프롬프트 생성하기') : '다음 단계'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!useWizardMode && (
+        <div className="input-section">
         <div className="form-group">
           <label htmlFor="image-model">이미지 생성 모델</label>
           <select
@@ -837,6 +1447,7 @@ function ImagePromptGenerator() {
           {isGenerating ? '생성 중...' : '이미지 프롬프트 생성하기'}
         </button>
       </div>
+      )}
 
       {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
       {isGenerating && <LoadingSpinner message="이미지 프롬프트를 생성하고 있습니다..." />}

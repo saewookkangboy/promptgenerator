@@ -4,6 +4,7 @@ import { prisma } from '../db/prisma'
 import { authenticateToken, requireAdmin, AuthRequest } from '../middleware/auth'
 
 const router = Router()
+const MAX_TEMPLATE_HISTORY = 20
 
 // 모든 라우트는 Admin 권한 필요
 router.use(authenticateToken)
@@ -32,6 +33,66 @@ async function logAdminAction(
     })
   } catch (error) {
     console.error('감사 로그 기록 실패:', error)
+  }
+}
+
+type TemplateHistoryEntry = {
+  version: number
+  name: string
+  description?: string | null
+  category: string
+  model?: string | null
+  content: string
+  variables?: any
+  updatedAt: string
+  authorId?: string | null
+  changeSummary?: string | null
+}
+
+function parseTemplateJSON<T>(value: string | null): T | null {
+  if (!value) return null
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
+function serializeHistory(history: any): TemplateHistoryEntry[] {
+  if (!Array.isArray(history)) return []
+  return history.map((entry) => ({
+    version: entry.version,
+    name: entry.name,
+    description: entry.description,
+    category: entry.category,
+    model: entry.model,
+    content: entry.content,
+    variables: entry.variables,
+    updatedAt: entry.updatedAt,
+    authorId: entry.authorId,
+    changeSummary: entry.changeSummary,
+  }))
+}
+
+function serializeTemplate(template: any) {
+  return {
+    id: template.id,
+    name: template.name,
+    description: template.description,
+    category: template.category,
+    model: template.model,
+    version: template.version,
+    isPublic: template.isPublic,
+    isPremium: template.isPremium,
+    tierRequired: template.tierRequired,
+    usageCount: template.usageCount,
+    rating: template.rating,
+    authorId: template.authorId,
+    createdAt: template.createdAt,
+    updatedAt: template.updatedAt,
+    content: parseTemplateJSON(template.content),
+    variables: template.variables,
+    history: serializeHistory(template.history),
   }
 }
 
@@ -393,6 +454,283 @@ router.get('/prompts', async (req: AuthRequest, res: Response) => {
   } catch (error: any) {
     console.error('프롬프트 목록 조회 오류:', error)
     res.status(500).json({ error: '프롬프트 목록을 가져오는데 실패했습니다' })
+  }
+})
+
+// 템플릿 목록 조회
+router.get('/templates', async (req: AuthRequest, res: Response) => {
+  try {
+    const { page = '1', limit = '20', category, search } = req.query
+
+    const where: any = {}
+    if (category) {
+      where.category = category
+    }
+    if (search) {
+      where.OR = [
+        { name: { contains: search as string, mode: 'insensitive' } },
+        { description: { contains: search as string, mode: 'insensitive' } },
+      ]
+    }
+
+    const skip = (parseInt(page as string) - 1) * parseInt(limit as string)
+    const [templates, total] = await Promise.all([
+      prisma.template.findMany({
+        where,
+        skip,
+        take: parseInt(limit as string),
+        orderBy: { updatedAt: 'desc' },
+      }),
+      prisma.template.count({ where }),
+    ])
+
+    res.json({
+      templates: templates.map(serializeTemplate),
+      pagination: {
+        page: parseInt(page as string),
+        limit: parseInt(limit as string),
+        total,
+        totalPages: Math.ceil(total / parseInt(limit as string)),
+      },
+    })
+  } catch (error: any) {
+    console.error('템플릿 목록 조회 오류:', error)
+    res.status(500).json({ error: '템플릿 목록을 가져오는데 실패했습니다' })
+  }
+})
+
+// 템플릿 상세 조회
+router.get('/templates/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const template = await prisma.template.findUnique({
+      where: { id: req.params.id },
+    })
+
+    if (!template) {
+      res.status(404).json({ error: '템플릿을 찾을 수 없습니다' })
+      return
+    }
+
+    res.json(serializeTemplate(template))
+  } catch (error: any) {
+    console.error('템플릿 조회 오류:', error)
+    res.status(500).json({ error: '템플릿을 가져오는데 실패했습니다' })
+  }
+})
+
+// 템플릿 생성
+router.post('/templates', async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      name,
+      description,
+      category,
+      model,
+      template,
+      variables,
+      isPublic = false,
+      isPremium = false,
+      tierRequired = 'FREE',
+    } = req.body
+
+    if (!name || !category || !template) {
+      res.status(400).json({ error: 'name, category, template 필드는 필수입니다.' })
+      return
+    }
+
+    const created = await prisma.template.create({
+      data: {
+        name,
+        description,
+        category,
+        model,
+        content: JSON.stringify(template),
+        variables: variables ?? [],
+        isPublic,
+        isPremium,
+        tierRequired,
+        authorId: req.user!.id,
+      },
+    })
+
+    await logAdminAction(
+      req.user!.id,
+      'CREATE_TEMPLATE',
+      'TEMPLATE',
+      created.id,
+      { category },
+      req
+    )
+
+    res.status(201).json(serializeTemplate(created))
+  } catch (error: any) {
+    console.error('템플릿 생성 오류:', error)
+    res.status(500).json({ error: '템플릿 생성에 실패했습니다' })
+  }
+})
+
+// 템플릿 수정
+router.patch('/templates/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    const {
+      name,
+      description,
+      category,
+      model,
+      template,
+      variables,
+      isPublic,
+      isPremium,
+      tierRequired,
+      changeSummary,
+    } = req.body
+
+    const existing = await prisma.template.findUnique({
+      where: { id: req.params.id },
+    })
+
+    if (!existing) {
+      res.status(404).json({ error: '템플릿을 찾을 수 없습니다' })
+      return
+    }
+
+    const history = serializeHistory(existing.history)
+    const newHistoryEntry: TemplateHistoryEntry = {
+      version: existing.version,
+      name: existing.name,
+      description: existing.description,
+      category: existing.category,
+      model: existing.model,
+      content: existing.content,
+      variables: existing.variables,
+      updatedAt: existing.updatedAt.toISOString(),
+      authorId: req.user!.id,
+      changeSummary: changeSummary || null,
+    }
+
+    const updated = await prisma.template.update({
+      where: { id: existing.id },
+      data: {
+        name: name ?? existing.name,
+        description: description ?? existing.description,
+        category: category ?? existing.category,
+        model: model ?? existing.model,
+        content: template ? JSON.stringify(template) : existing.content,
+        variables: variables ?? existing.variables,
+        isPublic: typeof isPublic === 'boolean' ? isPublic : existing.isPublic,
+        isPremium: typeof isPremium === 'boolean' ? isPremium : existing.isPremium,
+        tierRequired: tierRequired ?? existing.tierRequired,
+        version: existing.version + 1,
+        history: [newHistoryEntry, ...history].slice(0, MAX_TEMPLATE_HISTORY),
+      },
+    })
+
+    await logAdminAction(
+      req.user!.id,
+      'UPDATE_TEMPLATE',
+      'TEMPLATE',
+      existing.id,
+      { version: updated.version },
+      req
+    )
+
+    res.json(serializeTemplate(updated))
+  } catch (error: any) {
+    console.error('템플릿 수정 오류:', error)
+    res.status(500).json({ error: '템플릿 수정에 실패했습니다' })
+  }
+})
+
+// 템플릿 삭제
+router.delete('/templates/:id', async (req: AuthRequest, res: Response) => {
+  try {
+    await prisma.template.delete({
+      where: { id: req.params.id },
+    })
+
+    await logAdminAction(
+      req.user!.id,
+      'DELETE_TEMPLATE',
+      'TEMPLATE',
+      req.params.id,
+      {},
+      req
+    )
+
+    res.json({ message: '템플릿이 삭제되었습니다.' })
+  } catch (error: any) {
+    console.error('템플릿 삭제 오류:', error)
+    res.status(500).json({ error: '템플릿 삭제에 실패했습니다' })
+  }
+})
+
+// 템플릿 롤백
+router.post('/templates/:id/rollback', async (req: AuthRequest, res: Response) => {
+  try {
+    const { version, changeSummary } = req.body
+    if (typeof version !== 'number') {
+      res.status(400).json({ error: 'version 값이 필요합니다.' })
+      return
+    }
+
+    const existing = await prisma.template.findUnique({
+      where: { id: req.params.id },
+    })
+
+    if (!existing) {
+      res.status(404).json({ error: '템플릿을 찾을 수 없습니다' })
+      return
+    }
+
+    const history = serializeHistory(existing.history)
+    const targetVersion = history.find((entry) => entry.version === version)
+
+    if (!targetVersion) {
+      res.status(404).json({ error: '해당 버전을 찾을 수 없습니다' })
+      return
+    }
+
+    const remainingHistory = history.filter((entry) => entry.version !== version)
+    const rollbackHistoryEntry: TemplateHistoryEntry = {
+      version: existing.version,
+      name: existing.name,
+      description: existing.description,
+      category: existing.category,
+      model: existing.model,
+      content: existing.content,
+      variables: existing.variables,
+      updatedAt: existing.updatedAt.toISOString(),
+      authorId: req.user!.id,
+      changeSummary: changeSummary || `Rollback to version ${version}`,
+    }
+
+    const updated = await prisma.template.update({
+      where: { id: existing.id },
+      data: {
+        name: targetVersion.name,
+        description: targetVersion.description,
+        category: targetVersion.category,
+        model: targetVersion.model,
+        content: targetVersion.content,
+        variables: targetVersion.variables ?? existing.variables,
+        version: existing.version + 1,
+        history: [rollbackHistoryEntry, ...remainingHistory].slice(0, MAX_TEMPLATE_HISTORY),
+      },
+    })
+
+    await logAdminAction(
+      req.user!.id,
+      'ROLLBACK_TEMPLATE',
+      'TEMPLATE',
+      existing.id,
+      { targetVersion: version },
+      req
+    )
+
+    res.json(serializeTemplate(updated))
+  } catch (error: any) {
+    console.error('템플릿 롤백 오류:', error)
+    res.status(500).json({ error: '템플릿 롤백에 실패했습니다' })
   }
 })
 

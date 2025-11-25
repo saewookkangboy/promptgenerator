@@ -105,7 +105,7 @@ function VisitGraphModal({ isOpen, onClose }: VisitGraphModalProps) {
         position: 'top' as const,
         labels: {
           font: {
-            family: '"IBM Plex Sans KR", "Noto Sans KR", sans-serif',
+            family: '"IBM Plex Sans KR", sans-serif',
             size: 12,
           },
           color: '#000000',
@@ -115,7 +115,7 @@ function VisitGraphModal({ isOpen, onClose }: VisitGraphModalProps) {
         display: true,
         text: '일별 방문수 통계 (최근 30일)',
         font: {
-          family: '"IBM Plex Sans KR", "Noto Sans KR", sans-serif',
+          family: '"IBM Plex Sans KR", sans-serif',
           size: 16,
           weight: 'bold' as const,
         },
@@ -148,7 +148,7 @@ function VisitGraphModal({ isOpen, onClose }: VisitGraphModalProps) {
         ticks: {
           color: '#666666',
           font: {
-            family: '"IBM Plex Sans KR", "Noto Sans KR", sans-serif',
+            family: '"IBM Plex Sans KR", sans-serif',
             size: 11,
           },
         },
@@ -161,7 +161,7 @@ function VisitGraphModal({ isOpen, onClose }: VisitGraphModalProps) {
         ticks: {
           color: '#666666',
           font: {
-            family: '"IBM Plex Sans KR", "Noto Sans KR", sans-serif',
+            family: '"IBM Plex Sans KR", sans-serif',
             size: 11,
           },
           stepSize: 1,

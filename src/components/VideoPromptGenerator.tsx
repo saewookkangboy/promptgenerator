@@ -117,6 +117,13 @@ const MOTION_SPEEDS = [
   { value: 'time-lapse', label: '타임랩스' },
 ]
 
+const VIDEO_WIZARD_STEPS = [
+  { id: 1, label: '모델 & 콘셉트' },
+  { id: 2, label: '장면 구성' },
+  { id: 3, label: '기술 & 레퍼런스' },
+  { id: 4, label: '요약' },
+]
+
 function VideoPromptGenerator() {
   const [model, setModel] = useState<VideoModel>('sora')
   const [overallStyle, setOverallStyle] = useState<VideoStyle>({
@@ -158,6 +165,286 @@ function VideoPromptGenerator() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [modelSpecific, setModelSpecific] = useState<any>({})
   const [hashtagsCopied, setHashtagsCopied] = useState(false)
+  const [useWizardMode, setUseWizardMode] = useState(true)
+  const [wizardStep, setWizardStep] = useState(1)
+  const wizardSteps = VIDEO_WIZARD_STEPS
+  const wizardStepCount = wizardSteps.length
+
+  const canProceedToNext = () => {
+    if (wizardStep === 1) {
+      return scenes[0]?.description.trim().length > 0
+    }
+    if (wizardStep === 2) {
+      return scenes.every((scene) => scene.description.trim().length > 0)
+    }
+    return true
+  }
+
+  const handleNextStep = () => {
+    if (wizardStep < wizardStepCount) {
+      if (!canProceedToNext()) return
+      setWizardStep((prev) => prev + 1)
+    } else {
+      handleGenerate()
+    }
+  }
+
+  const handlePrevStep = () => {
+    if (wizardStep > 1) {
+      setWizardStep((prev) => prev - 1)
+    }
+  }
+
+  const resetWizard = (mode: boolean) => {
+    setUseWizardMode(mode)
+    setWizardStep(1)
+  }
+
+  const renderWizardOverview = () => (
+    <div className="wizard-panel">
+      <div className="form-group">
+        <label htmlFor="video-model-wizard">동영상 생성 모델</label>
+        <select
+          id="video-model-wizard"
+          value={model}
+          onChange={(e) => setModel(e.target.value as VideoModel)}
+          className="content-type-select"
+        >
+          {VIDEO_MODELS.map((m) => (
+            <option key={m.value} value={m.value}>
+              {m.label}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div className="options-grid">
+        <div className="form-group">
+          <label>장르</label>
+          <select
+            value={overallStyle.genre}
+            onChange={(e) => setOverallStyle({ ...overallStyle, genre: e.target.value as VideoStyle['genre'] })}
+            className="option-select"
+          >
+            {GENRES.map((g) => (
+              <option key={g.value} value={g.value}>
+                {g.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group">
+          <label>무드</label>
+          <select
+            value={overallStyle.mood}
+            onChange={(e) => setOverallStyle({ ...overallStyle, mood: e.target.value })}
+            className="option-select"
+          >
+            {MOODS.map((mood) => (
+              <option key={mood.value} value={mood.value}>
+                {mood.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="form-group">
+          <label>시네마틱 톤</label>
+          <input
+            type="text"
+            value={overallStyle.contextualTone || ''}
+            onChange={(e) => setOverallStyle({ ...overallStyle, contextualTone: e.target.value })}
+            placeholder="예: immersive, documentary style"
+            className="prompt-input"
+          />
+        </div>
+      </div>
+
+      <div className="form-group">
+        <label>콘셉트 개요</label>
+        <textarea
+          rows={4}
+          value={scenes[0]?.description || ''}
+          onChange={(e) => scenes[0] && updateScene(scenes[0].id, { description: e.target.value })}
+          placeholder="첫 장면 또는 전체 영상을 요약해주세요."
+          className="prompt-input"
+        />
+      </div>
+    </div>
+  )
+
+  const renderWizardScenes = () => (
+    <div className="wizard-panel">
+      <div className="wizard-panel__header">
+        <h4>장면 구성 ({scenes.length})</h4>
+        <button onClick={addScene} className="copy-button" style={{ whiteSpace: 'nowrap' }}>
+          + 장면 추가
+        </button>
+      </div>
+      <div className="wizard-preview-grid">
+        {scenes.map((scene, index) => (
+          <div key={scene.id} className="quality-panel">
+            <div className="quality-panel__header" style={{ justifyContent: 'space-between' }}>
+              <strong>Scene {index + 1}</strong>
+              {scenes.length > 1 && (
+                <button
+                  onClick={() => removeScene(scene.id)}
+                  className="copy-button"
+                  style={{ padding: '2px 8px', fontSize: '0.75rem' }}
+                >
+                  삭제
+                </button>
+              )}
+            </div>
+            <div className="form-group">
+              <label>장면 설명</label>
+              <textarea
+                rows={3}
+                value={scene.description}
+                onChange={(e) => updateScene(scene.id, { description: e.target.value })}
+                className="prompt-input"
+              />
+            </div>
+            <div className="options-grid">
+              <div className="form-group">
+                <label>길이 (초)</label>
+                <input
+                  type="number"
+                  min={2}
+                  max={20}
+                  value={scene.duration}
+                  onChange={(e) => updateScene(scene.id, { duration: parseInt(e.target.value) || 1 })}
+                />
+              </div>
+              <div className="form-group">
+                <label>카메라 무브먼트</label>
+                <select
+                  value={scene.camera.movement}
+                  onChange={(e) => updateSceneCamera(scene.id, { movement: e.target.value as CameraSettings['movement'] })}
+                  className="option-select"
+                >
+                  {CAMERA_MOVEMENTS.map((move) => (
+                    <option key={move.value} value={move.value}>
+                      {move.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="form-group">
+                <label>샷 타입</label>
+                <select
+                  value={scene.camera.shotType}
+                  onChange={(e) => updateSceneCamera(scene.id, { shotType: e.target.value as CameraSettings['shotType'] })}
+                  className="option-select"
+                >
+                  {SHOT_TYPES.map((shot) => (
+                    <option key={shot.value} value={shot.value}>
+                      {shot.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+
+  const renderWizardTechnical = () => (
+    <div className="wizard-panel">
+      <div className="form-group">
+        <label>총 길이 (초)</label>
+        <input
+          type="number"
+          min={10}
+          max={120}
+          value={technical.totalDuration}
+          onChange={(e) => setTechnical({ ...technical, totalDuration: parseInt(e.target.value) || technical.totalDuration })}
+        />
+      </div>
+      <div className="options-grid">
+        <div className="form-group">
+          <label>FPS</label>
+          <input
+            type="number"
+            min={12}
+            max={60}
+            value={technical.fps}
+            onChange={(e) => setTechnical({ ...technical, fps: parseInt(e.target.value) || technical.fps })}
+          />
+        </div>
+        <div className="form-group">
+          <label>해상도</label>
+          <select
+            value={technical.resolution}
+            onChange={(e) => setTechnical({ ...technical, resolution: e.target.value })}
+            className="option-select"
+          >
+            <option value="720p">720p</option>
+            <option value="1080p">1080p</option>
+            <option value="4k">4K</option>
+          </select>
+        </div>
+        <div className="form-group">
+          <label>종횡비</label>
+          <select
+            value={technical.aspectRatio}
+            onChange={(e) => setTechnical({ ...technical, aspectRatio: e.target.value })}
+            className="option-select"
+          >
+            <option value="16:9">16:9</option>
+            <option value="9:16">9:16</option>
+            <option value="2.35:1">2.35:1</option>
+          </select>
+        </div>
+      </div>
+      <div className="form-group">
+        <label className="checkbox-label">
+          <input
+            type="checkbox"
+            checked={hasReferenceImage}
+            onChange={(e) => setHasReferenceImage(e.target.checked)}
+          />
+          레퍼런스 이미지 설명 추가
+        </label>
+        {hasReferenceImage && (
+          <textarea
+            rows={3}
+            value={referenceImageDescription}
+            onChange={(e) => setReferenceImageDescription(e.target.value)}
+            placeholder="예: 청록색 조명 아래 춤추는 실루엣 사진"
+            className="prompt-input"
+          />
+        )}
+      </div>
+    </div>
+  )
+
+  const renderWizardSummary = () => (
+    <div className="wizard-panel">
+      <div className="wizard-preview-grid">
+        <div className="quality-panel">
+          <div className="quality-panel__header">
+            <div>
+              <p className="quality-panel__label">요약</p>
+              <div className="quality-panel__score" style={{ fontSize: '1rem', color: '#000' }}>
+                {VIDEO_MODELS.find((m) => m.value === model)?.label}
+              </div>
+            </div>
+          </div>
+          <div className="quality-panel__section">
+            <h4>핵심 설정</h4>
+            <ul>
+              <li>장르/무드: {overallStyle.genre} · {overallStyle.mood}</li>
+              <li>장면 수: {scenes.length}개 / 총 {totalDuration}초</li>
+              <li>기술: {technical.resolution}, {technical.fps}fps, {technical.aspectRatio}</li>
+              <li>레퍼런스: {hasReferenceImage ? '사용' : '없음'}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
 
   const handleGenerate = useCallback(() => {
     if (scenes.some(s => !s.description.trim())) {
@@ -360,7 +647,62 @@ function VideoPromptGenerator() {
 
   return (
     <div className="prompt-generator">
-      <div className="input-section">
+      <div className="wizard-toggle">
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className={`wizard-toggle-button ${useWizardMode ? 'active' : ''}`}
+            onClick={() => resetWizard(true)}
+          >
+            가이드 모드
+          </button>
+          <button
+            className={`wizard-toggle-button ${!useWizardMode ? 'active' : ''}`}
+            onClick={() => resetWizard(false)}
+          >
+            고급 모드
+          </button>
+        </div>
+        <span style={{ fontSize: '0.85rem', color: '#666' }}>
+          {useWizardMode ? '장면 설계 과정을 단계별로 안내합니다.' : '모든 세부 옵션을 한 번에 조정합니다.'}
+        </span>
+      </div>
+
+      {useWizardMode && (
+        <div className="wizard-section">
+          <div className="wizard-steps-indicator">
+            {wizardSteps.map((step) => (
+              <div
+                key={step.id}
+                className={`wizard-step ${wizardStep === step.id ? 'active' : wizardStep > step.id ? 'done' : ''}`}
+              >
+                <span className="wizard-step-number">{step.id}</span>
+                <span>{step.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {wizardStep === 1 && renderWizardOverview()}
+          {wizardStep === 2 && renderWizardScenes()}
+          {wizardStep === 3 && renderWizardTechnical()}
+          {wizardStep === 4 && renderWizardSummary()}
+
+          <div className="wizard-navigation">
+            <button className="wizard-nav-button" onClick={handlePrevStep} disabled={wizardStep === 1 || isGenerating}>
+              이전 단계
+            </button>
+            <button
+              className="wizard-nav-button primary"
+              onClick={handleNextStep}
+              disabled={isGenerating || (wizardStep < wizardStepCount && !canProceedToNext())}
+            >
+              {wizardStep === wizardStepCount ? (isGenerating ? '생성 중...' : '동영상 프롬프트 생성') : '다음 단계'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {!useWizardMode && (
+        <div className="input-section">
         <div className="form-group">
           <label htmlFor="video-model">동영상 생성 모델</label>
           <select
@@ -929,8 +1271,8 @@ function VideoPromptGenerator() {
           )}
         </div>
 
-        <button 
-          onClick={handleGenerate} 
+        <button
+          onClick={handleGenerate}
           className="generate-button"
           disabled={isGenerating}
           aria-busy={isGenerating}
@@ -938,6 +1280,7 @@ function VideoPromptGenerator() {
           {isGenerating ? '생성 중...' : '동영상 프롬프트 생성하기'}
         </button>
       </div>
+      )}
 
       {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
       {isGenerating && <LoadingSpinner message="동영상 프롬프트를 생성하고 있습니다..." />}

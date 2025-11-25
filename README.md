@@ -226,7 +226,7 @@
 
 #### 디자인 시스템
 - **Black/White 미니멀 디자인**: 검은색과 흰색만 사용한 미니멀한 디자인
-- **타이포그래피**: IBM Plex Sans KR, Noto Sans KR 폰트 사용
+- **타이포그래피**: IBM Plex Sans KR 폰트 사용
 - **반응형 디자인**: 모바일/태블릿/데스크톱 완벽 지원
   - 모바일: 480px 이하 최적화
   - 태블릿: 768px 이하 최적화
@@ -407,7 +407,6 @@ npm run preview
 ### 스타일링
 - **CSS3**: 커스텀 스타일링
 - **IBM Plex Sans KR**: 한글 폰트
-- **Noto Sans KR**: 한글 폰트
 
 ### 아키텍처
 - **모듈화된 구조**: 확장 가능한 생성기 시스템
@@ -485,7 +484,7 @@ src/
 
 ### 디자인 개선
 - Black/White 미니멀 디자인 적용
-- IBM Plex Sans KR, Noto Sans KR 폰트 적용
+- IBM Plex Sans KR 폰트 적용
 
 ### Phase 1: 아키텍처 구축
 - 확장 가능한 타입 시스템 구축

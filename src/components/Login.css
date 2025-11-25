@@ -55,7 +55,7 @@
   border: 1px solid #e5e5e5;
   border-radius: 8px;
   font-size: 14px;
-  font-family: 'IBM Plex Sans KR', 'Noto Sans KR', sans-serif;
+  font-family: 'IBM Plex Sans KR', sans-serif;
   transition: border-color 0.2s ease;
 }
 
@@ -77,7 +77,7 @@
   border-radius: 8px;
   font-size: 16px;
   font-weight: 500;
-  font-family: 'IBM Plex Sans KR', 'Noto Sans KR', sans-serif;
+  font-family: 'IBM Plex Sans KR', sans-serif;
   cursor: pointer;
   transition: background-color 0.2s ease;
   margin-top: 8px;
@@ -108,7 +108,7 @@
   cursor: pointer;
   padding: 0;
   font-size: 14px;
-  font-family: 'IBM Plex Sans KR', 'Noto Sans KR', sans-serif;
+  font-family: 'IBM Plex Sans KR', sans-serif;
 }
 
 .auth-link-button:hover {

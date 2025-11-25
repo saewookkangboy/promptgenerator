@@ -188,6 +188,8 @@ CREATE TABLE templates (
   author_id UUID REFERENCES users(id),
   usage_count INTEGER DEFAULT 0,
   rating DECIMAL(3, 2) DEFAULT 0,
+  version INTEGER DEFAULT 1,
+  history JSONB DEFAULT '[]',
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

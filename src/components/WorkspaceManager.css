@@ -37,7 +37,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: 'IBM Plex Sans KR', 'Noto Sans KR', sans-serif;
+  font-family: 'IBM Plex Sans KR', sans-serif;
 }
 
 .create-workspace-button:hover {
@@ -262,7 +262,7 @@
   border: 1px solid #e5e5e5;
   border-radius: 8px;
   font-size: 14px;
-  font-family: 'IBM Plex Sans KR', 'Noto Sans KR', sans-serif;
+  font-family: 'IBM Plex Sans KR', sans-serif;
   transition: border-color 0.2s ease;
 }
 
@@ -293,7 +293,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-family: 'IBM Plex Sans KR', 'Noto Sans KR', sans-serif;
+  font-family: 'IBM Plex Sans KR', sans-serif;
 }
 
 .modal-button.cancel-button {
