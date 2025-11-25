@@ -3,6 +3,5 @@ export * from './prompt.types'
 export * from './image.types'
 export * from './video.types'
 export * from './engineering.types'
-export * from './user.types'
 
 

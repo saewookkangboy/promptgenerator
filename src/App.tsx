@@ -7,33 +7,16 @@ import PromptList from './components/PromptList'
 import WorkspaceManager from './components/WorkspaceManager'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
-import Login from './components/Login'
-import Register from './components/Register'
-import AccountPanel from './components/AccountPanel'
-import { useAuth } from './contexts/AuthContext'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import './App.css'
 
 type TabType = 'text' | 'image' | 'video' | 'engineering' | 'list' | 'workspace'
 
-const TAB_CONFIG: { id: TabType; label: string }[] = [
-  { id: 'text', label: '텍스트 콘텐츠' },
-  { id: 'image', label: '이미지 생성' },
-  { id: 'video', label: '동영상 생성' },
-  { id: 'engineering', label: '프롬프트 엔지니어링' },
-  { id: 'list', label: '내 프롬프트' },
-  { id: 'workspace', label: '워크스페이스' },
-]
-
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('text')
   const [isAdmin, setIsAdmin] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
-  const [showAuthPanel, setShowAuthPanel] = useState(false)
-  const [authMode, setAuthMode] = useState<'login' | 'register'>('register')
-  const { user, loading, logout } = useAuth()
-  const isAuthenticated = !!user
 
   useEffect(() => {
     // 방문수 증가
@@ -81,19 +64,6 @@ function App() {
     )
   }
 
-  useEffect(() => {
-    if (!isAuthenticated && activeTab !== 'text') {
-      setActiveTab('text')
-    }
-  }, [isAuthenticated, activeTab])
-
-  const visibleTabs = isAuthenticated ? TAB_CONFIG : TAB_CONFIG.filter((tab) => tab.id === 'text')
-
-  const handleAuthToggle = (mode: 'login' | 'register') => {
-    setShowAuthPanel(true)
-    setAuthMode(mode)
-  }
-
   return (
     <div className="app">
       <header className="app-header">
@@ -136,60 +106,43 @@ function App() {
       </header>
       
       <div className="tabs">
-        {visibleTabs.map((tab) => (
-          <button
-            key={tab.id}
-            className={`tab-button ${activeTab === tab.id ? 'active' : ''}`}
-            onClick={() => setActiveTab(tab.id)}
-          >
-            {tab.label}
-          </button>
-        ))}
+        <button
+          className={`tab-button ${activeTab === 'text' ? 'active' : ''}`}
+          onClick={() => setActiveTab('text')}
+        >
+          텍스트 콘텐츠
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'image' ? 'active' : ''}`}
+          onClick={() => setActiveTab('image')}
+        >
+          이미지 생성
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'video' ? 'active' : ''}`}
+          onClick={() => setActiveTab('video')}
+        >
+          동영상 생성
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'engineering' ? 'active' : ''}`}
+          onClick={() => setActiveTab('engineering')}
+        >
+          프롬프트 엔지니어링
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
+          onClick={() => setActiveTab('list')}
+        >
+          내 프롬프트
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'workspace' ? 'active' : ''}`}
+          onClick={() => setActiveTab('workspace')}
+        >
+          워크스페이스
+        </button>
       </div>
-
-      {!isAuthenticated && !loading && (
-        <section className="auth-gate">
-          <div className="auth-gate-content">
-            <h2>더 많은 생성 도구를 사용하려면 회원가입/로그인</h2>
-            <p>
-              텍스트 프롬프트는 누구나 바로 이용할 수 있어요. 이미지·동영상 생성, 워크스페이스, 
-              내 프롬프트 관리 등 고급 기능을 사용하려면 간단히 회원가입 후 로그인해주세요.
-            </p>
-            <div className="auth-gate-actions">
-              <button className="auth-cta primary" onClick={() => handleAuthToggle('register')}>
-                회원가입
-              </button>
-              <button className="auth-cta secondary" onClick={() => handleAuthToggle('login')}>
-                로그인
-              </button>
-            </div>
-          </div>
-
-          {showAuthPanel && (
-            <div className="auth-panel-wrapper">
-              {authMode === 'register' ? (
-                <Register
-                  onSwitchToLogin={() => setAuthMode('login')}
-                  onSuccess={() => setShowAuthPanel(false)}
-                />
-              ) : (
-                <Login
-                  onSwitchToRegister={() => setAuthMode('register')}
-                  onSuccess={() => setShowAuthPanel(false)}
-                />
-              )}
-            </div>
-          )}
-        </section>
-      )}
-
-      {isAuthenticated && user && (
-        <AccountPanel
-          user={user}
-          onNavigate={(tab) => setActiveTab(tab)}
-          onLogout={logout}
-        />
-      )}
 
       <div className="tab-content">
         {activeTab === 'text' && <PromptGenerator />}
