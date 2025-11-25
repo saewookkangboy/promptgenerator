@@ -145,3 +145,64 @@
   }
 }
 
+.app-footer {
+  margin-top: 60px;
+  padding: 32px 20px;
+  text-align: center;
+  border-top: 1px solid #e5e5e5;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.app-footer p {
+  margin: 0;
+  font-size: 0.875rem;
+  color: #666666;
+  line-height: 1.6;
+}
+
+.footer-link {
+  color: #000000;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.footer-link:hover {
+  color: #666666;
+  text-decoration: underline;
+}
+
+.footer-link:focus {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* 반응형 푸터 */
+@media (max-width: 768px) {
+  .app-footer {
+    margin-top: 40px;
+    padding: 24px 16px;
+    border-radius: 8px;
+  }
+
+  .app-footer p {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-footer {
+    margin-top: 32px;
+    padding: 20px 12px;
+    border-radius: 8px;
+  }
+
+  .app-footer p {
+    font-size: 0.75rem;
+    line-height: 1.5;
+  }
+}
+

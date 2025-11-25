@@ -50,6 +50,13 @@ function App() {
         {activeTab === 'video' && <VideoPromptGenerator />}
         {activeTab === 'engineering' && <EngineeringPromptGenerator />}
       </div>
+
+      <footer className="app-footer">
+        <p>
+          © 2025 chunghyo park. Built to move the market. All rights reserved. |{' '}
+          <a href="mailto:chunghyo@troe.kr" className="footer-link">chunghyo@troe.kr</a>
+        </p>
+      </footer>
     </div>
   )
 }
