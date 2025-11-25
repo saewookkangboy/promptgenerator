@@ -3,15 +3,13 @@ import PromptGenerator from './components/PromptGenerator'
 import ImagePromptGenerator from './components/ImagePromptGenerator'
 import VideoPromptGenerator from './components/VideoPromptGenerator'
 import EngineeringPromptGenerator from './components/EngineeringPromptGenerator'
-import PromptList from './components/PromptList'
-import WorkspaceManager from './components/WorkspaceManager'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import './App.css'
 
-type TabType = 'text' | 'image' | 'video' | 'engineering' | 'list' | 'workspace'
+type TabType = 'text' | 'image' | 'video' | 'engineering'
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('text')
@@ -130,18 +128,6 @@ function App() {
         >
           프롬프트 엔지니어링
         </button>
-        <button
-          className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
-          onClick={() => setActiveTab('list')}
-        >
-          내 프롬프트
-        </button>
-        <button
-          className={`tab-button ${activeTab === 'workspace' ? 'active' : ''}`}
-          onClick={() => setActiveTab('workspace')}
-        >
-          워크스페이스
-        </button>
       </div>
 
       <div className="tab-content">
@@ -149,8 +135,6 @@ function App() {
         {activeTab === 'image' && <ImagePromptGenerator />}
         {activeTab === 'video' && <VideoPromptGenerator />}
         {activeTab === 'engineering' && <EngineeringPromptGenerator />}
-        {activeTab === 'list' && <PromptList />}
-        {activeTab === 'workspace' && <WorkspaceManager />}
       </div>
 
       <footer className="app-footer">
