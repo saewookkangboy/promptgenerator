@@ -41,6 +41,7 @@ model User {
   receivedShares        PromptShare[] @relation("PromptShareWith")
   analytics             Analytics[]
   auditLogs             AdminAuditLog[]
+  createdVersions       PromptVersion[] @relation("VersionCreator")
 
   @@index([email])
   @@index([tier])
@@ -200,6 +201,7 @@ model Prompt {
   versions        PromptVersion[]
   tags            PromptTagRelation[]
   abTestVariants  ABTestVariant[]
+  abTests         ABTest[] @relation("ABTestBasePrompt")
   testResults     TestResult[]
   modelOptimizations ModelOptimization[]
   multiModelResults MultiModelResult[]
@@ -242,7 +244,7 @@ model PromptVersion {
 
   // Relations
   prompt              Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
-  createdBy           User?    @relation(fields: [createdById], references: [id])
+  createdBy           User?    @relation("VersionCreator", fields: [createdById], references: [id])
   childPrompts        Prompt[] @relation("PromptVersionParent")
   testResults         TestResult[]
 
@@ -318,7 +320,7 @@ model ABTest {
   // Relations
   user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   workspace     Workspace?  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  basePrompt    Prompt?     @relation(fields: [basePromptId], references: [id])
+  basePrompt    Prompt?     @relation("ABTestBasePrompt", fields: [basePromptId], references: [id])
   variants      ABTestVariant[]
 
   @@index([userId])

@@ -1,6 +1,6 @@
 // Prisma 시드 파일 - 초기 데이터 생성
 import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import * as bcrypt from 'bcryptjs'
 
 const prisma = new PrismaClient()
 
