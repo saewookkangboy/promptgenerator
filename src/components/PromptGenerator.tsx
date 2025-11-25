@@ -16,6 +16,7 @@ const CONTENT_TYPES: { value: ContentType; label: string }[] = [
   { value: 'facebook', label: '페이스북 뉴스피드' },
   { value: 'instagram', label: '인스타그램 뉴스피드' },
   { value: 'youtube', label: '유튜브 영상' },
+  { value: 'general', label: '일반 텍스트' },
 ]
 
 const AGE_OPTIONS = [

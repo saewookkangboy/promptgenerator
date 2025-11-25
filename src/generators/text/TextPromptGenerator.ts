@@ -43,6 +43,12 @@ const CONTENT_TYPE_INFO: Record<
     requirements: '검색 최적화된 제목과 상세한 설명',
     requirementsEn: 'Provide search-optimized titles and detailed descriptions that drive watch time and engagement.',
   },
+  general: {
+    name: '일반 텍스트',
+    englishName: 'General Text',
+    requirements: '자연어 프롬프트 기반의 비정형 텍스트 생성, 특정 플랫폼 제약 없음',
+    requirementsEn: 'Generate unstructured text based on natural language prompts without platform-specific constraints.',
+  },
 }
 
 export class TextPromptGenerator extends BasePromptGenerator {
@@ -180,6 +186,12 @@ ${baseOptions.conversational ? '- 대화체 사용 (구어체, 친근한 표현)
 - 클릭을 유도하는 제목
 - 상세하고 정보가 풍부한 설명
 - 타임스탬프 및 관련 링크 섹션 고려`
+      case 'general':
+        return `- 자연어 프롬프트를 기반으로 한 자유로운 텍스트 생성
+- 특정 플랫폼이나 형식의 제약 없이 사용자의 의도를 충실히 반영
+- 비정형 문장 구조 허용
+- 창의적이고 유연한 표현 방식 사용
+- 사용자가 입력한 자연어 프롬프트의 맥락과 의도를 최대한 존중`
       default:
         return ''
     }
@@ -317,6 +329,12 @@ ${options.conversational ? '- Conversational tone (friendly, spoken language)' :
 - Make titles clickable and curiosity-driven
 - Provide detailed descriptions with key timestamps
 - Include relevant links and CTAs`
+      case 'general':
+        return `- Generate free-form text based on natural language prompts
+- Faithfully reflect user intent without platform or format constraints
+- Allow unstructured sentence structures
+- Use creative and flexible expression methods
+- Prioritize the context and intent of the user's natural language prompt`
       default:
         return ''
     }
@@ -358,6 +376,11 @@ Description:
 - Summarize value in first 2-3 lines
 - Provide detailed context
 - Add relevant links or resources`
+      case 'general':
+        return `- Generate natural text without structural constraints
+- Respond flexibly according to the user's natural language prompt
+- No fixed rules for sentence length, format, or structure
+- Prioritize user intent and context above all`
       default:
         return ''
     }

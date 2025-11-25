@@ -21,6 +21,10 @@ const CONTENT_TYPE_INFO = {
     name: '유튜브 영상 제목 및 설명 텍스트',
     requirements: '검색 최적화된 제목과 상세한 설명',
   },
+  general: {
+    name: '일반 텍스트',
+    requirements: '자연어 프롬프트 기반의 비정형 텍스트 생성, 특정 플랫폼 제약 없음',
+  },
 }
 
 export function generatePrompts(
@@ -164,6 +168,12 @@ function getContentGuidelines(contentType: ContentType): string {
 - 클릭을 유도하는 제목
 - 상세하고 정보가 풍부한 설명
 - 타임스탬프 및 관련 링크 섹션 고려`
+    case 'general':
+      return `- 자연어 프롬프트를 기반으로 한 자유로운 텍스트 생성
+- 특정 플랫폼이나 형식의 제약 없이 사용자의 의도를 충실히 반영
+- 비정형 문장 구조 허용
+- 창의적이고 유연한 표현 방식 사용
+- 사용자가 입력한 자연어 프롬프트의 맥락과 의도를 최대한 존중`
     default:
       return ''
   }
@@ -202,6 +212,11 @@ function getStructureRequirements(contentType: ContentType): string {
 - 첫 2-3줄에 핵심 정보
 - 상세 설명
 - 관련 링크 및 정보`
+    case 'general':
+      return `- 구조적 제약 없이 자연스러운 텍스트 생성
+- 사용자의 자연어 프롬프트에 따라 유연하게 대응
+- 문장 길이, 형식, 구조에 대한 고정된 규칙 없음
+- 사용자의 의도와 맥락을 최우선으로 고려`
     default:
       return ''
   }
@@ -218,6 +233,7 @@ function generateHashtags(userPrompt: string, contentType: ContentType): string[
     facebook: ['페이스북', '소셜미디어', '공유', '커뮤니티'],
     instagram: ['인스타그램', '소셜미디어', '콘텐츠', '스토리텔링'],
     youtube: ['유튜브', '영상', '콘텐츠', '크리에이터'],
+    general: ['텍스트', '자연어', '프롬프트', '일반'],
   }
   
   baseHashtags.push(...typeHashtags[contentType])

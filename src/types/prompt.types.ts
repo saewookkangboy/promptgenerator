@@ -36,6 +36,7 @@ export type ContentType =
   | 'facebook'
   | 'instagram'
   | 'youtube'
+  | 'general' // 일반 텍스트 (비정형 자연어 프롬프트)
 
 // 기존 DetailedOptions 유지 (하위 호환성)
 export interface DetailedOptions {
