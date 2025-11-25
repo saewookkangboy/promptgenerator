@@ -1,0 +1,583 @@
+// Prisma 스키마 파일
+// Tier 1 & Tier 2 기능 지원
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// 1. Users (사용자)
+// ============================================
+model User {
+  id                    String    @id @default(uuid())
+  email                 String    @unique
+  passwordHash          String    @map("password_hash")
+  name                  String?
+  tier                  Tier      @default(FREE)
+  subscriptionStatus    SubscriptionStatus @default(ACTIVE) @map("subscription_status")
+  subscriptionStartedAt DateTime? @map("subscription_started_at")
+  subscriptionEndsAt    DateTime? @map("subscription_ends_at")
+  apiKey                String?   @unique @map("api_key")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
+  lastLoginAt           DateTime? @map("last_login_at")
+
+  // Relations
+  ownedWorkspaces       Workspace[] @relation("WorkspaceOwner")
+  workspaceMemberships  WorkspaceMember[]
+  prompts               Prompt[]
+  folders               Folder[]
+  tags                  PromptTag[]
+  templates             Template[] @relation("TemplateAuthor")
+  abTests               ABTest[]
+  multiModelGenerations MultiModelGeneration[]
+  comments              Comment[]
+  promptShares          PromptShare[] @relation("PromptShareBy")
+  receivedShares        PromptShare[] @relation("PromptShareWith")
+  analytics             Analytics[]
+  auditLogs             AdminAuditLog[]
+
+  @@index([email])
+  @@index([tier])
+  @@index([apiKey])
+  @@index([subscriptionStatus])
+  @@map("users")
+}
+
+enum Tier {
+  FREE
+  BASIC
+  PROFESSIONAL
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  CANCELLED
+  EXPIRED
+  TRIAL
+}
+
+// ============================================
+// 2. Workspaces (워크스페이스 - Tier 2)
+// ============================================
+model Workspace {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  ownerId     String   @map("owner_id")
+  tier        Tier     @default(FREE)
+  settings    Json     @default("{}")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  owner       User     @relation("WorkspaceOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  members     WorkspaceMember[]
+  prompts     Prompt[]
+  folders     Folder[]
+  tags        PromptTag[]
+  abTests     ABTest[]
+  multiModelGenerations MultiModelGeneration[]
+  promptShares PromptShare[]
+  analytics   Analytics[]
+
+  @@index([ownerId])
+  @@index([tier])
+  @@map("workspaces")
+}
+
+// ============================================
+// 3. Workspace Members (워크스페이스 멤버 - Tier 2)
+// ============================================
+model WorkspaceMember {
+  id          String   @id @default(uuid())
+  workspaceId String   @map("workspace_id")
+  userId      String   @map("user_id")
+  role        WorkspaceRole @default(MEMBER)
+  permissions Json     @default("{}")
+  joinedAt    DateTime @default(now()) @map("joined_at")
+
+  // Relations
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([workspaceId, userId])
+  @@index([workspaceId])
+  @@index([userId])
+  @@map("workspace_members")
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+// ============================================
+// 4. Folders (폴더 - Tier 1)
+// ============================================
+model Folder {
+  id          String   @id @default(uuid())
+  name        String
+  parentId    String?  @map("parent_id")
+  userId      String   @map("user_id")
+  workspaceId String?  @map("workspace_id")
+  color       String?
+  icon        String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  parent      Folder?  @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[] @relation("FolderHierarchy")
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  prompts     Prompt[]
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([parentId])
+  @@map("folders")
+}
+
+// ============================================
+// 5. Prompt Tags (프롬프트 태그 - Tier 1)
+// ============================================
+model PromptTag {
+  id          String   @id @default(uuid())
+  name        String
+  color       String?
+  userId      String?  @map("user_id")
+  workspaceId String?  @map("workspace_id")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  prompts     PromptTagRelation[]
+
+  @@unique([name, userId, workspaceId])
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("prompt_tags")
+}
+
+// ============================================
+// 6. Prompts (프롬프트)
+// ============================================
+model Prompt {
+  id              String   @id @default(uuid())
+  workspaceId     String?  @map("workspace_id")
+  userId          String   @map("user_id")
+  title           String?
+  content         String
+  category        PromptCategory
+  model           String?
+  inputText       String?  @map("input_text")
+  options         Json     @default("{}")
+  folderId        String?  @map("folder_id")
+  isTemplate      Boolean  @default(false) @map("is_template")
+  isPublic        Boolean  @default(false) @map("is_public")
+  isFavorite      Boolean  @default(false) @map("is_favorite")
+  versionNumber   Int      @default(1) @map("version_number")
+  parentVersionId String?  @map("parent_version_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt       DateTime? @map("deleted_at")
+
+  // Relations
+  workspace       Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  folder          Folder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  parentVersion   PromptVersion? @relation("PromptVersionParent", fields: [parentVersionId], references: [id], onDelete: SetNull)
+  versions        PromptVersion[]
+  tags            PromptTagRelation[]
+  abTestVariants  ABTestVariant[]
+  testResults     TestResult[]
+  modelOptimizations ModelOptimization[]
+  multiModelResults MultiModelResult[]
+  comments        Comment[]
+  shares          PromptShare[]
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([category])
+  @@index([folderId])
+  @@index([createdAt])
+  @@index([deletedAt])
+  @@index([isFavorite])
+  @@map("prompts")
+}
+
+enum PromptCategory {
+  TEXT
+  IMAGE
+  VIDEO
+  ENGINEERING
+}
+
+// ============================================
+// 7. Prompt Versions (프롬프트 버전 관리 - Tier 1)
+// ============================================
+model PromptVersion {
+  id                  String   @id @default(uuid())
+  promptId            String   @map("prompt_id")
+  versionNumber       Int      @map("version_number")
+  content             String
+  options             Json     @default("{}")
+  score               Int?
+  predictedPerformance Json?   @map("predicted_performance")
+  tokenEstimate       Int?     @map("token_estimate")
+  costEstimate        Decimal? @map("cost_estimate") @db.Decimal(10, 4)
+  changeSummary       String?  @map("change_summary")
+  createdById         String?  @map("created_by")
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  // Relations
+  prompt              Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  createdBy           User?    @relation(fields: [createdById], references: [id])
+  childPrompts        Prompt[] @relation("PromptVersionParent")
+  testResults         TestResult[]
+
+  @@unique([promptId, versionNumber])
+  @@index([promptId])
+  @@index([score])
+  @@map("prompt_versions")
+}
+
+// ============================================
+// 8. Prompt Tag Relations (프롬프트-태그 관계)
+// ============================================
+model PromptTagRelation {
+  promptId  String @map("prompt_id")
+  tagId     String @map("tag_id")
+
+  // Relations
+  prompt    Prompt    @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  tag       PromptTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([promptId, tagId])
+  @@index([promptId])
+  @@index([tagId])
+  @@map("prompt_tag_relations")
+}
+
+// ============================================
+// 9. Templates (템플릿 라이브러리 - Tier 1)
+// ============================================
+model Template {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  category    String
+  model       String?
+  content     String
+  variables   Json     @default("[]")
+  isPublic    Boolean  @default(false) @map("is_public")
+  isPremium   Boolean  @default(false) @map("is_premium")
+  tierRequired Tier    @default(FREE) @map("tier_required")
+  authorId    String?  @map("author_id")
+  usageCount  Int      @default(0) @map("usage_count")
+  rating      Decimal  @default(0) @db.Decimal(3, 2)
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  author      User?    @relation("TemplateAuthor", fields: [authorId], references: [id])
+
+  @@index([category])
+  @@index([isPublic])
+  @@index([isPremium])
+  @@index([rating])
+  @@index([tierRequired])
+  @@map("templates")
+}
+
+// ============================================
+// 10. AB Tests (A/B 테스트 - Tier 1)
+// ============================================
+model ABTest {
+  id            String      @id @default(uuid())
+  name          String
+  userId        String      @map("user_id")
+  workspaceId   String?     @map("workspace_id")
+  basePromptId  String?     @map("base_prompt_id")
+  status        ABTestStatus @default(DRAFT)
+  startDate     DateTime?   @map("start_date")
+  endDate       DateTime?   @map("end_date")
+  createdAt     DateTime    @default(now()) @map("created_at")
+  updatedAt     DateTime    @updatedAt @map("updated_at")
+
+  // Relations
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace     Workspace?  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  basePrompt    Prompt?     @relation(fields: [basePromptId], references: [id])
+  variants      ABTestVariant[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([workspaceId])
+  @@map("ab_tests")
+}
+
+enum ABTestStatus {
+  DRAFT
+  RUNNING
+  COMPLETED
+  CANCELLED
+}
+
+// ============================================
+// 11. AB Test Variants (A/B 테스트 변형)
+// ============================================
+model ABTestVariant {
+  id              String   @id @default(uuid())
+  abTestId        String   @map("ab_test_id")
+  promptId        String   @map("prompt_id")
+  variantName     String?  @map("variant_name")
+  variantLetter   ABVariantLetter @map("variant_letter")
+  predictedScore  Int?     @map("predicted_score")
+  actualScore     Int?     @map("actual_score")
+  impressions     Int      @default(0)
+  conversions     Int      @default(0)
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  abTest          ABTest   @relation(fields: [abTestId], references: [id], onDelete: Cascade)
+  prompt          Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@index([abTestId])
+  @@index([promptId])
+  @@map("ab_test_variants")
+}
+
+enum ABVariantLetter {
+  A
+  B
+  C
+  D
+}
+
+// ============================================
+// 12. Test Results (실시간 테스트 결과 - Tier 2)
+// ============================================
+model TestResult {
+  id              String      @id @default(uuid())
+  promptId        String      @map("prompt_id")
+  promptVersionId String?     @map("prompt_version_id")
+  model           String
+  inputText       String?     @map("input_text")
+  responseText    String?     @map("response_text")
+  responseTimeMs  Int?        @map("response_time_ms")
+  tokenCount      Int?        @map("token_count")
+  cost            Decimal?    @db.Decimal(10, 6)
+  qualityScore    Int?        @map("quality_score")
+  metrics         Json        @default("{}")
+  errorMessage    String?     @map("error_message")
+  testType        TestType    @map("test_type")
+  createdAt       DateTime    @default(now()) @map("created_at")
+
+  // Relations
+  prompt          Prompt      @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  promptVersion   PromptVersion? @relation(fields: [promptVersionId], references: [id], onDelete: SetNull)
+
+  @@index([promptId])
+  @@index([model])
+  @@index([createdAt])
+  @@index([testType])
+  @@map("test_results")
+}
+
+enum TestType {
+  MANUAL
+  AUTOMATED
+  BENCHMARK
+}
+
+// ============================================
+// 13. Model Optimizations (모델별 최적화 - Tier 2)
+// ============================================
+model ModelOptimization {
+  id                    String   @id @default(uuid())
+  promptId              String   @map("prompt_id")
+  model                 String
+  optimizedContent      String   @map("optimized_content")
+  optimizationRules     Json     @default("{}") @map("optimization_rules")
+  performanceImprovement Decimal? @map("performance_improvement") @db.Decimal(5, 2)
+  beforeScore           Int?     @map("before_score")
+  afterScore            Int?     @map("after_score")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  // Relations
+  prompt                Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+
+  @@unique([promptId, model])
+  @@index([promptId])
+  @@index([model])
+  @@map("model_optimizations")
+}
+
+// ============================================
+// 14. Multi Model Generations (멀티 모델 생성 - Tier 2)
+// ============================================
+model MultiModelGeneration {
+  id          String   @id @default(uuid())
+  userId      String   @map("user_id")
+  workspaceId String?  @map("workspace_id")
+  inputText   String   @map("input_text")
+  baseOptions Json     @default("{}") @map("base_options")
+  status      GenerationStatus @default(PENDING)
+  createdAt   DateTime @default(now()) @map("created_at")
+  completedAt DateTime? @map("completed_at")
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  results     MultiModelResult[]
+
+  @@index([userId])
+  @@index([status])
+  @@index([workspaceId])
+  @@map("multi_model_generations")
+}
+
+enum GenerationStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ============================================
+// 15. Multi Model Results (멀티 모델 결과)
+// ============================================
+model MultiModelResult {
+  id              String   @id @default(uuid())
+  generationId    String   @map("generation_id")
+  model           String
+  promptId        String?  @map("prompt_id")
+  responseText    String?  @map("response_text")
+  responseTimeMs  Int?     @map("response_time_ms")
+  tokenCount      Int?     @map("token_count")
+  cost            Decimal? @db.Decimal(10, 6)
+  qualityScore    Int?     @map("quality_score")
+  comparisonRank  Int?     @map("comparison_rank")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  // Relations
+  generation      MultiModelGeneration @relation(fields: [generationId], references: [id], onDelete: Cascade)
+  prompt          Prompt? @relation(fields: [promptId], references: [id])
+
+  @@index([generationId])
+  @@index([model])
+  @@map("multi_model_results")
+}
+
+// ============================================
+// 16. Analytics (분석 데이터 - Tier 2)
+// ============================================
+model Analytics {
+  id          String   @id @default(uuid())
+  userId      String?  @map("user_id")
+  workspaceId String?  @map("workspace_id")
+  eventType   String   @map("event_type")
+  eventData   Json     @default("{}") @map("event_data")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  user        User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([workspaceId])
+  @@index([eventType])
+  @@index([createdAt])
+  @@map("analytics")
+}
+
+// ============================================
+// 17. Comments (댓글 - Tier 2 협업)
+// ============================================
+model Comment {
+  id              String   @id @default(uuid())
+  promptId        String   @map("prompt_id")
+  userId          String   @map("user_id")
+  content         String
+  parentCommentId String?  @map("parent_comment_id")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+  deletedAt      DateTime? @map("deleted_at")
+
+  // Relations
+  prompt          Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  parent          Comment? @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies         Comment[] @relation("CommentReplies")
+
+  @@index([promptId])
+  @@index([userId])
+  @@index([parentCommentId])
+  @@index([deletedAt])
+  @@map("comments")
+}
+
+// ============================================
+// 18. Prompt Shares (프롬프트 공유 - Tier 2)
+// ============================================
+model PromptShare {
+  id                  String   @id @default(uuid())
+  promptId            String   @map("prompt_id")
+  sharedById          String   @map("shared_by")
+  sharedWithWorkspaceId String? @map("shared_with_workspace_id")
+  sharedWithUserId    String?  @map("shared_with_user_id")
+  permission          SharePermission @default(VIEW)
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  // Relations
+  prompt              Prompt   @relation(fields: [promptId], references: [id], onDelete: Cascade)
+  sharedBy            User     @relation("PromptShareBy", fields: [sharedById], references: [id], onDelete: Cascade)
+  sharedWithWorkspace Workspace? @relation(fields: [sharedWithWorkspaceId], references: [id], onDelete: Cascade)
+  sharedWithUser      User?    @relation("PromptShareWith", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+
+  @@index([promptId])
+  @@index([sharedWithWorkspaceId])
+  @@index([sharedWithUserId])
+  @@map("prompt_shares")
+}
+
+enum SharePermission {
+  VIEW
+  EDIT
+  COMMENT
+}
+
+// ============================================
+// 19. Admin Audit Log (관리자 감사 로그)
+// ============================================
+model AdminAuditLog {
+  id            String   @id @default(uuid())
+  adminUserId   String   @map("admin_user_id")
+  action        String
+  resourceType  String?  @map("resource_type")
+  resourceId    String?  @map("resource_id")
+  details       Json     @default("{}")
+  ipAddress     String?  @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  // Relations
+  adminUser     User     @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([adminUserId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("admin_audit_logs")
+}
+

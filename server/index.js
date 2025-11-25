@@ -1,10 +1,13 @@
-// Express 서버 - 프롬프트 가이드 수집 API
+// Express 서버 - 프롬프트 가이드 수집 API + 프리미엄 기능 API
 
 const express = require('express')
 const cors = require('cors')
 const cron = require('node-cron')
 const { collectAllGuides } = require('./scraper/guideScraper')
 const { initializeScheduler } = require('./scheduler/guideScheduler')
+
+// Import new routes
+const promptsRouter = require('./routes/prompts')
 
 const app = express()
 const PORT = process.env.PORT || 3001
