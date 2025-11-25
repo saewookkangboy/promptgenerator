@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Create Icons</title>
+</head>
+<body>
+  <canvas id="c192" width="192" height="192"></canvas>
+  <canvas id="c512" width="512" height="512"></canvas>
+  <canvas id="c180" width="180" height="180"></canvas>
+  <script>
+    function draw(canvas) {
+      const ctx = canvas.getContext('2d');
+      const size = canvas.width;
+      ctx.fillStyle = '#000000';
+      ctx.fillRect(0, 0, size, size);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = `${size * 0.6}px Arial`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('⌨️', size / 2, size / 2);
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = canvas.id === 'c192' ? 'icon-192.png' : canvas.id === 'c512' ? 'icon-512.png' : 'apple-touch-icon.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    }
+    setTimeout(() => {
+      draw(document.getElementById('c192'));
+      setTimeout(() => draw(document.getElementById('c512')), 500);
+      setTimeout(() => draw(document.getElementById('c180')), 1000);
+    }, 500);
+  </script>
+</body>
+</html>
