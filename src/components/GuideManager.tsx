@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getAllLatestGuides } from '../utils/prompt-guide-storage'
 import { triggerManualCollection, getCollectionStatus as getScheduleStatus } from '../utils/prompt-guide-scheduler'
-import { GuideUpdateResult } from '../types/prompt-guide.types'
+import { GuideUpdateResult, ModelName } from '../types/prompt-guide.types'
 import './GuideManager.css'
 
 function GuideManager() {
@@ -31,6 +31,18 @@ function GuideManager() {
       loadData()
     } catch (error: any) {
       console.error('수집 실패:', error)
+      // 에러 메시지를 결과에 추가
+      const errorResult: GuideUpdateResult = {
+        success: false,
+        modelName: 'all' as ModelName,
+        guidesAdded: 0,
+        guidesUpdated: 0,
+        errors: [
+          error.message || '수집 중 오류가 발생했습니다',
+          '서버가 실행 중인지 확인해주세요 (npm run server 또는 npm run server:dev)',
+        ],
+      }
+      setCollectionResults([errorResult])
     } finally {
       setIsCollecting(false)
     }

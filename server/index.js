@@ -23,9 +23,21 @@ app.post('/api/guides/collect', async (req, res) => {
   try {
     console.log('가이드 수집 요청 받음...')
     const results = await collectAllGuides()
+    
+    // 결과 요약
+    const successCount = results.filter(r => r.success).length
+    const failCount = results.filter(r => !r.success).length
+    
+    console.log(`수집 완료: 성공 ${successCount}개, 실패 ${failCount}개`)
+    
     res.json({
       success: true,
       results,
+      summary: {
+        total: results.length,
+        success: successCount,
+        failed: failCount,
+      },
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
@@ -33,6 +45,7 @@ app.post('/api/guides/collect', async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     })
   }
 })

@@ -3,53 +3,6 @@
 import { PromptGuide, GuideUpdateResult, ModelName } from '../types/prompt-guide.types'
 import { upsertGuides, getLatestGuide } from './prompt-guide-storage'
 
-// 수집 소스 정의
-const COLLECTION_SOURCES: Record<ModelName, string[]> = {
-  'openai-gpt-4': [
-    'https://platform.openai.com/docs/guides/prompt-engineering',
-    'https://platform.openai.com/docs/api-reference/chat',
-  ],
-  'openai-gpt-3.5': [
-    'https://platform.openai.com/docs/guides/prompt-engineering',
-  ],
-  'claude-3': [
-    'https://docs.anthropic.com/claude/docs',
-  ],
-  'claude-3.5': [
-    'https://docs.anthropic.com/claude/docs',
-  ],
-  'gemini-pro': [
-    'https://ai.google.dev/docs/prompt_intro',
-  ],
-  'gemini-ultra': [
-    'https://ai.google.dev/docs/prompt_intro',
-  ],
-  'gemini-nano-banana-pro': [
-    'https://ai.google.dev/docs',
-  ],
-  'midjourney': [
-    'https://docs.midjourney.com/docs',
-  ],
-  'dalle-3': [
-    'https://platform.openai.com/docs/guides/images',
-  ],
-  'stable-diffusion': [
-    'https://stability.ai/docs',
-  ],
-  'sora': [
-    'https://openai.com/research/video-generation-models-as-world-simulators',
-  ],
-  'veo-3': [
-    'https://deepmind.google/technologies/veo/',
-  ],
-  'llama-3': [
-    'https://llama.meta.com/docs',
-  ],
-  'llama-3.1': [
-    'https://llama.meta.com/docs',
-  ],
-}
-
 // 서버 API를 통한 가이드 수집
 const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
 
@@ -102,16 +55,41 @@ export function addManualGuide(guide: Omit<PromptGuide, 'id' | 'metadata'>): Pro
 
 // 모든 모델의 가이드 수집 (서버 API 호출)
 export async function collectAllGuides(): Promise<GuideUpdateResult[]> {
+  const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
+  
   try {
+    // 서버 연결 확인
+    try {
+      const healthCheck = await fetch(`${API_BASE_URL}/health`, {
+        method: 'GET',
+        signal: AbortSignal.timeout(5000), // 5초 타임아웃
+      })
+      
+      if (!healthCheck.ok) {
+        throw new Error(`서버 헬스 체크 실패 (HTTP ${healthCheck.status})`)
+      }
+    } catch (healthError: any) {
+      if (healthError.name === 'AbortError' || healthError.name === 'TypeError') {
+        throw new Error(
+          `서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.\n` +
+          `서버 실행: npm run server 또는 npm run server:dev\n` +
+          `서버 URL: ${API_BASE_URL}`
+        )
+      }
+      throw healthError
+    }
+    
     const response = await fetch(`${API_BASE_URL}/api/guides/collect`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
+      signal: AbortSignal.timeout(300000), // 5분 타임아웃 (수집에 시간이 걸릴 수 있음)
     })
     
     if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
+      const errorText = await response.text()
+      throw new Error(`HTTP ${response.status}: ${errorText || '서버 오류'}`)
     }
     
     const data = await response.json()
@@ -154,14 +132,22 @@ export async function collectAllGuides(): Promise<GuideUpdateResult[]> {
     return results
   } catch (error: any) {
     console.error('서버 가이드 수집 실패:', error)
-    // 서버 연결 실패 시 빈 결과 반환
-    return Object.keys(COLLECTION_SOURCES).map(modelName => ({
-      success: false,
-      modelName: modelName as ModelName,
-      guidesAdded: 0,
-      guidesUpdated: 0,
-      errors: [error.message || '서버 연결 실패'],
-    }))
+    
+    // 네트워크 오류인 경우 더 명확한 메시지
+    let errorMessage = error.message || '서버 연결 실패'
+    
+    if (error.name === 'AbortError') {
+      errorMessage = '요청 시간 초과. 서버가 응답하지 않습니다.'
+    } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      errorMessage = `서버에 연결할 수 없습니다.\n\n` +
+        `해결 방법:\n` +
+        `1. 서버가 실행 중인지 확인: npm run server 또는 npm run server:dev\n` +
+        `2. 서버 URL 확인: ${API_BASE_URL}\n` +
+        `3. 방화벽 또는 네트워크 설정 확인`
+    }
+    
+    // 서버 연결 실패 시 에러 결과 반환
+    throw new Error(errorMessage)
   }
 }
 
