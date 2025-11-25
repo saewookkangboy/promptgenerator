@@ -4,6 +4,7 @@ const STORAGE_KEYS = {
   ADMIN_AUTH: 'admin_auth',
   PROMPT_HISTORY: 'prompt_history',
   VISIT_COUNT: 'visit_count',
+  DAILY_VISITS: 'daily_visits',
   STATS: 'prompt_stats',
 } as const
 
@@ -110,8 +111,57 @@ export function incrementVisitCount(): void {
   try {
     const count = getVisitCount()
     localStorage.setItem(STORAGE_KEYS.VISIT_COUNT, String(count + 1))
+    
+    // 일별 방문수 증가
+    incrementDailyVisit()
   } catch (error) {
     console.error('방문수 증가 실패:', error)
+  }
+}
+
+// 일별 방문수 증가
+function incrementDailyVisit(): void {
+  try {
+    const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD 형식
+    const dailyVisits = getDailyVisits()
+    
+    if (dailyVisits[today]) {
+      dailyVisits[today]++
+    } else {
+      dailyVisits[today] = 1
+    }
+    
+    localStorage.setItem(STORAGE_KEYS.DAILY_VISITS, JSON.stringify(dailyVisits))
+  } catch (error) {
+    console.error('일별 방문수 증가 실패:', error)
+  }
+}
+
+// 일별 방문수 조회
+export function getDailyVisits(): { [date: string]: number } {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.DAILY_VISITS)
+    return data ? JSON.parse(data) : {}
+  } catch (error) {
+    console.error('일별 방문수 조회 실패:', error)
+    return {}
+  }
+}
+
+// 일별 방문수 배열로 조회 (최근 N일)
+export function getDailyVisitsArray(days: number = 30): Array<{ date: string; count: number }> {
+  try {
+    const dailyVisits = getDailyVisits()
+    const dates = Object.keys(dailyVisits).sort()
+    const recentDates = dates.slice(-days)
+    
+    return recentDates.map(date => ({
+      date,
+      count: dailyVisits[date],
+    }))
+  } catch (error) {
+    console.error('일별 방문수 배열 조회 실패:', error)
+    return []
   }
 }
 

@@ -72,6 +72,21 @@
   transform: translateY(-2px);
 }
 
+.stat-card-clickable {
+  cursor: pointer;
+}
+
+.stat-card-clickable:hover {
+  background: #fafafa;
+}
+
+.stat-hint {
+  font-size: 0.75rem;
+  color: #999999;
+  margin-top: 8px;
+  font-weight: 400;
+}
+
 .stat-label {
   font-size: 0.875rem;
   color: #666666;

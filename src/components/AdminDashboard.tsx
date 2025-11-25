@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getStats, getPromptRecords, getVisitCount, clearAdminAuth, PromptRecord } from '../utils/storage'
+import VisitGraphModal from './VisitGraphModal'
 import './AdminDashboard.css'
 
 interface AdminDashboardProps {
@@ -12,6 +13,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   const [records, setRecords] = useState<PromptRecord[]>([])
   const [visitCount, setVisitCount] = useState(0)
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'text' | 'image' | 'video' | 'engineering'>('all')
+  const [isGraphModalOpen, setIsGraphModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<PromptRecord | null>(null)
 
   useEffect(() => {
@@ -122,9 +124,10 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
       </div>
 
       <div className="admin-stats-grid">
-        <div className="stat-card">
+        <div className="stat-card stat-card-clickable" onClick={() => setIsGraphModalOpen(true)}>
           <div className="stat-label">총 방문수</div>
           <div className="stat-value">{visitCount.toLocaleString()}</div>
+          <div className="stat-hint">클릭하여 그래프 보기</div>
         </div>
         <div className="stat-card">
           <div className="stat-label">총 생성 건수</div>
@@ -266,6 +269,11 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
           </div>
         )}
       </div>
+
+      <VisitGraphModal
+        isOpen={isGraphModalOpen}
+        onClose={() => setIsGraphModalOpen(false)}
+      />
     </div>
   )
 }
