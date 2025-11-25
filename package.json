@@ -30,16 +30,16 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/cors": "^2.8.19",
-    "@types/jsonwebtoken": "^9.0.6",
-    "prisma": "^5.19.1",
-    "tsx": "^4.19.2",
     "@types/express": "^5.0.5",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node-cron": "^3.0.11",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",
     "@vitejs/plugin-react": "^4.2.1",
     "nodemon": "^3.1.11",
+    "prisma": "^5.19.1",
     "sharp": "^0.34.5",
+    "tsx": "^4.19.2",
     "typescript": "^5.2.2",
     "vite": "^5.0.8"
   }
