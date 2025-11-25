@@ -118,30 +118,66 @@ function EngineeringPromptGenerator() {
         const generator = PromptGeneratorFactory.create('engineering')
         const generated = generator.generate(options)
 
+        // 디버깅: 생성된 결과 확인
+        console.log('Generated result:', {
+          hasMetaPrompt: !!generated.metaPrompt,
+          hasContextPrompt: !!generated.contextPrompt,
+          hasEnglishMetaPrompt: !!generated.englishMetaPrompt,
+          hasEnglishContextPrompt: !!generated.englishContextPrompt,
+          method: generated.method,
+        })
+
         let enrichedResults = generated
-        try {
-          const translationTargets: Record<string, string | undefined> = {
-            englishMetaPrompt: generated.metaPrompt,
-            englishContextPrompt: generated.contextPrompt,
-          }
+        
+        // PromptEngineer가 이미 영어 버전을 생성했는지 확인
+        const hasEnglishVersions = generated.englishMetaPrompt && generated.englishContextPrompt
+        
+        // 영어 버전이 없거나 DeepL로 개선하고 싶은 경우에만 번역 시도
+        if (!hasEnglishVersions) {
+          try {
+            const translationTargets: Record<string, string | undefined> = {}
+            
+            // 영어 버전이 없으면 번역 대상에 추가
+            if (!generated.englishMetaPrompt && generated.metaPrompt) {
+              translationTargets.englishMetaPrompt = generated.metaPrompt
+            }
+            
+            if (!generated.englishContextPrompt && generated.contextPrompt) {
+              translationTargets.englishContextPrompt = generated.contextPrompt
+            }
 
-          const primaryContent =
-            (generated as any).fullPrompt ||
-            (generated as any).prompt ||
-            (generated as any).result ||
-            ''
+            const primaryContent =
+              (generated as any).fullPrompt ||
+              (generated as any).prompt ||
+              (generated as any).result ||
+              ''
 
-          if (typeof primaryContent === 'string' && primaryContent.trim().length > 0) {
-            translationTargets.englishVersion = primaryContent
-          }
+            if (typeof primaryContent === 'string' && primaryContent.trim().length > 0 && !generated.englishVersion) {
+              translationTargets.englishVersion = primaryContent
+            }
 
-          const translations = await translateTextMap(translationTargets)
-          if (Object.keys(translations).length > 0) {
-            enrichedResults = { ...generated, ...translations }
+            // 번역 대상이 있는 경우에만 DeepL 호출
+            if (Object.keys(translationTargets).length > 0) {
+              const translations = await translateTextMap(translationTargets)
+              if (Object.keys(translations).length > 0) {
+                enrichedResults = { ...generated, ...translations }
+              }
+            }
+          } catch (translationError) {
+            console.warn('DeepL translation failed:', translationError)
+            // 영어 버전이 이미 있으면 경고만 표시, 없으면 에러 표시
+            if (!hasEnglishVersions) {
+              showNotification('프롬프트 엔지니어링 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')
+            }
           }
-        } catch (translationError) {
-          console.warn('DeepL translation failed:', translationError)
-          showNotification('프롬프트 엔지니어링 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')
+        }
+
+        // 결과 검증: metaPrompt와 contextPrompt가 반드시 있어야 함
+        if (!enrichedResults.metaPrompt || !enrichedResults.contextPrompt) {
+          console.error('Generated result missing metaPrompt or contextPrompt:', enrichedResults)
+          setError('프롬프트 생성 중 오류가 발생했습니다. 메타 프롬프트 또는 컨텍스트 프롬프트가 생성되지 않았습니다.')
+          setIsGenerating(false)
+          return
         }
 
         setResults(enrichedResults)
@@ -513,18 +549,32 @@ function EngineeringPromptGenerator() {
 
       {results && !isGenerating && (
         <div className="results-section">
-          <ResultCard
-            title="메타 프롬프트"
-            content={results.metaPrompt}
-            englishVersion={results.englishMetaPrompt}
-            showEnglishToggle={true}
-          />
-          <ResultCard
-            title="컨텍스트 프롬프트"
-            content={results.contextPrompt}
-            englishVersion={results.englishContextPrompt}
-            showEnglishToggle={true}
-          />
+          {results.metaPrompt ? (
+            <ResultCard
+              title="메타 프롬프트"
+              content={results.metaPrompt}
+              englishVersion={results.englishMetaPrompt}
+              showEnglishToggle={true}
+            />
+          ) : (
+            <div className="hashtags-card">
+              <h3>메타 프롬프트</h3>
+              <p style={{ color: '#c62828' }}>메타 프롬프트가 생성되지 않았습니다. 다시 시도해주세요.</p>
+            </div>
+          )}
+          {results.contextPrompt ? (
+            <ResultCard
+              title="컨텍스트 프롬프트"
+              content={results.contextPrompt}
+              englishVersion={results.englishContextPrompt}
+              showEnglishToggle={true}
+            />
+          ) : (
+            <div className="hashtags-card">
+              <h3>컨텍스트 프롬프트</h3>
+              <p style={{ color: '#c62828' }}>컨텍스트 프롬프트가 생성되지 않았습니다. 다시 시도해주세요.</p>
+            </div>
+          )}
           {results.fullPrompt && (
             <ResultCard
               title="전체 프롬프트 (복사용)"
