@@ -80,6 +80,15 @@ app.get('/api/guides/status', (req, res) => {
   res.json(status)
 })
 
+// 프리미엄 기능 API 라우트
+try {
+  const promptsRouter = require('./routes/prompts')
+  app.use('/api/prompts', promptsRouter)
+  console.log('✅ 프롬프트 API 라우트 로드됨')
+} catch (error) {
+  console.warn('⚠️  프롬프트 API 라우트 로드 실패 (데이터베이스 미설정 가능):', error.message)
+}
+
 // 서버 시작
 app.listen(PORT, () => {
   console.log(`🚀 프롬프트 가이드 수집 서버가 포트 ${PORT}에서 실행 중입니다`)
