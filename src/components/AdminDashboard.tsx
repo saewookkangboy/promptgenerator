@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getStats, getPromptRecords, getVisitCount, clearAdminAuth, PromptRecord } from '../utils/storage'
+import { adminAPI } from '../utils/api'
 import VisitGraphModal from './VisitGraphModal'
 import GuideManager from './GuideManager'
 import './AdminDashboard.css'
@@ -16,14 +17,44 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'text' | 'image' | 'video' | 'engineering'>('all')
   const [isGraphModalOpen, setIsGraphModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<PromptRecord | null>(null)
-  const [activeSection, setActiveSection] = useState<'stats' | 'guides'>('stats')
+  const [activeSection, setActiveSection] = useState<'stats' | 'guides' | 'users' | 'prompts'>('stats')
+  
+  // 새로운 상태: 서버 통계
+  const [serverStats, setServerStats] = useState<any>(null)
+  const [users, setUsers] = useState<any[]>([])
+  const [serverPrompts, setServerPrompts] = useState<any[]>([])
+  const [usersPage, setUsersPage] = useState(1)
+  const [promptsPage, setPromptsPage] = useState(1)
 
   useEffect(() => {
     loadData()
+    loadServerData()
     // 5초마다 데이터 새로고침
-    const interval = setInterval(loadData, 5000)
+    const interval = setInterval(() => {
+      loadData()
+      loadServerData()
+    }, 5000)
     return () => clearInterval(interval)
-  }, [])
+  }, [usersPage, promptsPage])
+
+  const loadServerData = async () => {
+    try {
+      // 서버 통계 로드
+      const statsData = await adminAPI.getStats()
+      setServerStats(statsData)
+
+      // 사용자 목록 로드
+      const usersData = await adminAPI.getUsers({ page: usersPage, limit: 20 })
+      setUsers(usersData.users)
+
+      // 프롬프트 목록 로드
+      const promptsData = await adminAPI.getPrompts({ page: promptsPage, limit: 20 })
+      setServerPrompts(promptsData.prompts)
+    } catch (error) {
+      console.error('서버 데이터 로드 실패:', error)
+      // 서버가 없거나 인증되지 않은 경우 무시
+    }
+  }
 
   const loadData = () => {
     setStats(getStats())
@@ -125,28 +156,198 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
         </div>
       </div>
 
-      <div className="admin-section-tabs">
-        <button
-          className={`section-tab ${activeSection === 'stats' ? 'active' : ''}`}
-          onClick={() => setActiveSection('stats')}
-        >
-          통계 및 기록
-        </button>
-        <button
-          className={`section-tab ${activeSection === 'guides' ? 'active' : ''}`}
-          onClick={() => setActiveSection('guides')}
-        >
-          가이드 관리
-        </button>
-      </div>
+            <div className="admin-section-tabs">
+              <button
+                className={`section-tab ${activeSection === 'stats' ? 'active' : ''}`}
+                onClick={() => setActiveSection('stats')}
+              >
+                통계 및 기록
+              </button>
+              <button
+                className={`section-tab ${activeSection === 'users' ? 'active' : ''}`}
+                onClick={() => setActiveSection('users')}
+              >
+                사용자 관리
+              </button>
+              <button
+                className={`section-tab ${activeSection === 'prompts' ? 'active' : ''}`}
+                onClick={() => setActiveSection('prompts')}
+              >
+                프롬프트 관리
+              </button>
+              <button
+                className={`section-tab ${activeSection === 'guides' ? 'active' : ''}`}
+                onClick={() => setActiveSection('guides')}
+              >
+                가이드 관리
+              </button>
+            </div>
 
-      {activeSection === 'guides' && (
-        <div style={{ marginBottom: '32px' }}>
-          <GuideManager />
-        </div>
-      )}
+            {activeSection === 'guides' && (
+              <div style={{ marginBottom: '32px' }}>
+                <GuideManager />
+              </div>
+            )}
 
-      {activeSection === 'stats' && (
+            {activeSection === 'users' && (
+              <div className="admin-section">
+                <div className="admin-section-header">
+                  <h2>사용자 관리</h2>
+                </div>
+                {serverStats && (
+                  <div className="admin-stats-grid" style={{ marginBottom: '24px' }}>
+                    <div className="stat-card">
+                      <div className="stat-label">총 사용자</div>
+                      <div className="stat-value">{serverStats.overview?.totalUsers?.toLocaleString() || 0}</div>
+                    </div>
+                    <div className="stat-card">
+                      <div className="stat-label">활성 사용자</div>
+                      <div className="stat-value">{serverStats.overview?.activeUsers?.toLocaleString() || 0}</div>
+                    </div>
+                  </div>
+                )}
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>이메일</th>
+                        <th>이름</th>
+                        <th>Tier</th>
+                        <th>상태</th>
+                        <th>가입일</th>
+                        <th>액션</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="no-data">
+                            사용자가 없습니다
+                          </td>
+                        </tr>
+                      ) : (
+                        users.map((user) => (
+                          <tr key={user.id}>
+                            <td>{user.email}</td>
+                            <td>{user.name || '-'}</td>
+                            <td>
+                              <span className={`category-badge tier-${user.tier.toLowerCase()}`}>
+                                {user.tier}
+                              </span>
+                            </td>
+                            <td>{user.subscriptionStatus}</td>
+                            <td>{new Date(user.createdAt).toLocaleDateString('ko-KR')}</td>
+                            <td>
+                              <button
+                                className="admin-action-button"
+                                onClick={() => {
+                                  console.log('사용자 편집:', user.id)
+                                }}
+                              >
+                                편집
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="admin-pagination">
+                  <button
+                    onClick={() => setUsersPage(Math.max(1, usersPage - 1))}
+                    disabled={usersPage === 1}
+                  >
+                    이전
+                  </button>
+                  <span>페이지 {usersPage}</span>
+                  <button
+                    onClick={() => setUsersPage(usersPage + 1)}
+                  >
+                    다음
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'prompts' && (
+              <div className="admin-section">
+                <div className="admin-section-header">
+                  <h2>프롬프트 관리</h2>
+                </div>
+                {serverStats && (
+                  <div className="admin-stats-grid" style={{ marginBottom: '24px' }}>
+                    <div className="stat-card">
+                      <div className="stat-label">총 프롬프트</div>
+                      <div className="stat-value">{serverStats.overview?.totalPrompts?.toLocaleString() || 0}</div>
+                    </div>
+                  </div>
+                )}
+                <div className="admin-table-container">
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>제목</th>
+                        <th>카테고리</th>
+                        <th>사용자</th>
+                        <th>모델</th>
+                        <th>생성일</th>
+                        <th>액션</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {serverPrompts.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="no-data">
+                            프롬프트가 없습니다
+                          </td>
+                        </tr>
+                      ) : (
+                        serverPrompts.map((prompt) => (
+                          <tr key={prompt.id}>
+                            <td>{prompt.title || prompt.content.substring(0, 50)}</td>
+                            <td>
+                              <span className={`category-badge category-${prompt.category.toLowerCase()}`}>
+                                {prompt.category}
+                              </span>
+                            </td>
+                            <td>{prompt.user?.email || '-'}</td>
+                            <td>{prompt.model || '-'}</td>
+                            <td>{new Date(prompt.createdAt).toLocaleDateString('ko-KR')}</td>
+                            <td>
+                              <button
+                                className="admin-action-button"
+                                onClick={() => {
+                                  console.log('프롬프트 상세:', prompt.id)
+                                }}
+                              >
+                                상세
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+                <div className="admin-pagination">
+                  <button
+                    onClick={() => setPromptsPage(Math.max(1, promptsPage - 1))}
+                    disabled={promptsPage === 1}
+                  >
+                    이전
+                  </button>
+                  <span>페이지 {promptsPage}</span>
+                  <button
+                    onClick={() => setPromptsPage(promptsPage + 1)}
+                  >
+                    다음
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {activeSection === 'stats' && (
         <>
           <div className="admin-stats-grid">
             <div className="stat-card stat-card-clickable" onClick={() => setIsGraphModalOpen(true)}>

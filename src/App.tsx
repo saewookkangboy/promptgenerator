@@ -5,16 +5,22 @@ import VideoPromptGenerator from './components/VideoPromptGenerator'
 import EngineeringPromptGenerator from './components/EngineeringPromptGenerator'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
+import Login from './components/Login'
+import Register from './components/Register'
+import { useAuth } from './contexts/AuthContext'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import './App.css'
 
 type TabType = 'text' | 'image' | 'video' | 'engineering'
+type AuthMode = 'login' | 'register'
 
 function App() {
+  const { user, loading } = useAuth()
   const [activeTab, setActiveTab] = useState<TabType>('text')
   const [isAdmin, setIsAdmin] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
+  const [authMode, setAuthMode] = useState<AuthMode>('login')
 
   useEffect(() => {
     // 방문수 증가
@@ -26,6 +32,36 @@ function App() {
     // 프롬프트 가이드 스케줄러 초기화
     initializeScheduler()
   }, [])
+
+  // 로딩 중
+  if (loading) {
+    return (
+      <div className="app">
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <p>로딩 중...</p>
+        </div>
+      </div>
+    )
+  }
+
+  // 로그인되지 않은 경우
+  if (!user) {
+    return (
+      <div className="app">
+        {authMode === 'login' ? (
+          <Login
+            onSwitchToRegister={() => setAuthMode('register')}
+            onSuccess={() => setAuthMode('login')}
+          />
+        ) : (
+          <Register
+            onSwitchToLogin={() => setAuthMode('login')}
+            onSuccess={() => setAuthMode('login')}
+          />
+        )}
+      </div>
+    )
+  }
 
   const handleAdminLogin = () => {
     setIsAdminAuthenticated(true)
