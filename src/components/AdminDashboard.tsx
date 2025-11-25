@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { getStats, getPromptRecords, getVisitCount, clearAdminAuth, PromptRecord } from '../utils/storage'
 import VisitGraphModal from './VisitGraphModal'
+import GuideManager from './GuideManager'
 import './AdminDashboard.css'
 
 interface AdminDashboardProps {
@@ -15,6 +16,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'text' | 'image' | 'video' | 'engineering'>('all')
   const [isGraphModalOpen, setIsGraphModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<PromptRecord | null>(null)
+  const [activeSection, setActiveSection] = useState<'stats' | 'guides'>('stats')
 
   useEffect(() => {
     loadData()
@@ -123,35 +125,58 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
         </div>
       </div>
 
-      <div className="admin-stats-grid">
-        <div className="stat-card stat-card-clickable" onClick={() => setIsGraphModalOpen(true)}>
-          <div className="stat-label">총 방문수</div>
-          <div className="stat-value">{visitCount.toLocaleString()}</div>
-          <div className="stat-hint">클릭하여 그래프 보기</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">총 생성 건수</div>
-          <div className="stat-value">{stats.total.toLocaleString()}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">텍스트 콘텐츠</div>
-          <div className="stat-value">{stats.text.toLocaleString()}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">이미지 생성</div>
-          <div className="stat-value">{stats.image.toLocaleString()}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">동영상 생성</div>
-          <div className="stat-value">{stats.video.toLocaleString()}</div>
-        </div>
-        <div className="stat-card">
-          <div className="stat-label">프롬프트 엔지니어링</div>
-          <div className="stat-value">{stats.engineering.toLocaleString()}</div>
-        </div>
+      <div className="admin-section-tabs">
+        <button
+          className={`section-tab ${activeSection === 'stats' ? 'active' : ''}`}
+          onClick={() => setActiveSection('stats')}
+        >
+          통계 및 기록
+        </button>
+        <button
+          className={`section-tab ${activeSection === 'guides' ? 'active' : ''}`}
+          onClick={() => setActiveSection('guides')}
+        >
+          가이드 관리
+        </button>
       </div>
 
-      <div className="admin-section">
+      {activeSection === 'guides' && (
+        <div style={{ marginBottom: '32px' }}>
+          <GuideManager />
+        </div>
+      )}
+
+      {activeSection === 'stats' && (
+        <>
+          <div className="admin-stats-grid">
+            <div className="stat-card stat-card-clickable" onClick={() => setIsGraphModalOpen(true)}>
+              <div className="stat-label">총 방문수</div>
+              <div className="stat-value">{visitCount.toLocaleString()}</div>
+              <div className="stat-hint">클릭하여 그래프 보기</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">총 생성 건수</div>
+              <div className="stat-value">{stats.total.toLocaleString()}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">텍스트 콘텐츠</div>
+              <div className="stat-value">{stats.text.toLocaleString()}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">이미지 생성</div>
+              <div className="stat-value">{stats.image.toLocaleString()}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">동영상 생성</div>
+              <div className="stat-value">{stats.video.toLocaleString()}</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-label">프롬프트 엔지니어링</div>
+              <div className="stat-value">{stats.engineering.toLocaleString()}</div>
+            </div>
+          </div>
+
+          <div className="admin-section">
         <div className="admin-section-header">
           <h2>프롬프트 생성 기록</h2>
           <div className="category-filter">
@@ -268,7 +293,9 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
             </div>
           </div>
         )}
-      </div>
+          </div>
+        </>
+      )}
 
       <VisitGraphModal
         isOpen={isGraphModalOpen}

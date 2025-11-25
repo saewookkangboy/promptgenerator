@@ -1,6 +1,8 @@
 // 기본 프롬프트 생성기 추상 클래스
 
 import { BasePromptOptions, PromptResult } from '../../types/prompt.types'
+import { ModelName } from '../../types/prompt-guide.types'
+import { getLatestGuide as getGuide } from '../../utils/prompt-guide-storage'
 
 export abstract class BasePromptGenerator {
   /**
@@ -8,6 +10,30 @@ export abstract class BasePromptGenerator {
    * 각 하위 클래스에서 구현해야 함
    */
   abstract generate(options: BasePromptOptions): PromptResult
+  
+  /**
+   * 최신 가이드 적용
+   */
+  protected applyLatestGuide(modelName?: ModelName): string {
+    if (!modelName) return ''
+    
+    const guide = getGuide(modelName)
+    if (!guide) return ''
+    
+    const tips: string[] = []
+    
+    if (guide.content.bestPractices && guide.content.bestPractices.length > 0) {
+      tips.push(...guide.content.bestPractices.slice(0, 3)) // 최대 3개
+    }
+    
+    if (guide.content.tips && guide.content.tips.length > 0) {
+      tips.push(...guide.content.tips.slice(0, 2)) // 최대 2개
+    }
+    
+    return tips.length > 0
+      ? `\n\n[최신 가이드 적용]\n${tips.join('\n')}`
+      : ''
+  }
 
   /**
    * 타겟 독자 정보를 문자열로 변환

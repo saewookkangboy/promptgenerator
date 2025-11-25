@@ -6,6 +6,7 @@ import EngineeringPromptGenerator from './components/EngineeringPromptGenerator'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
+import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import './App.css'
 
 type TabType = 'text' | 'image' | 'video' | 'engineering'
@@ -21,6 +22,9 @@ function App() {
     
     // Admin 인증 상태 확인
     setIsAdminAuthenticated(getAdminAuth())
+    
+    // 프롬프트 가이드 스케줄러 초기화
+    initializeScheduler()
   }, [])
 
   const handleAdminLogin = () => {
