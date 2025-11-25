@@ -77,6 +77,67 @@ WizardState {
 3. **UI 표시**
    - 결과 카드에 “DeepL + Compress” 배지 표시, 토큰 절감률(%), 처리 시간(ms) 표시.
 
+### 단계별 처리 흐름 (시퀀스)
+```
+Client -> Server /api/translate -> DeepL -> Server
+Server -> LLM Summarizer (optional) -> Server
+Server -> Client (translations + metadata)
+Client -> UI 렌더링 (배지/토큰절감/로그 링크)
+```
+
+1. **요청 수신**
+   - `POST /api/translate` payload에 `texts[]`, `compress=true`, `context="meta|context|hashtags"` 등 메타정보 추가.
+2. **DeepL 변환**
+   - 병렬 호출(최대 batch 50개) → 실패 시 재시도(최대 2회, exponential backoff).
+3. **LLM 요약**
+   - `compress=true`일 경우 `POST /api/llm/summarize`로 내부 호출.
+   - 모델 기본값: `gpt-4o-mini`(OpenAI) / 대체: `claude-3.5-haiku`.
+   - Prompt 템플릿: “Summarize for prompt context, keep key instructions, max 120 tokens”.
+4. **메타데이터 기록**
+   - `pipeline_log` 테이블 또는 `logs/pipeline.log`에 JSON append:
+     ```json
+     {
+       "id": "uuid",
+       "timestamp": "...",
+       "texts": 2,
+       "deepl_ms": 820,
+       "llm_ms": 410,
+       "tokens_in": 580,
+       "tokens_out": 190,
+       "compression": 0.67,
+       "status": "success"
+     }
+     ```
+5. **응답 구조**
+   ```json
+   {
+     "translations": ["...", "..."],
+     "metadata": {
+       "deeplMs": 820,
+       "llmMs": 410,
+       "compressionRatio": 0.67,
+       "tokenSaved": 390
+     }
+   }
+   ```
+
+### 모니터링 & 알림
+- **Dashboards**
+  - Grafana/Metabase에 `compressionRatio`, `successRate`, `avgLatency` 차트.
+- **Alerts**
+  - DeepL error rate > 10% → Slack 알림.
+  - LLM 비용이 하루 $10 이상 → 이메일 리포트.
+
+### 보안/비용 고려
+- API 키는 `server/.env`에서 관리, Vault 연계 고려.
+- LLM 호출 전 `token_estimator`로 예상 비용 계산, 임계값 초과 시 요약 생략.
+
+### 개발 단계
+1. Server 파이프라인 모듈 (`services/translationPipeline.ts`)
+2. Logging + Dashboard 설정
+3. Client UI 업데이트 (배지/토큰 절감 표시)
+4. 부하/비용 테스트 → 운영 플래그 `ENABLE_LLM_COMPRESS`
+
 ### 기술 스택 & 의존성
 - DeepL REST API (기존 키 활용), OpenAI GPT-4o-mini 또는 Claude 3 Sonnet으로 요약.
 - 서버에서 파이프라인 실행 → 클라이언트는 번역 완료된 데이터만 수신.
