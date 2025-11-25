@@ -66,10 +66,27 @@ const TONE_STYLE_OPTIONS: { value: ToneStyle; label: string; description: string
   { value: 'explanatory', label: '설명적인 말투', description: '상세하고 이해하기 쉬운 설명' },
 ]
 
+const GOAL_OPTIONS = [
+  { value: 'awareness', label: '브랜드 인지도 강화' },
+  { value: 'conversion', label: '전환/구매 유도' },
+  { value: 'engagement', label: '참여/소통 활성화' },
+  { value: 'education', label: '교육/인사이트 제공' },
+]
+
+const GUIDELINE_CHIPS: Record<ContentType, string[]> = {
+  blog: ['SEO 키워드', '질문 기반 서술', 'CTA 포함'],
+  linkedin: ['전문 인사이트', '네트워킹 유도', '전문 톤'],
+  facebook: ['친근한 톤', '질문 던지기', '공유 유도'],
+  instagram: ['감성적 표현', '해시태그 최적화', 'CTA'],
+  youtube: ['검색 키워드', '훅 문장', '타임스탬프'],
+  general: ['의도 명확화', '자연어 유지', '핵심 메시지'],
+}
+
 const WIZARD_STEPS = [
   { id: 1, label: '목표 & 채널' },
   { id: 2, label: '타겟 & 톤' },
   { id: 3, label: '자연어 프롬프트' },
+  { id: 4, label: '구조화 프리뷰' },
 ]
 
 function PromptGenerator() {
@@ -82,6 +99,7 @@ function PromptGenerator() {
     occupation: '',
     conversational: false,
     toneStyles: [],
+    goal: 'awareness',
   })
   const [results, setResults] = useState<ReturnType<typeof generatePrompts> | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -89,6 +107,22 @@ function PromptGenerator() {
   const [hashtagsCopied, setHashtagsCopied] = useState(false)
   const [useWizardMode, setUseWizardMode] = useState(true)
   const [wizardStep, setWizardStep] = useState(1)
+
+  const buildGenerationOptions = useCallback((): DetailedOptions => {
+    return {
+      age: detailedOptions.age || undefined,
+      gender: detailedOptions.gender || undefined,
+      occupation: detailedOptions.occupation || undefined,
+      conversational:
+        detailedOptions.conversational ||
+        (detailedOptions.toneStyles?.includes('conversational') ?? false),
+      toneStyles:
+        detailedOptions.toneStyles && detailedOptions.toneStyles.length > 0
+          ? detailedOptions.toneStyles
+          : undefined,
+      goal: detailedOptions.goal || undefined,
+    }
+  }, [detailedOptions])
 
   const handleGenerate = useCallback(() => {
     // 입력 검증
@@ -104,13 +138,7 @@ function PromptGenerator() {
     // 비동기 처리 시뮬레이션 (실제로는 즉시 생성되지만 UX를 위해)
     setTimeout(async () => {
       try {
-        const options: DetailedOptions = {
-          age: detailedOptions.age || undefined,
-          gender: detailedOptions.gender || undefined,
-          occupation: detailedOptions.occupation || undefined,
-          conversational: detailedOptions.conversational || (detailedOptions.toneStyles?.includes('conversational') ?? false),
-          toneStyles: detailedOptions.toneStyles && detailedOptions.toneStyles.length > 0 ? detailedOptions.toneStyles : undefined,
-        }
+        const options = buildGenerationOptions()
 
         const generated = generatePrompts(userPrompt, contentType, options)
 
@@ -181,6 +209,7 @@ function PromptGenerator() {
             occupation: detailedOptions.occupation,
             conversational: detailedOptions.conversational,
             toneStyles: detailedOptions.toneStyles,
+            goal: detailedOptions.goal,
           },
         })
 
@@ -197,7 +226,8 @@ function PromptGenerator() {
               gender: detailedOptions.gender,
               occupation: detailedOptions.occupation,
               conversational: detailedOptions.conversational,
-            toneStyles: detailedOptions.toneStyles,
+              toneStyles: detailedOptions.toneStyles,
+              goal: detailedOptions.goal,
               contextPrompt: generated.contextPrompt,
               hashtags: generated.hashtags,
             },
@@ -214,15 +244,30 @@ function PromptGenerator() {
         setIsGenerating(false)
       }
     }, 300)
-  }, [userPrompt, contentType, detailedOptions])
+  }, [userPrompt, contentType, detailedOptions, buildGenerationOptions])
 
   const handleDismissError = useCallback(() => {
     setError(null)
   }, [])
 
   const isFormValid = useMemo(() => {
-    return userPrompt.trim().length >= 3
-  }, [userPrompt])
+    return userPrompt.trim().length >= 3 && !!detailedOptions.goal
+  }, [userPrompt, detailedOptions.goal])
+
+  const previewResult = useMemo(() => {
+    if (!isFormValid) return null
+    try {
+      return generatePrompts(userPrompt, contentType, buildGenerationOptions())
+    } catch (err) {
+      console.warn('Preview generation failed', err)
+      return null
+    }
+  }, [isFormValid, userPrompt, contentType, buildGenerationOptions])
+
+  const guidelineChips = GUIDELINE_CHIPS[contentType] || []
+  const tokenUsage = userPrompt.trim().length
+  const tokenLimit = 1200
+  const tokenRatio = Math.min(tokenUsage / tokenLimit, 1)
 
   const handleCopyHashtags = useCallback(async () => {
     if (!results?.hashtags?.length) return
@@ -268,9 +313,36 @@ function PromptGenerator() {
     </div>
   )
 
+  const renderGoalSelector = () => (
+    <div className="form-group">
+      <label htmlFor="content-goal">콘텐츠 목표</label>
+      <select
+        id="content-goal"
+        value={detailedOptions.goal || 'awareness'}
+        onChange={(e) =>
+          setDetailedOptions({
+            ...detailedOptions,
+            goal: e.target.value,
+          })
+        }
+        className="content-type-select"
+      >
+        {GOAL_OPTIONS.map((goalOption) => (
+          <option key={goalOption.value} value={goalOption.value}>
+            {goalOption.label}
+          </option>
+        ))}
+      </select>
+      <p className="helper-text">
+        목표에 맞춰 템플릿과 가이드라인이 자동으로 업데이트됩니다.
+      </p>
+    </div>
+  )
+
   const renderDetailedOptionsGrid = () => (
     <div className="detailed-options">
       <div className="options-grid">
+        {renderGoalSelector()}
         <div className="form-group">
           <label htmlFor="age">나이</label>
           <select
@@ -470,7 +542,10 @@ function PromptGenerator() {
               <p className="wizard-panel__hint">
                 생성하고자 하는 채널과 목적을 먼저 정의하면 이후 단계에서 맞춤 가이드를 받을 수 있습니다.
               </p>
-              {renderContentTypeSelector()}
+              <div className="wizard-dual-grid">
+                {renderContentTypeSelector()}
+                {renderGoalSelector()}
+              </div>
               <div className="wizard-panel__summary">
                 <p>선택한 채널에 맞춰 메타 템플릿이 자동 구성됩니다.</p>
                 <ul>
@@ -496,6 +571,53 @@ function PromptGenerator() {
                 자연어로 원하는 내용을 자유롭게 작성하면 컨텍스트 템플릿의 상황/지시/요약이 자동으로 구성됩니다.
               </p>
               {renderPromptTextarea()}
+              <div className="guideline-chips">
+                {guidelineChips.map((chip) => (
+                  <span key={chip} className="guideline-chip">
+                    {chip}
+                  </span>
+                ))}
+              </div>
+              <div className="token-meter">
+                <div className="token-meter__label">
+                  <span>입력 길이</span>
+                  <span>
+                    {tokenUsage} / {tokenLimit} chars
+                  </span>
+                </div>
+                <div className="token-meter__bar">
+                  <div
+                    className="token-meter__bar-fill"
+                    style={{ width: `${tokenRatio * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {wizardStep === 4 && (
+            <div className="wizard-panel">
+              <p className="wizard-panel__hint">
+                입력값으로 생성될 템플릿을 미리 확인한 뒤 최종 출력을 생성하세요.
+              </p>
+              {previewResult ? (
+                <div className="wizard-preview-grid">
+                  {previewResult.metaTemplate && (
+                    <StructuredPromptCard
+                      title="메타 템플릿 미리보기"
+                      template={previewResult.metaTemplate}
+                    />
+                  )}
+                  {previewResult.contextTemplate && (
+                    <StructuredPromptCard
+                      title="컨텍스트 템플릿 미리보기"
+                      template={previewResult.contextTemplate}
+                    />
+                  )}
+                </div>
+              ) : (
+                <p className="helper-text">프롬프트를 입력하면 미리보기가 표시됩니다.</p>
+              )}
             </div>
           )}
 

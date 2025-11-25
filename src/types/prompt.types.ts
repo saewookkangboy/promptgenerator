@@ -73,6 +73,7 @@ export interface DetailedOptions {
   occupation?: string
   conversational: boolean // 하위 호환성 유지
   toneStyles?: ToneStyle[] // 새로운 어투 옵션 (다중 선택 가능)
+  goal?: string
 }
 
 

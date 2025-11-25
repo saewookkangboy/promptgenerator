@@ -28,12 +28,39 @@ const CONTENT_TYPE_INFO = {
   },
 }
 
+const CONTENT_GOALS: Record<
+  string,
+  { label: string; description: string; checklist: string[] }
+> = {
+  awareness: {
+    label: '브랜드 인지도 강화',
+    description: '브랜드 스토리와 핵심 가치를 강조하여 자연스럽게 각인시킵니다.',
+    checklist: ['브랜드 USP를 1회 이상 언급', '감성적 연결 요소 포함'],
+  },
+  conversion: {
+    label: '전환/구매 유도',
+    description: '명확한 혜택과 CTA로 행동을 촉진합니다.',
+    checklist: ['혜택/문제 해결 메시지', '구체적인 CTA 문장'],
+  },
+  engagement: {
+    label: '참여/소통 활성화',
+    description: '질문이나 참여 유도를 통해 상호작용을 증가시킵니다.',
+    checklist: ['독자에게 질문 던지기', '댓글/공유 유도 표현'],
+  },
+  education: {
+    label: '교육/인사이트 제공',
+    description: '체계적인 정보 전달과 예시로 전문성을 구축합니다.',
+    checklist: ['핵심 개념 정의', '사례 또는 데이터 제공'],
+  },
+}
+
 export function generatePrompts(
   userPrompt: string,
   contentType: ContentType,
   options?: DetailedOptions
 ): PromptResult {
   const typeInfo = CONTENT_TYPE_INFO[contentType]
+  const goalInfo = options?.goal ? CONTENT_GOALS[options.goal] : undefined
   
   // 타겟 독자 정보 구성
   const targetAudience = buildTargetAudience(options)
@@ -47,12 +74,15 @@ export function generatePrompts(
 
 주제: ${userPrompt}
 ${targetAudience ? `\n타겟 독자: ${targetAudience}` : ''}
+${goalInfo ? `\n콘텐츠 목표: ${goalInfo.label}` : ''}
 
 요구사항:
 - ${typeInfo.requirements}
 - 독자의 관심을 끌고 참여를 유도하는 내용
 - 명확하고 이해하기 쉬운 구조
 - 타겟 독자에게 가치를 제공하는 정보
+${goalInfo ? `- ${goalInfo.description}` : ''}
+${goalInfo?.checklist?.length ? goalInfo.checklist.map((item) => `- ${item}`).join('\n') : ''}
 ${toneAndStyle ? `- ${toneAndStyle}` : ''}
 
 콘텐츠를 작성할 때 다음을 고려해주세요:
@@ -67,6 +97,7 @@ ${toneAndStyle ? `- ${toneAndStyle}` : ''}
 콘텐츠 유형: ${typeInfo.name}
 원본 주제: ${userPrompt}
 ${targetAudience ? `타겟 독자: ${targetAudience}` : ''}
+${goalInfo ? `콘텐츠 목표: ${goalInfo.label}` : ''}
 ${toneAndStyle ? `톤앤매너: ${toneAndStyle}` : ''}
 
 작성 가이드라인:
@@ -90,6 +121,8 @@ ${options?.conversational ? '- 대화체 사용 (구어체, 친근한 표현)' :
     requirements: typeInfo.requirements,
     targetAudience,
     toneAndStyle,
+    goal: goalInfo?.label,
+    goalDescription: goalInfo?.description,
   })
   const contextTemplate = buildContextTemplate({
     userPrompt,
@@ -263,6 +296,8 @@ function buildMetaTemplate({
   requirements,
   targetAudience,
   toneAndStyle,
+  goal,
+  goalDescription,
 }: {
   userPrompt: string
   contentType: ContentType
@@ -270,6 +305,8 @@ function buildMetaTemplate({
   requirements: string
   targetAudience?: string
   toneAndStyle?: string
+  goal?: string
+  goalDescription?: string
 }): PromptTemplate {
   const structureSummary = summarizeStructure(getStructureRequirements(contentType))
   const keyConstraints = summarizeConstraints(requirements, toneAndStyle)
@@ -288,6 +325,12 @@ function buildMetaTemplate({
         title: '주제',
         content: userPrompt.trim(),
         helperText: '사용자가 입력한 자연어 요구사항',
+      },
+      {
+        key: 'goal',
+        title: '콘텐츠 목표',
+        content: goal || '명확한 메시지 전달',
+        helperText: goalDescription || '달성하고 싶은 비즈니스/커뮤니케이션 목적',
       },
       {
         key: 'audience',

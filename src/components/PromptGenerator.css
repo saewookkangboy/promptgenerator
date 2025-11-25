@@ -124,6 +124,12 @@
   margin-top: 40px;
 }
 
+.helper-text {
+  margin-top: 4px;
+  font-size: 0.8rem;
+  color: #666;
+}
+
 .wizard-toggle {
   display: flex;
   justify-content: space-between;
@@ -214,6 +220,19 @@
   border: 1px solid #eee;
 }
 
+.wizard-dual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.wizard-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 16px;
+}
+
 .wizard-panel__hint {
   margin-top: 0;
   color: #666;
@@ -260,6 +279,46 @@
 .wizard-nav-button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.guideline-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.guideline-chip {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #efefef;
+  font-size: 0.8rem;
+}
+
+.token-meter {
+  margin-top: 16px;
+}
+
+.token-meter__label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #555;
+  margin-bottom: 4px;
+}
+
+.token-meter__bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #f0f0f0;
+  overflow: hidden;
+}
+
+.token-meter__bar-fill {
+  height: 100%;
+  background: #000;
+  transition: width 0.2s ease;
 }
 
 .detailed-options-section {
