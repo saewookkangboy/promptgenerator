@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
 import { convertToNativeEnglish } from '../utils/englishTranslator'
+import { showNotification } from '../utils/notifications'
 import './ResultCard.css'
 
 interface ResultCardProps {
@@ -35,7 +36,7 @@ function ResultCard({ title, content, englishVersion, showEnglishToggle = false 
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (err) {
-      alert('복사에 실패했습니다. 텍스트를 직접 선택하여 복사해주세요.')
+      showNotification('복사에 실패했습니다. 텍스트를 직접 선택하여 복사해주세요.', 'error')
     }
   }, [displayContent])
 

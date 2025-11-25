@@ -25,7 +25,7 @@ function ScenePromptDisplay({ scene, index }: { scene: any; index: number }) {
       setCopied(true)
       setTimeout(() => setCopied(false), 1500)
     } catch (error) {
-      alert('복사에 실패했습니다. 텍스트를 직접 선택하여 복사해주세요.')
+      showNotification('복사에 실패했습니다. 텍스트를 직접 선택하여 복사해주세요.', 'error')
     }
   }
   
