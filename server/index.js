@@ -82,19 +82,23 @@ app.get('/api/guides/status', (req, res) => {
 
 // 프리미엄 기능 API 라우트
 try {
-  const promptsRouter = require('./routes/prompts')
-  const authRouter = require('./routes/auth')
-  const usersRouter = require('./routes/users')
-  const adminRouter = require('./routes/admin')
+  // TypeScript로 컴파일된 JavaScript 파일 사용
+  const promptsRouter = require('./routes/routes/prompts')
+  const authRouter = require('./routes/routes/auth')
+  const usersRouter = require('./routes/routes/users')
+  const adminRouter = require('./routes/routes/admin')
   
-  app.use('/api/auth', authRouter)
-  app.use('/api/users', usersRouter)
-  app.use('/api/prompts', promptsRouter)
-  app.use('/api/admin', adminRouter)
+  app.use('/api/auth', authRouter.default || authRouter)
+  app.use('/api/users', usersRouter.default || usersRouter)
+  app.use('/api/prompts', promptsRouter.default || promptsRouter)
+  app.use('/api/admin', adminRouter.default || adminRouter)
   
   console.log('✅ 프리미엄 기능 API 라우트 로드됨')
 } catch (error) {
   console.warn('⚠️  프리미엄 기능 API 라우트 로드 실패 (데이터베이스 미설정 가능):', error.message)
+  if (process.env.NODE_ENV === 'development') {
+    console.error('상세 오류:', error)
+  }
 }
 
 // 서버 시작
