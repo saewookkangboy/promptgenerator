@@ -5,57 +5,69 @@
 .app-header {
   text-align: center;
   color: #000000;
-  margin-bottom: 42px;
-  padding: 28px 20px;
+  margin-bottom: 32px;
+  padding: 32px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .app-header h1 {
   font-size: 2.5rem;
-  margin-bottom: 7px;
-  font-weight: 300;
+  margin-bottom: 8px;
+  font-weight: 400;
   letter-spacing: -0.02em;
+  line-height: 1.2;
 }
 
 .app-header p {
   font-size: 1rem;
   font-weight: 300;
-  color: #000000;
-  opacity: 0.6;
+  color: #666666;
+  margin: 0;
 }
 
 .tabs {
   display: flex;
   gap: 0;
-  border-bottom: 1px solid #000000;
-  margin-bottom: 40px;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 32px;
   max-width: 1200px;
   margin-left: auto;
   margin-right: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .tab-button {
-  padding: 16px 24px;
-  background: #ffffff;
+  padding: 12px 20px;
+  background: transparent;
   border: none;
-  border-bottom: 2px solid #000000;
-  color: #000000;
+  border-radius: 8px;
+  color: #666666;
   font-size: 0.9rem;
   font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  text-transform: none;
+  letter-spacing: 0;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s ease;
   position: relative;
-  top: 1px;
+  white-space: nowrap;
+  flex: 1;
+  min-width: fit-content;
 }
 
 .tab-button:hover:not(:disabled) {
-  background: #000000;
-  color: #ffffff;
+  background: #f5f5f5;
+  color: #000000;
 }
 
 .tab-button.active {
-  border-bottom: 2px solid #000000;
+  background: #000000;
+  color: #ffffff;
   font-weight: 500;
 }
 
@@ -83,23 +95,28 @@
 /* 반응형 개선 */
 @media (max-width: 768px) {
   .app-header {
-    padding: 14px 12px;
-    margin-bottom: 21px;
+    padding: 24px 16px;
+    margin-bottom: 24px;
+    border-radius: 8px;
   }
 
   .app-header h1 {
-    font-size: 1.8rem;
+    font-size: 1.75rem;
+  }
+
+  .app-header p {
+    font-size: 0.9rem;
   }
 
   .tabs {
     margin-bottom: 24px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
+    border-radius: 8px;
+    padding: 3px;
   }
 
   .tab-button {
-    padding: 12px 16px;
-    font-size: 0.8rem;
+    padding: 10px 16px;
+    font-size: 0.875rem;
     white-space: nowrap;
     flex-shrink: 0;
   }
@@ -110,13 +127,21 @@
 }
 
 @media (max-width: 480px) {
+  .app-header {
+    padding: 20px 12px;
+  }
+
   .app-header h1 {
     font-size: 1.5rem;
   }
 
+  .app-header p {
+    font-size: 0.85rem;
+  }
+
   .tab-button {
-    padding: 10px 12px;
-    font-size: 0.75rem;
+    padding: 8px 12px;
+    font-size: 0.8rem;
   }
 }
 

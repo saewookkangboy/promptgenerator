@@ -1,13 +1,15 @@
 .result-card {
   background: #ffffff;
-  border-radius: 0;
+  border-radius: 12px;
   padding: 24px;
-  border: 1px solid #000000;
-  transition: background 0.2s;
+  border: 1px solid #e5e5e5;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .result-card:hover {
-  background: #f5f5f5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transform: translateY(-2px);
 }
 
 .result-card-header {
@@ -18,43 +20,45 @@
 }
 
 .result-card-header h3 {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #000000;
   margin: 0;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .copy-button {
   padding: 8px 16px;
-  background: #000000;
-  color: #ffffff;
-  border: 1px solid #000000;
-  border-radius: 0;
-  font-size: 0.85rem;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  background: #f5f5f5;
+  color: #000000;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.2s ease;
 }
 
 .copy-button:hover {
-  background: #ffffff;
-  color: #000000;
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
 }
 
 .copy-button.copied {
   background: #000000;
   color: #ffffff;
+  border-color: #000000;
 }
 
 .result-card-content {
-  background: #ffffff;
-  border-radius: 0;
+  background: #fafafa;
+  border-radius: 8px;
   padding: 16px;
-  border: 1px solid #000000;
+  border: 1px solid #e5e5e5;
   max-height: 400px;
   overflow-y: auto;
 }
@@ -71,18 +75,19 @@
 
 .hashtags-card {
   background: #ffffff;
-  border-radius: 0;
+  border-radius: 12px;
   padding: 24px;
-  border: 1px solid #000000;
+  border: 1px solid #e5e5e5;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .hashtags-card h3 {
-  font-size: 1.1rem;
+  font-size: 1rem;
   color: #000000;
   margin-bottom: 16px;
-  font-weight: 400;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  font-weight: 600;
+  text-transform: none;
+  letter-spacing: 0;
 }
 
 .hashtags-container {
@@ -94,16 +99,23 @@
 
 .hashtag {
   display: inline-block;
-  padding: 8px 12px;
+  padding: 6px 12px;
+  background: #f5f5f5;
+  color: #000000;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: default;
+  border: 1px solid #e5e5e5;
+  text-transform: none;
+  letter-spacing: 0;
+  transition: all 0.2s ease;
+}
+
+.hashtag:hover {
   background: #000000;
   color: #ffffff;
-  border-radius: 0;
-  font-size: 0.85rem;
-  font-weight: 400;
-  cursor: default;
-  border: 1px solid #000000;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  border-color: #000000;
 }
 
 .hashtags-card .copy-button {

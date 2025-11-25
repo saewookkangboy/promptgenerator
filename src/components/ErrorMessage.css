@@ -3,10 +3,12 @@
   align-items: center;
   justify-content: space-between;
   padding: 16px;
-  background: #ffffff;
-  border: 2px solid #000000;
+  background: #fff5f5;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
   margin-bottom: 24px;
   gap: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .error-content {
@@ -23,15 +25,16 @@
 
 .error-text {
   font-size: 0.9rem;
-  color: #000000;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
+  color: #dc2626;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
 }
 
 .error-dismiss {
   background: transparent;
   border: none;
-  color: #000000;
+  color: #666666;
   font-size: 1.5rem;
   line-height: 1;
   cursor: pointer;
@@ -41,12 +44,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s, color 0.2s;
+  transition: all 0.2s ease;
+  border-radius: 4px;
 }
 
 .error-dismiss:hover {
-  background: #000000;
-  color: #ffffff;
+  background: #fee2e2;
+  color: #dc2626;
 }
 
 .error-dismiss:focus {

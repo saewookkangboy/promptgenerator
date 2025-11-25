@@ -11,10 +11,11 @@ body {
   font-weight: 300;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #ffffff;
+  background: #fafafa;
   min-height: 100vh;
-  padding: 20px;
+  padding: 0;
   color: #000000;
+  line-height: 1.6;
 }
 
 /* IBM Plex Sans KR 폰트 클래스 */
@@ -71,6 +72,13 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   min-height: 100vh;
+  padding: 24px 20px;
+}
+
+@media (max-width: 768px) {
+  #root {
+    padding: 16px 12px;
+  }
 }
 
 /* 접근성 개선 */
