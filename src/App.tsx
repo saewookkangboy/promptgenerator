@@ -63,7 +63,7 @@ function App() {
       <header className="app-header">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div style={{ flex: 1 }}>
-            <h1>프롬프트 생성기</h1>
+            <h1>프롬프트 메이커</h1>
             <p>텍스트, 이미지, 동영상 생성용 프롬프트를 생성합니다</p>
           </div>
           <div className="header-actions">
