@@ -1,4 +1,5 @@
 import { ContentType, PromptResult, DetailedOptions } from '../types'
+import { PromptTemplate } from '../types/prompt.types'
 
 const CONTENT_TYPE_INFO = {
   blog: {
@@ -81,6 +82,22 @@ ${options?.conversational ? '- 대화체 사용 (구어체, 친근한 표현)' :
 - 핵심 메시지 강조
 - 독자 참여 유도`
 
+  // 템플릿 빌드
+  const metaTemplate = buildMetaTemplate({
+    userPrompt,
+    contentType,
+    typeName: typeInfo.name,
+    requirements: typeInfo.requirements,
+    targetAudience,
+    toneAndStyle,
+  })
+  const contextTemplate = buildContextTemplate({
+    userPrompt,
+    typeName: typeInfo.name,
+    targetAudience,
+    toneAndStyle,
+  })
+
   // 해시태그 생성
   const hashtags = generateHashtags(userPrompt, contentType)
 
@@ -88,6 +105,8 @@ ${options?.conversational ? '- 대화체 사용 (구어체, 친근한 표현)' :
     metaPrompt,
     contextPrompt,
     hashtags,
+    metaTemplate,
+    contextTemplate,
   }
 }
 
@@ -235,6 +254,130 @@ function getStructureRequirements(contentType: ContentType): string {
     default:
       return ''
   }
+}
+
+function buildMetaTemplate({
+  userPrompt,
+  contentType,
+  typeName,
+  requirements,
+  targetAudience,
+  toneAndStyle,
+}: {
+  userPrompt: string
+  contentType: ContentType
+  typeName: string
+  requirements: string
+  targetAudience?: string
+  toneAndStyle?: string
+}): PromptTemplate {
+  const structureSummary = summarizeStructure(getStructureRequirements(contentType))
+  const keyConstraints = summarizeConstraints(requirements, toneAndStyle)
+
+  return {
+    title: `${typeName} 메타 프롬프트 템플릿`,
+    description: '목표, 대상, 제약, 톤, 출력 요소를 한 번에 정의하는 표준 구조입니다.',
+    sections: [
+      {
+        key: 'objective',
+        title: '목표',
+        content: `${typeName}에 맞는 고품질 콘텐츠를 생성하고 독자의 행동을 유도합니다.`,
+      },
+      {
+        key: 'topic',
+        title: '주제',
+        content: userPrompt.trim(),
+        helperText: '사용자가 입력한 자연어 요구사항',
+      },
+      {
+        key: 'audience',
+        title: '타겟 & 페르소나',
+        content: targetAudience || '광범위한 일반 대중',
+        helperText: '나이, 성별, 직업 등 세부 속성',
+      },
+      {
+        key: 'constraints',
+        title: '핵심 제약 조건',
+        content: keyConstraints,
+        helperText: 'SEO, 플랫폼 규칙, 길이 등 필수 요건',
+      },
+      {
+        key: 'tone',
+        title: '톤 & 스타일',
+        content: toneAndStyle || '명확하고 신뢰감을 주는 톤',
+        helperText: '어투/표현 방식',
+      },
+      {
+        key: 'output',
+        title: '출력 구조',
+        content: structureSummary,
+        helperText: '콘텐츠 구성 순서',
+      },
+    ],
+  }
+}
+
+function buildContextTemplate({
+  userPrompt,
+  typeName,
+  targetAudience,
+  toneAndStyle,
+}: {
+  userPrompt: string
+  typeName: string
+  targetAudience?: string
+  toneAndStyle?: string
+}): PromptTemplate {
+  return {
+    title: `${typeName} 컨텍스트 템플릿`,
+    description: '상황, 최근 대화 요약, 추가 지시로 구성된 컨텍스트 구조입니다.',
+    sections: [
+      {
+        key: 'situation',
+        title: '상황 설명',
+        content: `사용자가 "${userPrompt.trim()}" 주제로 ${typeName} 생성을 요청했습니다.`,
+        helperText: '현재 생성 요청의 배경과 목표',
+      },
+      {
+        key: 'recentSummary',
+        title: '최근 대화 요약',
+        content: targetAudience
+          ? `타겟 정보: ${targetAudience}. 해당 특성을 반영해 콘텐츠를 준비합니다.`
+          : '추가 대화 정보 없음. 기본 가이드라인을 따릅니다.',
+        helperText: '바로 직전 맥락이나 전달된 보조 정보',
+      },
+      {
+        key: 'additional',
+        title: '추가 지시',
+        content: toneAndStyle
+          ? `톤/스타일 지침: ${toneAndStyle}. CTA 포함 및 독자 가치 강조.`
+          : '명확한 서술, CTA 포함, 독자에게 가치를 제공.',
+        helperText: '모델이 반드시 지켜야 할 추가 지시사항',
+      },
+    ],
+  }
+}
+
+function summarizeStructure(structureText: string): string {
+  return structureText
+    .replace(/\s+/g, ' ')
+    .replace(/-/g, '')
+    .trim()
+}
+
+function summarizeConstraints(requirements: string, toneAndStyle?: string): string {
+  const normalized = requirements
+    .split('\n')
+    .map((line) => line.replace(/^-/, '').trim())
+    .filter(Boolean)
+    .slice(0, 4)
+    .join(', ')
+
+  if (toneAndStyle) {
+    return `${normalized}${normalized ? ', ' : ''}${toneAndStyle}`
+  }
+
+  return normalized
 }
 
 function generateHashtags(userPrompt: string, contentType: ContentType): string[] {

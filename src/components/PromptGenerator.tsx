@@ -8,9 +8,11 @@ import { promptAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
 import { translateTextMap } from '../utils/translation'
 import ResultCard from './ResultCard'
+import StructuredPromptCard from './StructuredPromptCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
 import './PromptGenerator.css'
+import './StructuredPromptCard.css'
 
 const CONTENT_TYPES: { value: ContentType; label: string }[] = [
   { value: 'blog', label: '블로그 콘텐츠' },
@@ -64,6 +66,12 @@ const TONE_STYLE_OPTIONS: { value: ToneStyle; label: string; description: string
   { value: 'explanatory', label: '설명적인 말투', description: '상세하고 이해하기 쉬운 설명' },
 ]
 
+const WIZARD_STEPS = [
+  { id: 1, label: '목표 & 채널' },
+  { id: 2, label: '타겟 & 톤' },
+  { id: 3, label: '자연어 프롬프트' },
+]
+
 function PromptGenerator() {
   const [userPrompt, setUserPrompt] = useState('')
   const [contentType, setContentType] = useState<ContentType>('blog')
@@ -79,6 +87,8 @@ function PromptGenerator() {
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
   const [hashtagsCopied, setHashtagsCopied] = useState(false)
+  const [useWizardMode, setUseWizardMode] = useState(true)
+  const [wizardStep, setWizardStep] = useState(1)
 
   const handleGenerate = useCallback(() => {
     // 입력 검증
@@ -106,13 +116,52 @@ function PromptGenerator() {
 
         let enrichedResults = generated
         try {
-          const translations = await translateTextMap({
+          const translationPayload: Record<string, string> = {
             englishMetaPrompt: generated.metaPrompt,
             englishContextPrompt: generated.contextPrompt,
-          })
+          }
+
+          if (generated.metaTemplate) {
+            generated.metaTemplate.sections.forEach((section) => {
+              translationPayload[`metaTemplate_${section.key}`] = section.content
+            })
+          }
+
+          if (generated.contextTemplate) {
+            generated.contextTemplate.sections.forEach((section) => {
+              translationPayload[`contextTemplate_${section.key}`] = section.content
+            })
+          }
+
+          const translations = await translateTextMap(translationPayload)
 
           if (Object.keys(translations).length > 0) {
-            enrichedResults = { ...generated, ...translations }
+            const { englishMetaPrompt, englishContextPrompt, ...templateTranslations } = translations
+            enrichedResults = {
+              ...generated,
+              englishMetaPrompt,
+              englishContextPrompt,
+            }
+
+            if (generated.metaTemplate) {
+              enrichedResults.englishMetaTemplate = {
+                ...generated.metaTemplate,
+                sections: generated.metaTemplate.sections.map((section) => ({
+                  ...section,
+                  content: templateTranslations[`metaTemplate_${section.key}`] || section.content,
+                })),
+              }
+            }
+
+            if (generated.contextTemplate) {
+              enrichedResults.englishContextTemplate = {
+                ...generated.contextTemplate,
+                sections: generated.contextTemplate.sections.map((section) => ({
+                  ...section,
+                  content: templateTranslations[`contextTemplate_${section.key}`] || section.content,
+                })),
+              }
+            }
           }
         } catch (translationError) {
           console.warn('DeepL translation failed:', translationError)
@@ -187,216 +236,340 @@ function PromptGenerator() {
     }
   }, [results?.hashtags])
 
-  return (
-    <div className="prompt-generator">
-      {error && <ErrorMessage message={error} onDismiss={handleDismissError} />}
-      
-      <div className="input-section">
+  const renderContentTypeSelector = () => (
+    <div className="form-group">
+      <label htmlFor="content-type">콘텐츠 유형 선택</label>
+      <select
+        id="content-type"
+        value={contentType}
+        onChange={(e) => setContentType(e.target.value as ContentType)}
+        className="content-type-select"
+      >
+        {CONTENT_TYPES.map((type) => (
+          <option key={type.value} value={type.value}>
+            {type.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  )
+
+  const renderPromptTextarea = () => (
+    <div className="form-group">
+      <label htmlFor="user-prompt">자연어 프롬프트 입력</label>
+      <textarea
+        id="user-prompt"
+        value={userPrompt}
+        onChange={(e) => setUserPrompt(e.target.value)}
+        placeholder="예: 인공지능의 미래와 사회적 영향에 대해 작성해주세요"
+        className="prompt-input"
+        rows={5}
+      />
+    </div>
+  )
+
+  const renderDetailedOptionsGrid = () => (
+    <div className="detailed-options">
+      <div className="options-grid">
         <div className="form-group">
-          <label htmlFor="content-type">콘텐츠 유형 선택</label>
+          <label htmlFor="age">나이</label>
           <select
-            id="content-type"
-            value={contentType}
-            onChange={(e) => setContentType(e.target.value as ContentType)}
-            className="content-type-select"
+            id="age"
+            value={detailedOptions.age}
+            onChange={(e) =>
+              setDetailedOptions({ ...detailedOptions, age: e.target.value })
+            }
+            className="option-select"
           >
-            {CONTENT_TYPES.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
+            {AGE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>
         </div>
 
         <div className="form-group">
-          <label htmlFor="user-prompt">자연어 프롬프트 입력</label>
-          <textarea
-            id="user-prompt"
-            value={userPrompt}
-            onChange={(e) => setUserPrompt(e.target.value)}
-            placeholder="예: 인공지능의 미래와 사회적 영향에 대해 작성해주세요"
-            className="prompt-input"
-            rows={5}
-          />
+          <label htmlFor="gender">성별</label>
+          <select
+            id="gender"
+            value={detailedOptions.gender}
+            onChange={(e) =>
+              setDetailedOptions({ ...detailedOptions, gender: e.target.value })
+            }
+            className="option-select"
+          >
+            {GENDER_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="detailed-options-section">
-          <button
-            type="button"
-            onClick={() => setShowDetailedOptions(!showDetailedOptions)}
-            className="toggle-options-button"
+        <div className="form-group">
+          <label htmlFor="occupation">타겟의 직업</label>
+          <select
+            id="occupation"
+            value={detailedOptions.occupation}
+            onChange={(e) =>
+              setDetailedOptions({ ...detailedOptions, occupation: e.target.value })
+            }
+            className="option-select"
           >
-            {showDetailedOptions ? '▼' : '▶'} 상세 옵션 {showDetailedOptions ? '접기' : '펼치기'}
-          </button>
+            {OCCUPATION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          {showDetailedOptions && (
-            <div className="detailed-options">
-              <div className="options-grid">
-                <div className="form-group">
-                  <label htmlFor="age">나이</label>
-                  <select
-                    id="age"
-                    value={detailedOptions.age}
-                    onChange={(e) =>
-                      setDetailedOptions({ ...detailedOptions, age: e.target.value })
+        <div className="form-group">
+          <label style={{ marginBottom: '12px', display: 'block', fontWeight: '500' }}>어투 및 말 표현</label>
+          <div className="tone-styles-grid" style={{ 
+            display: 'grid', 
+            gridTemplateColumns: '1fr 1fr', 
+            gap: '12px',
+            marginTop: '8px'
+          }}>
+            {TONE_STYLE_OPTIONS.map((tone) => {
+              const isSelected = detailedOptions.toneStyles?.includes(tone.value) || 
+                (tone.value === 'conversational' && detailedOptions.conversational)
+              return (
+                <label
+                  key={tone.value}
+                  className="tone-style-option"
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    padding: '12px',
+                    border: '1px solid #000',
+                    cursor: 'pointer',
+                    backgroundColor: isSelected ? '#000' : '#fff',
+                    color: isSelected ? '#fff' : '#000',
+                    transition: 'all 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = '#f5f5f5'
                     }
-                    className="option-select"
-                  >
-                    {AGE_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="gender">성별</label>
-                  <select
-                    id="gender"
-                    value={detailedOptions.gender}
-                    onChange={(e) =>
-                      setDetailedOptions({ ...detailedOptions, gender: e.target.value })
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isSelected) {
+                      e.currentTarget.style.backgroundColor = '#fff'
                     }
-                    className="option-select"
-                  >
-                    {GENDER_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label htmlFor="occupation">타겟의 직업</label>
-                  <select
-                    id="occupation"
-                    value={detailedOptions.occupation}
-                    onChange={(e) =>
-                      setDetailedOptions({ ...detailedOptions, occupation: e.target.value })
-                    }
-                    className="option-select"
-                  >
-                    {OCCUPATION_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="form-group">
-                  <label style={{ marginBottom: '12px', display: 'block', fontWeight: '500' }}>어투 및 말 표현</label>
-                  <div className="tone-styles-grid" style={{ 
-                    display: 'grid', 
-                    gridTemplateColumns: '1fr 1fr', 
-                    gap: '12px',
-                    marginTop: '8px'
-                  }}>
-                    {TONE_STYLE_OPTIONS.map((tone) => {
-                      const isSelected = detailedOptions.toneStyles?.includes(tone.value) || 
-                        (tone.value === 'conversational' && detailedOptions.conversational)
-                      return (
-                        <label
-                          key={tone.value}
-                          className="tone-style-option"
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            padding: '12px',
-                            border: '1px solid #000',
-                            cursor: 'pointer',
-                            backgroundColor: isSelected ? '#000' : '#fff',
-                            color: isSelected ? '#fff' : '#000',
-                            transition: 'all 0.2s ease',
-                          }}
-                          onMouseEnter={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.backgroundColor = '#f5f5f5'
-                            }
-                          }}
-                          onMouseLeave={(e) => {
-                            if (!isSelected) {
-                              e.currentTarget.style.backgroundColor = '#fff'
-                            }
-                          }}
-                        >
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-                            <input
-                              type="checkbox"
-                              checked={isSelected}
-                              onChange={(e) => {
-                                const currentStyles = detailedOptions.toneStyles || []
-                                
-                                if (e.target.checked) {
-                                  // 선택됨: 추가
-                                  if (tone.value === 'conversational') {
-                                    // 대화체는 하위 호환성을 위해 conversational도 true로 설정
-                                    setDetailedOptions({
-                                      ...detailedOptions,
-                                      conversational: true,
-                                      toneStyles: [...currentStyles, tone.value],
-                                    })
-                                  } else {
-                                    setDetailedOptions({
-                                      ...detailedOptions,
-                                      toneStyles: [...currentStyles, tone.value],
-                                    })
-                                  }
-                                } else {
-                                  // 선택 해제됨: 제거
-                                  if (tone.value === 'conversational') {
-                                    setDetailedOptions({
-                                      ...detailedOptions,
-                                      conversational: false,
-                                      toneStyles: currentStyles.filter(s => s !== tone.value),
-                                    })
-                                  } else {
-                                    setDetailedOptions({
-                                      ...detailedOptions,
-                                      toneStyles: currentStyles.filter(s => s !== tone.value),
-                                    })
-                                  }
-                                }
-                              }}
-                              style={{ margin: 0, cursor: 'pointer' }}
-                            />
-                            <span style={{ fontWeight: '500', fontSize: '14px' }}>{tone.label}</span>
-                          </div>
-                          <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '24px' }}>
-                            {tone.description}
-                          </span>
-                        </label>
-                      )
-                    })}
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                    <input
+                      type="checkbox"
+                      checked={isSelected}
+                      onChange={(e) => {
+                        const currentStyles = detailedOptions.toneStyles || []
+                        
+                        if (e.target.checked) {
+                          // 선택됨: 추가
+                          if (tone.value === 'conversational') {
+                            // 대화체는 하위 호환성을 위해 conversational도 true로 설정
+                            setDetailedOptions({
+                              ...detailedOptions,
+                              conversational: true,
+                              toneStyles: [...currentStyles, tone.value],
+                            })
+                          } else {
+                            setDetailedOptions({
+                              ...detailedOptions,
+                              toneStyles: [...currentStyles, tone.value],
+                            })
+                          }
+                        } else {
+                          // 선택 해제됨: 제거
+                          if (tone.value === 'conversational') {
+                            setDetailedOptions({
+                              ...detailedOptions,
+                              conversational: false,
+                              toneStyles: currentStyles.filter(s => s !== tone.value),
+                            })
+                          } else {
+                            setDetailedOptions({
+                              ...detailedOptions,
+                              toneStyles: currentStyles.filter(s => s !== tone.value),
+                            })
+                          }
+                        }
+                      }}
+                      style={{ margin: 0, cursor: 'pointer' }}
+                    />
+                    <span style={{ fontWeight: '500', fontSize: '14px' }}>{tone.label}</span>
                   </div>
-                </div>
+                  <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '24px' }}>
+                    {tone.description}
+                  </span>
+                </label>
+              )
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+
+  const handleNextStep = () => {
+    if (wizardStep === WIZARD_STEPS.length) return
+    setWizardStep((prev) => prev + 1)
+  }
+
+  const handlePrevStep = () => {
+    if (wizardStep === 1) return
+    setWizardStep((prev) => prev - 1)
+  }
+
+  return (
+    <div className="prompt-generator">
+      {error && <ErrorMessage message={error} onDismiss={handleDismissError} />}
+      
+      <div className="wizard-toggle">
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            className={`wizard-toggle-button ${useWizardMode ? 'active' : ''}`}
+            onClick={() => setUseWizardMode(true)}
+          >
+            가이드 모드
+          </button>
+          <button
+            className={`wizard-toggle-button ${!useWizardMode ? 'active' : ''}`}
+            onClick={() => setUseWizardMode(false)}
+          >
+            고급 모드
+          </button>
+        </div>
+        <span style={{ fontSize: '0.85rem', color: '#666' }}>
+          {useWizardMode 
+            ? '단계별 안내를 따라 프롬프트를 완성하세요.'
+            : '모든 옵션을 한 번에 설정하세요.'}
+        </span>
+      </div>
+
+      {useWizardMode ? (
+        <div className="wizard-section">
+          <div className="wizard-steps-indicator">
+            {WIZARD_STEPS.map((step) => (
+              <div
+                key={step.id}
+                className={`wizard-step ${wizardStep === step.id ? 'active' : wizardStep > step.id ? 'done' : ''}`}
+              >
+                <span className="wizard-step-number">{step.id}</span>
+                <span>{step.label}</span>
+              </div>
+            ))}
+          </div>
+
+          {wizardStep === 1 && (
+            <div className="wizard-panel">
+              <p className="wizard-panel__hint">
+                생성하고자 하는 채널과 목적을 먼저 정의하면 이후 단계에서 맞춤 가이드를 받을 수 있습니다.
+              </p>
+              {renderContentTypeSelector()}
+              <div className="wizard-panel__summary">
+                <p>선택한 채널에 맞춰 메타 템플릿이 자동 구성됩니다.</p>
+                <ul>
+                  <li>목표/주제/타겟/제약/톤/출력 구조를 자동 정렬</li>
+                  <li>DeepL 번역까지 연동되어 양언어 템플릿 제공</li>
+                </ul>
               </div>
             </div>
           )}
-        </div>
 
-        <button 
-          onClick={handleGenerate} 
-          className="generate-button"
-          disabled={!isFormValid || isGenerating}
-          aria-busy={isGenerating}
-        >
-          {isGenerating ? '생성 중...' : '프롬프트 생성하기'}
-        </button>
-      </div>
+          {wizardStep === 2 && (
+            <div className="wizard-panel">
+              <p className="wizard-panel__hint">
+                타겟 독자와 어투를 선택하면 템플릿의 페르소나와 톤 섹션이 함께 채워집니다.
+              </p>
+              {renderDetailedOptionsGrid()}
+            </div>
+          )}
+
+          {wizardStep === 3 && (
+            <div className="wizard-panel">
+              <p className="wizard-panel__hint">
+                자연어로 원하는 내용을 자유롭게 작성하면 컨텍스트 템플릿의 상황/지시/요약이 자동으로 구성됩니다.
+              </p>
+              {renderPromptTextarea()}
+            </div>
+          )}
+
+          <div className="wizard-navigation">
+            <button
+              className="wizard-nav-button"
+              onClick={handlePrevStep}
+              disabled={wizardStep === 1}
+            >
+              이전 단계
+            </button>
+            <button
+              className="wizard-nav-button primary"
+              onClick={wizardStep === WIZARD_STEPS.length ? handleGenerate : handleNextStep}
+              disabled={wizardStep === WIZARD_STEPS.length ? (!isFormValid || isGenerating) : false}
+            >
+              {wizardStep === WIZARD_STEPS.length
+                ? (isGenerating ? '생성 중...' : '프롬프트 생성하기')
+                : '다음 단계'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="input-section">
+          {renderContentTypeSelector()}
+          {renderPromptTextarea()}
+
+          <div className="detailed-options-section">
+            <button
+              type="button"
+              onClick={() => setShowDetailedOptions(!showDetailedOptions)}
+              className="toggle-options-button"
+            >
+              {showDetailedOptions ? '▼' : '▶'} 상세 옵션 {showDetailedOptions ? '접기' : '펼치기'}
+            </button>
+
+            {showDetailedOptions && renderDetailedOptionsGrid()}
+          </div>
+
+          <button 
+            onClick={handleGenerate} 
+            className="generate-button"
+            disabled={!isFormValid || isGenerating}
+            aria-busy={isGenerating}
+          >
+            {isGenerating ? '생성 중...' : '프롬프트 생성하기'}
+          </button>
+        </div>
+      )}
 
       {isGenerating && <LoadingSpinner message="프롬프트를 생성하고 있습니다..." />}
 
       {results && !isGenerating && (
         <div className="results-section">
+          {results.metaTemplate && (
+            <StructuredPromptCard
+              title="표준 메타 프롬프트 템플릿"
+              template={results.metaTemplate}
+              englishTemplate={results.englishMetaTemplate}
+            />
+          )}
           <ResultCard
             title="메타 프롬프트"
             content={results.metaPrompt}
             englishVersion={results.englishMetaPrompt}
             showEnglishToggle={true}
           />
+          {results.contextTemplate && (
+            <StructuredPromptCard
+              title="컨텍스트 프롬프트 템플릿"
+              template={results.contextTemplate}
+              englishTemplate={results.englishContextTemplate}
+            />
+          )}
           <ResultCard
             title="컨텍스트 프롬프트"
             content={results.contextPrompt}

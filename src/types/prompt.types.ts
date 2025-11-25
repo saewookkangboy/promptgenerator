@@ -21,11 +21,28 @@ export interface BasePromptOptions {
   conversational?: boolean
 }
 
+export interface PromptTemplateSection {
+  key: string
+  title: string
+  content: string
+  helperText?: string
+}
+
+export interface PromptTemplate {
+  title: string
+  description?: string
+  sections: PromptTemplateSection[]
+}
+
 export interface PromptResult {
   metaPrompt: string
   contextPrompt: string
   hashtags: string[]
   fullPrompt?: string
+  metaTemplate?: PromptTemplate
+  contextTemplate?: PromptTemplate
+  englishMetaTemplate?: PromptTemplate
+  englishContextTemplate?: PromptTemplate
   [key: string]: any // 확장 가능한 필드
 }
 

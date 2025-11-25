@@ -124,6 +124,144 @@
   margin-top: 40px;
 }
 
+.wizard-toggle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.wizard-toggle-button {
+  border: 1px solid #e0e0e0;
+  background: #fff;
+  color: #000;
+  padding: 8px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.wizard-toggle-button.active {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+
+.wizard-section {
+  border: 1px solid #f0f0f0;
+  border-radius: 16px;
+  padding: 24px;
+  background: #fafafa;
+  margin-bottom: 32px;
+}
+
+.wizard-steps-indicator {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #e0e0e0;
+  font-size: 0.85rem;
+  color: #777;
+}
+
+.wizard-step-number {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 1px solid #ccc;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+}
+
+.wizard-step.active {
+  border-color: #000;
+  color: #000;
+}
+
+.wizard-step.active .wizard-step-number {
+  border-color: #000;
+}
+
+.wizard-step.done {
+  border-color: #000;
+  color: #000;
+  background: #000;
+  color: #fff;
+}
+
+.wizard-step.done .wizard-step-number {
+  border-color: #fff;
+}
+
+.wizard-panel {
+  background: #fff;
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid #eee;
+}
+
+.wizard-panel__hint {
+  margin-top: 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.wizard-panel__summary {
+  margin-top: 16px;
+  padding: 16px;
+  border-radius: 12px;
+  background: #f5f5f5;
+  font-size: 0.9rem;
+}
+
+.wizard-panel__summary ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+}
+
+.wizard-navigation {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.wizard-nav-button {
+  border: 1px solid #d0d0d0;
+  background: #fff;
+  color: #000;
+  padding: 10px 18px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.wizard-nav-button.primary {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+
+.wizard-nav-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .detailed-options-section {
   margin-top: 24px;
   margin-bottom: 24px;

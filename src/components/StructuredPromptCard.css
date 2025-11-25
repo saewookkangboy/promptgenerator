@@ -1,0 +1,88 @@
+.structured-card {
+  background: #fff;
+  border: 1px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 8px 24px rgba(15, 15, 15, 0.05);
+}
+
+.structured-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.structured-card__description {
+  margin: 4px 0 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.structured-card__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.structured-card__button {
+  border: 1px solid #000;
+  background: #fff;
+  color: #000;
+  padding: 8px 12px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: all 0.2s ease;
+}
+
+.structured-card__button:hover {
+  background: #000;
+  color: #fff;
+}
+
+.structured-card__button.copied {
+  background: #000;
+  color: #fff;
+}
+
+.structured-card__sections {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.structured-card__section {
+  border: 1px solid #f0f0f0;
+  border-radius: 12px;
+  padding: 16px;
+  background: #fafafa;
+}
+
+.structured-card__section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  gap: 8px;
+}
+
+.structured-card__section-title {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.structured-card__section-helper {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.structured-card__section-content {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  color: #333;
+  white-space: pre-wrap;
+}
+
