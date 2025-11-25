@@ -6,7 +6,7 @@ import { validatePrompt } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
-import { translateTextMap } from '../utils/translation'
+import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 import { evaluateQuality, QualityReport } from '../utils/qualityRules'
 import ResultCard from './ResultCard'
 import StructuredPromptCard from './StructuredPromptCard'
@@ -167,7 +167,7 @@ function PromptGenerator() {
             })
           }
 
-          const translations = await translateTextMap(translationPayload)
+          const translations = await translateTextMap(translationPayload, { compress: true, context: 'TEXT' })
 
           if (Object.keys(translations).length > 0) {
             const { englishMetaPrompt, englishContextPrompt, ...templateTranslations } = translations
@@ -200,6 +200,8 @@ function PromptGenerator() {
         } catch (translationError) {
           console.warn('DeepL translation failed:', translationError)
           showNotification('영문 번역에 실패하여 기본 버전을 표시합니다.', 'warning')
+          const fallback = buildNativeEnglishFallback(generated)
+          enrichedResults = { ...generated, ...fallback }
         }
 
         setResults(enrichedResults)

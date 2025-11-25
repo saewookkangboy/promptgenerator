@@ -1,4 +1,6 @@
 import { translationAPI } from './api'
+import { convertToNativeEnglish } from './englishTranslator'
+import { PromptResult } from '../types'
 
 type TextMap = Record<string, string | undefined | null>
 
@@ -7,7 +9,7 @@ type TextMap = Record<string, string | undefined | null>
  */
 export async function translateTextMap(
   textMap: TextMap,
-  options: { targetLang?: string; sourceLang?: string } = {}
+  options: { targetLang?: string; sourceLang?: string; compress?: boolean; context?: string } = {}
 ): Promise<Record<string, string>> {
   const entries = Object.entries(textMap).filter(
     ([, text]) => typeof text === 'string' && text.trim().length > 0
@@ -17,10 +19,7 @@ export async function translateTextMap(
     return {}
   }
 
-  const { translations } = await translationAPI.translateToEnglish(
-    entries.map(([, text]) => text as string),
-    options
-  )
+  const { translations } = await translationAPI.translateToEnglish(entries.map(([, text]) => text as string), options)
 
   const result: Record<string, string> = {}
   entries.forEach(([key], index) => {
@@ -30,5 +29,24 @@ export async function translateTextMap(
   })
 
   return result
+}
+
+export function buildNativeEnglishFallback(result: PromptResult): Partial<PromptResult> {
+  const fallback: Partial<PromptResult> = {}
+
+  if (!result.englishMetaPrompt && result.metaPrompt) {
+    fallback.englishMetaPrompt = convertToNativeEnglish(result.metaPrompt)
+  }
+
+  if (!result.englishContextPrompt && result.contextPrompt) {
+    fallback.englishContextPrompt = convertToNativeEnglish(result.contextPrompt)
+  }
+
+  if (!result.englishVersion) {
+    const base = (result as any).fullPrompt || result.metaPrompt || ''
+    fallback.englishVersion = convertToNativeEnglish(base)
+  }
+
+  return fallback
 }
 

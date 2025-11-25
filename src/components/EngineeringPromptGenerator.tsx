@@ -8,7 +8,7 @@ import { validateRequired } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
-import { translateTextMap } from '../utils/translation'
+import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -158,7 +158,10 @@ function EngineeringPromptGenerator() {
 
             // 번역 대상이 있는 경우에만 DeepL 호출
             if (Object.keys(translationTargets).length > 0) {
-              const translations = await translateTextMap(translationTargets)
+              const translations = await translateTextMap(translationTargets, {
+                compress: true,
+                context: 'ENGINEERING',
+              })
               if (Object.keys(translations).length > 0) {
                 enrichedResults = { ...generated, ...translations }
               }
@@ -169,6 +172,8 @@ function EngineeringPromptGenerator() {
             if (!hasEnglishVersions) {
               showNotification('프롬프트 엔지니어링 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')
             }
+            const fallback = buildNativeEnglishFallback(generated)
+            enrichedResults = { ...generated, ...fallback }
           }
         }
 

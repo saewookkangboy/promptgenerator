@@ -10,6 +10,9 @@ const path = require('path')
 const { collectAllGuides } = require('./scraper/guideScraper')
 const { initializeScheduler } = require('./scheduler/guideScheduler')
 
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY
+const OPENAI_SUMMARIZE_MODEL = process.env.OPENAI_SUMMARIZE_MODEL || 'gpt-4o-mini'
+
 // 로그 경로 설정
 const LOG_DIR = path.resolve(__dirname, '..', 'logs')
 const TRANSLATION_LOG_PATH = path.join(LOG_DIR, 'deepl.log')
@@ -30,6 +33,45 @@ function logTranslationEvent(event) {
   })
 }
 
+async function summarizeWithLLM(text, context = 'general') {
+  if (!OPENAI_API_KEY || !text) {
+    return text
+  }
+
+  try {
+    const response = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: OPENAI_SUMMARIZE_MODEL,
+        temperature: 0.2,
+        max_tokens: 320,
+        messages: [
+          {
+            role: 'system',
+            content:
+              'You are a prompt compression assistant. Keep instructions intact, compress to concise native English under 120 tokens. Maintain key requirements, CTA, and structure. Output plain text only.',
+          },
+          {
+            role: 'user',
+            content: `Context: ${context}\nCompress the following prompt while keeping essential intent and instructions:\n${text}`,
+          },
+        ],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+        },
+      }
+    )
+
+    const content = response.data?.choices?.[0]?.message?.content?.trim()
+    return content || text
+  } catch (error) {
+    console.error('LLM summarize error:', error.response?.data || error.message)
+    return text
+  }
+}
+
 // Import new routes
 const promptsRouter = require('./routes/prompts')
 
@@ -47,7 +89,7 @@ app.get('/health', (req, res) => {
 
 // DeepL 번역 프록시
 app.post('/api/translate', async (req, res) => {
-  const { texts, targetLang = 'EN-US', sourceLang } = req.body || {}
+  const { texts, targetLang = 'EN-US', sourceLang, compress = false, context = 'general' } = req.body || {}
   const apiKey = process.env.DEEPL_API_KEY
 
   if (!Array.isArray(texts) || texts.length === 0) {
@@ -67,6 +109,8 @@ app.post('/api/translate', async (req, res) => {
     charCount,
     targetLang,
     sourceLang: sourceLang || 'auto',
+    compress,
+    context,
   })
 
   try {
@@ -89,7 +133,14 @@ app.post('/api/translate', async (req, res) => {
       },
     })
 
-    const translations = response.data?.translations?.map((item) => item.text) || []
+    let translations = response.data?.translations?.map((item) => item.text) || []
+    let llmDurationMs = 0
+
+    if (compress && OPENAI_API_KEY) {
+      const llmStart = Date.now()
+      translations = await Promise.all(translations.map((text) => summarizeWithLLM(text, context)))
+      llmDurationMs = Date.now() - llmStart
+    }
 
     logTranslationEvent({
       type: 'success',
@@ -98,9 +149,19 @@ app.post('/api/translate', async (req, res) => {
       charCount,
       targetLang,
       durationMs: Date.now() - startTime,
+      compressApplied: compress && !!OPENAI_API_KEY,
+      llmDurationMs,
     })
 
-    res.json({ translations })
+    res.json({
+      translations,
+      metadata: {
+        durationMs: Date.now() - startTime,
+        llmDurationMs,
+        compressApplied: compress && !!OPENAI_API_KEY,
+        context,
+      },
+    })
   } catch (error) {
     const status = error.response?.status || 500
     const detail = error.response?.data || error.message
@@ -114,6 +175,7 @@ app.post('/api/translate', async (req, res) => {
       durationMs: Date.now() - startTime,
       status,
       detail,
+      compress,
     })
 
     console.error('DeepL translation error:', detail)

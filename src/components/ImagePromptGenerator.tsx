@@ -8,7 +8,7 @@ import { validateRequired } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
-import { translateTextMap } from '../utils/translation'
+import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -157,11 +157,14 @@ function ImagePromptGenerator() {
 
         let enrichedResults = generated
         try {
-          const translations = await translateTextMap({
-            englishMetaPrompt: generated.metaPrompt,
-            englishContextPrompt: generated.contextPrompt,
-            englishVersion: generated.fullPrompt || generated.metaPrompt,
-          })
+          const translations = await translateTextMap(
+            {
+              englishMetaPrompt: generated.metaPrompt,
+              englishContextPrompt: generated.contextPrompt,
+              englishVersion: generated.fullPrompt || generated.metaPrompt,
+            },
+            { compress: true, context: 'IMAGE' }
+          )
 
           if (Object.keys(translations).length > 0) {
             enrichedResults = { ...generated, ...translations }
@@ -169,6 +172,8 @@ function ImagePromptGenerator() {
         } catch (translationError) {
           console.warn('DeepL translation failed:', translationError)
           showNotification('이미지 프롬프트 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')
+          const fallback = buildNativeEnglishFallback(generated)
+          enrichedResults = { ...generated, ...fallback }
         }
 
         setResults(enrichedResults)

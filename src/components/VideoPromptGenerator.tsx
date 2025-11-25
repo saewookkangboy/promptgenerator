@@ -7,7 +7,8 @@ import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFac
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
-import { translateTextMap } from '../utils/translation'
+import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
+import { convertToNativeEnglish } from '../utils/englishTranslator'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -220,7 +221,7 @@ function VideoPromptGenerator() {
             })
           }
 
-          const translations = await translateTextMap(translationTargets)
+          const translations = await translateTextMap(translationTargets, { compress: true, context: 'VIDEO' })
 
           if (translations.englishMetaPrompt) {
             enrichedResults.englishMetaPrompt = translations.englishMetaPrompt
@@ -241,6 +242,14 @@ function VideoPromptGenerator() {
         } catch (translationError) {
           console.warn('DeepL translation failed:', translationError)
           showNotification('동영상 프롬프트 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')
+          const fallback = buildNativeEnglishFallback(generated)
+          enrichedResults = { ...enrichedResults, ...fallback }
+          if (Array.isArray(enrichedResults.scenes)) {
+            enrichedResults.scenes = enrichedResults.scenes.map((scene: any) => ({
+              ...scene,
+              englishPrompt: scene.prompt ? convertToNativeEnglish(scene.prompt) : scene.englishPrompt,
+            }))
+          }
         }
 
         setResults(enrichedResults)

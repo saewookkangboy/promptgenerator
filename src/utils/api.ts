@@ -297,7 +297,7 @@ export const adminAPI = {
 export const translationAPI = {
   translateToEnglish: async (
     texts: string[],
-    options: { targetLang?: string; sourceLang?: string } = {}
+    options: { targetLang?: string; sourceLang?: string; compress?: boolean; context?: string } = {}
   ) => {
     if (!Array.isArray(texts) || texts.length === 0) {
       return { translations: [] as string[] }
@@ -309,6 +309,8 @@ export const translationAPI = {
         texts,
         targetLang: options.targetLang || 'EN-US',
         sourceLang: options.sourceLang,
+        compress: options.compress ?? false,
+        context: options.context,
       }),
     })
   },

@@ -279,6 +279,8 @@ npm install
 ```bash
 DATABASE_URL="postgresql://YOUR_DB_URL"
 DEEPL_API_KEY="YOUR_DEEPL_API_KEY"
+OPENAI_API_KEY="YOUR_OPENAI_API_KEY" # DeepL 요약 파이프라인 압축용 (선택)
+OPENAI_SUMMARIZE_MODEL="gpt-4o-mini" # 선택, 기본값 gpt-4o-mini
 ```
 
 ### DeepL 호출 로그
