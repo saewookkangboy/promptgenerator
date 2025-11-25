@@ -149,6 +149,15 @@ function ImagePromptGenerator() {
           category: 'image',
           userInput: subject,
           model: model,
+          options: {
+            artStyle: style.artStyle,
+            framing: composition.framing,
+            lighting: lighting.type,
+            colorMood: color.mood,
+            aspectRatio: technical.aspectRatio,
+            quality: technical.quality,
+            negativePrompt: negativePrompt.length > 0 ? negativePrompt : undefined,
+          },
         })
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)

@@ -90,6 +90,13 @@ function PromptGenerator() {
         savePromptRecord({
           category: 'text',
           userInput: userPrompt,
+          options: {
+            contentType,
+            age: detailedOptions.age,
+            gender: detailedOptions.gender,
+            occupation: detailedOptions.occupation,
+            conversational: detailedOptions.conversational,
+          },
         })
       } catch (err) {
         setError('프롬프트 생성 중 오류가 발생했습니다.')

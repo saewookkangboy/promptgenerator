@@ -13,6 +13,33 @@ export interface PromptRecord {
   category: 'text' | 'image' | 'video' | 'engineering'
   userInput: string
   model?: string
+  options?: {
+    // Text options
+    contentType?: string
+    age?: string
+    gender?: string
+    occupation?: string
+    conversational?: boolean
+    // Image options
+    artStyle?: string
+    framing?: string
+    lighting?: string
+    colorMood?: string
+    aspectRatio?: string
+    quality?: number
+    negativePrompt?: string[]
+    // Video options
+    genre?: string
+    mood?: string
+    totalDuration?: number
+    fps?: number
+    resolution?: string
+    sceneCount?: number
+    hasReferenceImage?: boolean
+    // Engineering options
+    method?: string
+    [key: string]: any
+  }
 }
 
 export interface PromptStats {

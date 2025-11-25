@@ -119,6 +119,9 @@ function EngineeringPromptGenerator() {
         savePromptRecord({
           category: 'engineering',
           userInput: basePrompt,
+          options: {
+            method: method,
+          },
         })
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)

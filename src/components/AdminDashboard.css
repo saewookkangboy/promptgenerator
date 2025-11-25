@@ -218,6 +218,123 @@
   color: #999999;
 }
 
+.admin-table tbody tr.selected {
+  background: #f0f0f0;
+}
+
+.options-indicator {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.options-indicator.empty {
+  background: #f5f5f5;
+  color: #999999;
+}
+
+.options-detail-section {
+  margin-top: 24px;
+  padding: 24px;
+  background: #fafafa;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+}
+
+.options-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.options-detail-header h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #000000;
+  margin: 0;
+}
+
+.close-detail-button {
+  padding: 6px 12px;
+  background: #f5f5f5;
+  color: #000000;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.close-detail-button:hover {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.options-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.detail-item strong {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #000000;
+}
+
+.detail-item p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #333333;
+  line-height: 1.6;
+  word-break: break-word;
+}
+
+.options-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 8px;
+}
+
+.options-table tbody tr {
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.options-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.options-label {
+  padding: 8px 12px;
+  background: #f5f5f5;
+  font-weight: 500;
+  color: #000000;
+  width: 30%;
+  font-size: 0.875rem;
+}
+
+.options-value {
+  padding: 8px 12px;
+  color: #333333;
+  font-size: 0.875rem;
+  word-break: break-word;
+}
+
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .admin-dashboard {
@@ -302,6 +419,28 @@
   .filter-button {
     flex: 1;
     min-width: 0;
+  }
+
+  .options-detail-section {
+    padding: 16px;
+  }
+
+  .options-detail-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .options-table {
+    font-size: 0.8rem;
+  }
+
+  .options-label,
+  .options-value {
+    padding: 6px 8px;
+    font-size: 0.8rem;
+  }
+
+  .options-label {
+    width: 35%;
   }
 }
 

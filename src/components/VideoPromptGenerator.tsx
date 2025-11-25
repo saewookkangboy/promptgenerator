@@ -193,6 +193,15 @@ function VideoPromptGenerator() {
           category: 'video',
           userInput: scenes.map(s => s.description).join(' '),
           model: model,
+          options: {
+            genre: overallStyle.genre,
+            mood: overallStyle.mood,
+            totalDuration: technical.totalDuration,
+            fps: technical.fps,
+            resolution: technical.resolution,
+            sceneCount: scenes.length,
+            hasReferenceImage: hasReferenceImage,
+          },
         })
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)
