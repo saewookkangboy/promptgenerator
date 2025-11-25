@@ -1,0 +1,334 @@
+/* 워크스페이스 관리 스타일 */
+.workspace-manager-container {
+  padding: 32px 20px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.workspace-manager-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.workspace-manager-header h2 {
+  margin: 0 0 8px 0;
+  font-size: 28px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.workspace-manager-header .subtitle {
+  margin: 0;
+  font-size: 14px;
+  color: #666666;
+}
+
+.create-workspace-button {
+  padding: 12px 24px;
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'IBM Plex Sans KR', 'Noto Sans KR', sans-serif;
+}
+
+.create-workspace-button:hover {
+  background: #333333;
+}
+
+.workspaces-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.workspace-card {
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 12px;
+  padding: 20px;
+  transition: all 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.workspace-card:hover {
+  border-color: #000000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.workspace-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.workspace-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #000000;
+  flex: 1;
+}
+
+.tier-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.tier-badge.tier-free {
+  background: #f5f5f5;
+  color: #666666;
+}
+
+.tier-badge.tier-basic {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.tier-badge.tier-professional {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.tier-badge.tier-enterprise {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.workspace-description {
+  margin: 0;
+  font-size: 14px;
+  color: #666666;
+  line-height: 1.6;
+}
+
+.workspace-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid #f0f0f0;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.workspace-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: #999999;
+}
+
+.workspace-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-button {
+  padding: 6px 12px;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  background: #ffffff;
+  color: #000000;
+}
+
+.action-button:hover {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.action-button.delete-button:hover {
+  background: #dc3545;
+  border-color: #dc3545;
+  color: #ffffff;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: #999999;
+}
+
+.empty-state p {
+  margin: 8px 0;
+  font-size: 16px;
+}
+
+.empty-hint {
+  font-size: 14px;
+  color: #cccccc;
+  margin-bottom: 24px;
+}
+
+/* 모달 스타일 */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: #ffffff;
+  border-radius: 12px;
+  max-width: 500px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #000000;
+}
+
+.modal-close-button {
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #666666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.modal-close-button:hover {
+  background: #f5f5f5;
+  color: #000000;
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #000000;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: 'IBM Plex Sans KR', 'Noto Sans KR', sans-serif;
+  transition: border-color 0.2s ease;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: #000000;
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid #e5e5e5;
+}
+
+.modal-button {
+  padding: 10px 20px;
+  border: 1px solid #e5e5e5;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'IBM Plex Sans KR', 'Noto Sans KR', sans-serif;
+}
+
+.modal-button.cancel-button {
+  background: #ffffff;
+  color: #666666;
+}
+
+.modal-button.cancel-button:hover {
+  background: #f5f5f5;
+  border-color: #000000;
+}
+
+.modal-button.create-button {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.modal-button.create-button:hover {
+  background: #333333;
+}
+
+/* 반응형 */
+@media (max-width: 768px) {
+  .workspaces-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .workspace-manager-header {
+    flex-direction: column;
+  }
+
+  .workspace-card-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
