@@ -6,6 +6,8 @@ import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
+import { showNotification } from '../utils/notifications'
+import { translateTextMap } from '../utils/translation'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -154,6 +156,7 @@ function VideoPromptGenerator() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [modelSpecific, setModelSpecific] = useState<any>({})
+  const [hashtagsCopied, setHashtagsCopied] = useState(false)
 
   const handleGenerate = useCallback(() => {
     if (scenes.some(s => !s.description.trim())) {
@@ -191,7 +194,56 @@ function VideoPromptGenerator() {
 
         const generator = PromptGeneratorFactory.createVideoGenerator(model)
         const generated = generator.generate(options)
-        setResults(generated)
+
+        let enrichedResults: any = {
+          ...generated,
+          scenes: Array.isArray(generated.scenes)
+            ? generated.scenes.map((scene: any) => ({ ...scene }))
+            : generated.scenes,
+        }
+
+        try {
+          const translationTargets: Record<string, string | undefined> = {
+            englishMetaPrompt: generated.metaPrompt,
+            englishContextPrompt: generated.contextPrompt,
+          }
+
+          if (generated.fullPrompt) {
+            translationTargets.englishVersion = generated.fullPrompt
+          }
+
+          if (Array.isArray(generated.scenes)) {
+            generated.scenes.forEach((scene: any, index: number) => {
+              if (scene?.prompt) {
+                translationTargets[`scene-${index}`] = scene.prompt
+              }
+            })
+          }
+
+          const translations = await translateTextMap(translationTargets)
+
+          if (translations.englishMetaPrompt) {
+            enrichedResults.englishMetaPrompt = translations.englishMetaPrompt
+          }
+          if (translations.englishContextPrompt) {
+            enrichedResults.englishContextPrompt = translations.englishContextPrompt
+          }
+          if (translations.englishVersion) {
+            enrichedResults.englishVersion = translations.englishVersion
+          }
+
+          if (Array.isArray(enrichedResults.scenes)) {
+            enrichedResults.scenes = enrichedResults.scenes.map((scene: any, index: number) => {
+              const translated = translations[`scene-${index}`]
+              return translated ? { ...scene, englishPrompt: translated } : scene
+            })
+          }
+        } catch (translationError) {
+          console.warn('DeepL translation failed:', translationError)
+          showNotification('동영상 프롬프트 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')
+        }
+
+        setResults(enrichedResults)
         
         // 로컬 스토리지에 저장 (Admin 기록용)
         savePromptRecord({
@@ -282,6 +334,18 @@ function VideoPromptGenerator() {
       s.id === id ? { ...s, motion: { ...s.motion, ...updates } } : s
     ))
   }
+
+  const handleCopyHashtags = useCallback(async () => {
+    if (!results?.hashtags?.length) return
+    try {
+      await navigator.clipboard.writeText(results.hashtags.join(' '))
+      setHashtagsCopied(true)
+      setTimeout(() => setHashtagsCopied(false), 2000)
+    } catch (copyErr) {
+      console.error('Failed to copy hashtags', copyErr)
+      showNotification('해시태그 복사에 실패했습니다. 클립보드 권한을 확인해주세요.', 'error')
+    }
+  }, [results?.hashtags])
 
   const totalDuration = scenes.reduce((sum, s) => sum + s.duration, 0)
 
@@ -914,13 +978,10 @@ function VideoPromptGenerator() {
               ))}
             </div>
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(results.hashtags.join(' '))
-                alert('해시태그가 복사되었습니다!')
-              }}
-              className="copy-button"
+              onClick={handleCopyHashtags}
+              className={`copy-button ${hashtagsCopied ? 'copied' : ''}`}
             >
-              해시태그 복사
+              {hashtagsCopied ? '✓ 복사됨' : '해시태그 복사'}
             </button>
           </div>
         </div>

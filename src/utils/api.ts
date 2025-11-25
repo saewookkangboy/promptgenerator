@@ -293,3 +293,24 @@ export const adminAPI = {
   },
 }
 
+// 번역 API
+export const translationAPI = {
+  translateToEnglish: async (
+    texts: string[],
+    options: { targetLang?: string; sourceLang?: string } = {}
+  ) => {
+    if (!Array.isArray(texts) || texts.length === 0) {
+      return { translations: [] as string[] }
+    }
+
+    return apiRequest<{ translations: string[] }>('/api/translate', {
+      method: 'POST',
+      body: JSON.stringify({
+        texts,
+        targetLang: options.targetLang || 'EN-US',
+        sourceLang: options.sourceLang,
+      }),
+    })
+  },
+}
+

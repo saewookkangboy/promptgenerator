@@ -7,6 +7,8 @@ import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFac
 import { validateRequired } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
+import { showNotification } from '../utils/notifications'
+import { translateTextMap } from '../utils/translation'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -21,6 +23,7 @@ function EngineeringPromptGenerator() {
   const [results, setResults] = useState<PromptResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [hashtagsCopied, setHashtagsCopied] = useState(false)
 
   // Few-shot 예시 관리
   const [fewShotExamples, setFewShotExamples] = useState<Array<{ input: string; output: string; explanation?: string }>>([
@@ -114,7 +117,34 @@ function EngineeringPromptGenerator() {
 
         const generator = PromptGeneratorFactory.create('engineering')
         const generated = generator.generate(options)
-        setResults(generated)
+
+        let enrichedResults = generated
+        try {
+          const translationTargets: Record<string, string | undefined> = {
+            englishMetaPrompt: generated.metaPrompt,
+            englishContextPrompt: generated.contextPrompt,
+          }
+
+          const primaryContent =
+            (generated as any).fullPrompt ||
+            (generated as any).prompt ||
+            (generated as any).result ||
+            ''
+
+          if (typeof primaryContent === 'string' && primaryContent.trim().length > 0) {
+            translationTargets.englishVersion = primaryContent
+          }
+
+          const translations = await translateTextMap(translationTargets)
+          if (Object.keys(translations).length > 0) {
+            enrichedResults = { ...generated, ...translations }
+          }
+        } catch (translationError) {
+          console.warn('DeepL translation failed:', translationError)
+          showNotification('프롬프트 엔지니어링 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')
+        }
+
+        setResults(enrichedResults)
         
         // 로컬 스토리지에 저장 (Admin 기록용)
         savePromptRecord({
@@ -191,6 +221,18 @@ function EngineeringPromptGenerator() {
     updated[index] = value
     setExpertise(updated)
   }
+
+  const handleCopyHashtags = useCallback(async () => {
+    if (!results?.hashtags?.length) return
+    try {
+      await navigator.clipboard.writeText(results.hashtags.join(' '))
+      setHashtagsCopied(true)
+      setTimeout(() => setHashtagsCopied(false), 2000)
+    } catch (copyErr) {
+      console.error('Failed to copy hashtags', copyErr)
+      showNotification('해시태그 복사에 실패했습니다. 클립보드 권한을 확인해주세요.', 'error')
+    }
+  }, [results?.hashtags])
 
   return (
     <div className="prompt-generator">
@@ -537,13 +579,10 @@ function EngineeringPromptGenerator() {
               ))}
             </div>
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(results.hashtags.join(' '))
-                alert('해시태그가 복사되었습니다!')
-              }}
-              className="copy-button"
+              onClick={handleCopyHashtags}
+              className={`copy-button ${hashtagsCopied ? 'copied' : ''}`}
             >
-              해시태그 복사
+              {hashtagsCopied ? '✓ 복사됨' : '해시태그 복사'}
             </button>
           </div>
         </div>

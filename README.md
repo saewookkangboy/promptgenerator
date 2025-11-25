@@ -271,6 +271,21 @@ cd prompt-generator
 npm install
 ```
 
+### 환경 변수 (.env)
+
+프로젝트 루트에 `.env` 파일을 생성하고 아래 값을 추가하세요.   
+민감한 값이므로 버전 관리에 포함하지 않습니다.
+
+```bash
+DATABASE_URL="postgresql://YOUR_DB_URL"
+DEEPL_API_KEY="YOUR_DEEPL_API_KEY"
+```
+
+### DeepL 호출 로그
+
+- 서버는 DeepL 번역 요청/응답 요약을 `logs/deepl.log` 파일에 JSON Lines 형식으로 기록합니다.
+- 로그에는 요청 수, 문자 수, 소요 시간, 응답 코드 등이 포함되어 추후 진단에 활용할 수 있습니다.
+
 ### 개발 서버 실행
 
 ```bash

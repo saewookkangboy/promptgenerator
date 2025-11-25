@@ -7,6 +7,8 @@ import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFac
 import { validateRequired } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
+import { showNotification } from '../utils/notifications'
+import { translateTextMap } from '../utils/translation'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -110,6 +112,7 @@ function ImagePromptGenerator() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [hashtagsCopied, setHashtagsCopied] = useState(false)
   
   // 모델별 고급 옵션 state
   const [modelSpecific, setModelSpecific] = useState<any>({})
@@ -151,7 +154,24 @@ function ImagePromptGenerator() {
 
         const generator = PromptGeneratorFactory.createImageGenerator(model)
         const generated = generator.generate(options) as PromptResult
-        setResults(generated)
+
+        let enrichedResults = generated
+        try {
+          const translations = await translateTextMap({
+            englishMetaPrompt: generated.metaPrompt,
+            englishContextPrompt: generated.contextPrompt,
+            englishVersion: generated.fullPrompt || generated.metaPrompt,
+          })
+
+          if (Object.keys(translations).length > 0) {
+            enrichedResults = { ...generated, ...translations }
+          }
+        } catch (translationError) {
+          console.warn('DeepL translation failed:', translationError)
+          showNotification('이미지 프롬프트 영문 번역에 실패했습니다. 기본 버전을 표시합니다.', 'warning')
+        }
+
+        setResults(enrichedResults)
         
         // 로컬 스토리지에 저장 (Admin 기록용)
         savePromptRecord({
@@ -209,6 +229,18 @@ function ImagePromptGenerator() {
   const removeNegativePrompt = (index: number) => {
     setNegativePrompt(negativePrompt.filter((_, i) => i !== index))
   }
+
+  const handleCopyHashtags = useCallback(async () => {
+    if (!results?.hashtags?.length) return
+    try {
+      await navigator.clipboard.writeText(results.hashtags.join(' '))
+      setHashtagsCopied(true)
+      setTimeout(() => setHashtagsCopied(false), 2000)
+    } catch (copyErr) {
+      console.error('Failed to copy hashtags', copyErr)
+      showNotification('해시태그 복사에 실패했습니다. 클립보드 권한을 확인해주세요.', 'error')
+    }
+  }, [results?.hashtags])
 
   return (
     <div className="prompt-generator">
@@ -836,13 +868,10 @@ function ImagePromptGenerator() {
               ))}
             </div>
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(results.hashtags.join(' '))
-                alert('해시태그가 복사되었습니다!')
-              }}
-              className="copy-button"
+              onClick={handleCopyHashtags}
+              className={`copy-button ${hashtagsCopied ? 'copied' : ''}`}
             >
-              해시태그 복사
+              {hashtagsCopied ? '✓ 복사됨' : '해시태그 복사'}
             </button>
           </div>
         </div>

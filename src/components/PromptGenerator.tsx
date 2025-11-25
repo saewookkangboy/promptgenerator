@@ -6,6 +6,7 @@ import { validatePrompt } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
+import { translateTextMap } from '../utils/translation'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -77,6 +78,7 @@ function PromptGenerator() {
   const [results, setResults] = useState<ReturnType<typeof generatePrompts> | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [hashtagsCopied, setHashtagsCopied] = useState(false)
 
   const handleGenerate = useCallback(() => {
     // 입력 검증
@@ -101,7 +103,23 @@ function PromptGenerator() {
         }
 
         const generated = generatePrompts(userPrompt, contentType, options)
-        setResults(generated)
+
+        let enrichedResults = generated
+        try {
+          const translations = await translateTextMap({
+            englishMetaPrompt: generated.metaPrompt,
+            englishContextPrompt: generated.contextPrompt,
+          })
+
+          if (Object.keys(translations).length > 0) {
+            enrichedResults = { ...generated, ...translations }
+          }
+        } catch (translationError) {
+          console.warn('DeepL translation failed:', translationError)
+          showNotification('영문 번역에 실패하여 기본 버전을 표시합니다.', 'warning')
+        }
+
+        setResults(enrichedResults)
         
         // 로컬 스토리지에 저장 (Admin 기록용)
         savePromptRecord({
@@ -156,6 +174,18 @@ function PromptGenerator() {
   const isFormValid = useMemo(() => {
     return userPrompt.trim().length >= 3
   }, [userPrompt])
+
+  const handleCopyHashtags = useCallback(async () => {
+    if (!results?.hashtags?.length) return
+    try {
+      await navigator.clipboard.writeText(results.hashtags.join(' '))
+      setHashtagsCopied(true)
+      setTimeout(() => setHashtagsCopied(false), 2000)
+    } catch (copyError) {
+      console.error('Failed to copy hashtags', copyError)
+      showNotification('해시태그 복사에 실패했습니다. 클립보드 권한을 확인해주세요.', 'error')
+    }
+  }, [results?.hashtags])
 
   return (
     <div className="prompt-generator">
@@ -383,13 +413,10 @@ function PromptGenerator() {
               ))}
             </div>
             <button
-              onClick={() => {
-                navigator.clipboard.writeText(results.hashtags.join(' '))
-                alert('해시태그가 복사되었습니다!')
-              }}
-              className="copy-button"
+              onClick={handleCopyHashtags}
+              className={`copy-button ${hashtagsCopied ? 'copied' : ''}`}
             >
-              해시태그 복사
+              {hashtagsCopied ? '✓ 복사됨' : '해시태그 복사'}
             </button>
           </div>
         </div>

@@ -1,10 +1,34 @@
 // Express 서버 - 프롬프트 가이드 수집 API + 프리미엄 기능 API
 
+require('dotenv').config()
 const express = require('express')
 const cors = require('cors')
 const cron = require('node-cron')
+const axios = require('axios')
+const fs = require('fs')
+const path = require('path')
 const { collectAllGuides } = require('./scraper/guideScraper')
 const { initializeScheduler } = require('./scheduler/guideScheduler')
+
+// 로그 경로 설정
+const LOG_DIR = path.resolve(__dirname, '..', 'logs')
+const TRANSLATION_LOG_PATH = path.join(LOG_DIR, 'deepl.log')
+
+if (!fs.existsSync(LOG_DIR)) {
+  fs.mkdirSync(LOG_DIR, { recursive: true })
+}
+
+function logTranslationEvent(event) {
+  const entry = JSON.stringify({
+    timestamp: new Date().toISOString(),
+    ...event,
+  })
+  fs.appendFile(TRANSLATION_LOG_PATH, `${entry}\n`, (err) => {
+    if (err) {
+      console.error('DeepL 로그 기록 실패:', err.message)
+    }
+  })
+}
 
 // Import new routes
 const promptsRouter = require('./routes/prompts')
@@ -19,6 +43,85 @@ app.use(express.json())
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+// DeepL 번역 프록시
+app.post('/api/translate', async (req, res) => {
+  const { texts, targetLang = 'EN-US', sourceLang } = req.body || {}
+  const apiKey = process.env.DEEPL_API_KEY
+
+  if (!Array.isArray(texts) || texts.length === 0) {
+    return res.status(400).json({ error: 'texts 배열을 전달해주세요.' })
+  }
+
+  if (!apiKey) {
+    return res.status(500).json({ error: 'DeepL API 키가 설정되지 않았습니다.' })
+  }
+
+  const startTime = Date.now()
+  const charCount = texts.reduce((sum, text) => sum + (typeof text === 'string' ? text.length : 0), 0)
+  logTranslationEvent({
+    type: 'request',
+    ip: req.ip,
+    textCount: texts.length,
+    charCount,
+    targetLang,
+    sourceLang: sourceLang || 'auto',
+  })
+
+  try {
+    const params = new URLSearchParams()
+    texts.forEach((text) => {
+      if (typeof text === 'string') {
+        params.append('text', text)
+      }
+    })
+
+    params.append('target_lang', targetLang)
+    if (sourceLang) {
+      params.append('source_lang', sourceLang)
+    }
+
+    const response = await axios.post('https://api-free.deepl.com/v2/translate', params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Authorization: `DeepL-Auth-Key ${apiKey}`,
+      },
+    })
+
+    const translations = response.data?.translations?.map((item) => item.text) || []
+
+    logTranslationEvent({
+      type: 'success',
+      ip: req.ip,
+      textCount: texts.length,
+      charCount,
+      targetLang,
+      durationMs: Date.now() - startTime,
+    })
+
+    res.json({ translations })
+  } catch (error) {
+    const status = error.response?.status || 500
+    const detail = error.response?.data || error.message
+
+    logTranslationEvent({
+      type: 'error',
+      ip: req.ip,
+      textCount: texts.length,
+      charCount,
+      targetLang,
+      durationMs: Date.now() - startTime,
+      status,
+      detail,
+    })
+
+    console.error('DeepL translation error:', detail)
+    res.status(status).json({
+      error: 'DeepL 번역 요청에 실패했습니다.',
+      detail,
+    })
+  }
 })
 
 // 가이드 수집 API
