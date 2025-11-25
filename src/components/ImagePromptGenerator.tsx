@@ -7,7 +7,6 @@ import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFac
 import { validateRequired } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
-import { useAuth } from '../contexts/AuthContext'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -77,7 +76,6 @@ const ASPECT_RATIOS = [
 ]
 
 function ImagePromptGenerator() {
-  const { user } = useAuth()
   const [model, setModel] = useState<ImageModel>('midjourney')
   const [subject, setSubject] = useState('')
   const [style, setStyle] = useState<ImageStyle>({
@@ -163,29 +161,27 @@ function ImagePromptGenerator() {
           },
         })
 
-        // 서버에 저장 (로그인된 사용자인 경우)
-        if (user) {
-          try {
-            await promptAPI.create({
-              title: `${model} 이미지 프롬프트`,
-              content: generated.prompt || '',
-              category: 'IMAGE',
-              model: model,
-              inputText: subject,
-              options: {
-                artStyle: style.artStyle,
-                framing: composition.framing,
-                lighting: lighting.type,
-                colorMood: color.mood,
-                aspectRatio: technical.aspectRatio,
-                quality: technical.quality,
-                negativePrompt: negativePrompt.length > 0 ? negativePrompt : undefined,
-                englishVersion: (generated as any).englishVersion,
-              },
-            })
-          } catch (serverError) {
-            console.warn('서버 저장 실패:', serverError)
-          }
+        // 서버에 저장 시도 (로그인 없이도 시도)
+        try {
+          await promptAPI.create({
+            title: `${model} 이미지 프롬프트`,
+            content: generated.prompt || '',
+            category: 'IMAGE',
+            model: model,
+            inputText: subject,
+            options: {
+              artStyle: style.artStyle,
+              framing: composition.framing,
+              lighting: lighting.type,
+              colorMood: color.mood,
+              aspectRatio: technical.aspectRatio,
+              quality: technical.quality,
+              negativePrompt: negativePrompt.length > 0 ? negativePrompt : undefined,
+              englishVersion: (generated as any).englishVersion,
+            },
+          })
+        } catch (serverError) {
+          console.warn('서버 저장 실패:', serverError)
         }
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)

@@ -7,7 +7,6 @@ import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFac
 import { validateRequired } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
-import { useAuth } from '../contexts/AuthContext'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -16,7 +15,6 @@ import './PromptGenerator.css'
 type EngineeringMethod = 'cot' | 'few-shot' | 'role-based' | 'zero-shot' | 'optimize'
 
 function EngineeringPromptGenerator() {
-  const { user } = useAuth()
   const [method, setMethod] = useState<EngineeringMethod>('zero-shot')
   const [basePrompt, setBasePrompt] = useState('')
   const [config, setConfig] = useState<EngineeringConfig>({})
@@ -127,24 +125,22 @@ function EngineeringPromptGenerator() {
           },
         })
 
-        // 서버에 저장 (로그인된 사용자인 경우)
-        if (user) {
-          try {
-            const resultContent = (generated as any).prompt || (generated as any).result || JSON.stringify(generated)
-            await promptAPI.create({
-              title: `${method} 프롬프트 엔지니어링`,
-              content: resultContent,
-              category: 'ENGINEERING',
-              inputText: basePrompt,
-              options: {
-                method: method,
-                config: config,
-                result: generated,
-              },
-            })
-          } catch (serverError) {
-            console.warn('서버 저장 실패:', serverError)
-          }
+        // 서버에 저장 시도 (로그인 없이도 시도)
+        try {
+          const resultContent = (generated as any).prompt || (generated as any).result || JSON.stringify(generated)
+          await promptAPI.create({
+            title: `${method} 프롬프트 엔지니어링`,
+            content: resultContent,
+            category: 'ENGINEERING',
+            inputText: basePrompt,
+            options: {
+              method: method,
+              config: config,
+              result: generated,
+            },
+          })
+        } catch (serverError) {
+          console.warn('서버 저장 실패:', serverError)
         }
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)

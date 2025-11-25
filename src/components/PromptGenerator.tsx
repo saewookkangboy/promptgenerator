@@ -4,7 +4,6 @@ import { generatePrompts } from '../utils/promptGenerator'
 import { validatePrompt } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
-import { useAuth } from '../contexts/AuthContext'
 import { showNotification } from '../utils/notifications'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
@@ -52,7 +51,6 @@ const OCCUPATION_OPTIONS = [
 ]
 
 function PromptGenerator() {
-  const { user } = useAuth()
   const [userPrompt, setUserPrompt] = useState('')
   const [contentType, setContentType] = useState<ContentType>('blog')
   const [showDetailedOptions, setShowDetailedOptions] = useState(false)
@@ -103,29 +101,27 @@ function PromptGenerator() {
           },
         })
 
-        // 서버에 저장 (로그인된 사용자인 경우)
-        if (user) {
-          try {
-            await promptAPI.create({
-              title: `${contentType} 프롬프트`,
-              content: generated.metaPrompt,
-              category: 'TEXT',
-              inputText: userPrompt,
-              options: {
-                contentType,
-                age: detailedOptions.age,
-                gender: detailedOptions.gender,
-                occupation: detailedOptions.occupation,
-                conversational: detailedOptions.conversational,
-                contextPrompt: generated.contextPrompt,
-                hashtags: generated.hashtags,
-              },
-            })
-            // 서버 저장 성공 (조용히 처리, 사용자에게 알림 없음)
-          } catch (serverError) {
-            // 서버 저장 실패해도 계속 진행 (로컬 저장은 성공)
-            console.warn('서버 저장 실패:', serverError)
-          }
+        // 서버에 저장 시도 (로그인 없이도 시도)
+        try {
+          await promptAPI.create({
+            title: `${contentType} 프롬프트`,
+            content: generated.metaPrompt,
+            category: 'TEXT',
+            inputText: userPrompt,
+            options: {
+              contentType,
+              age: detailedOptions.age,
+              gender: detailedOptions.gender,
+              occupation: detailedOptions.occupation,
+              conversational: detailedOptions.conversational,
+              contextPrompt: generated.contextPrompt,
+              hashtags: generated.hashtags,
+            },
+          })
+          // 서버 저장 성공 (조용히 처리, 사용자에게 알림 없음)
+        } catch (serverError) {
+          // 서버 저장 실패해도 계속 진행 (로컬 저장은 성공)
+          console.warn('서버 저장 실패:', serverError)
         }
       } catch (err) {
         setError('프롬프트 생성 중 오류가 발생했습니다.')

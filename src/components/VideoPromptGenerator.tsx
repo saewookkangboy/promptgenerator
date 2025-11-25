@@ -6,7 +6,6 @@ import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
 import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
-import { useAuth } from '../contexts/AuthContext'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -116,7 +115,6 @@ const MOTION_SPEEDS = [
 ]
 
 function VideoPromptGenerator() {
-  const { user } = useAuth()
   const [model, setModel] = useState<VideoModel>('sora')
   const [overallStyle, setOverallStyle] = useState<VideoStyle>({
     genre: 'drama',
@@ -207,30 +205,28 @@ function VideoPromptGenerator() {
           },
         })
 
-        // 서버에 저장 (로그인된 사용자인 경우)
-        if (user) {
-          try {
-            await promptAPI.create({
-              title: `${model} 동영상 프롬프트`,
-              content: generated.prompt || '',
-              category: 'VIDEO',
-              model: model,
-              inputText: scenes.map(s => s.description).join(' '),
-              options: {
-                genre: overallStyle.genre,
-                mood: overallStyle.mood,
-                totalDuration: technical.totalDuration,
-                fps: technical.fps,
-                resolution: technical.resolution,
-                sceneCount: scenes.length,
-                hasReferenceImage: hasReferenceImage,
-                scenes: (generated as any).scenes,
-                englishVersion: (generated as any).englishVersion,
-              },
-            })
-          } catch (serverError) {
-            console.warn('서버 저장 실패:', serverError)
-          }
+        // 서버에 저장 시도 (로그인 없이도 시도)
+        try {
+          await promptAPI.create({
+            title: `${model} 동영상 프롬프트`,
+            content: generated.prompt || '',
+            category: 'VIDEO',
+            model: model,
+            inputText: scenes.map(s => s.description).join(' '),
+            options: {
+              genre: overallStyle.genre,
+              mood: overallStyle.mood,
+              totalDuration: technical.totalDuration,
+              fps: technical.fps,
+              resolution: technical.resolution,
+              sceneCount: scenes.length,
+              hasReferenceImage: hasReferenceImage,
+              scenes: (generated as any).scenes,
+              englishVersion: (generated as any).englishVersion,
+            },
+          })
+        } catch (serverError) {
+          console.warn('서버 저장 실패:', serverError)
         }
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)

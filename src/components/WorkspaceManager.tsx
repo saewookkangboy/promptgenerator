@@ -1,6 +1,5 @@
 // 워크스페이스 관리 컴포넌트
 import { useState, useEffect } from 'react'
-import { useAuth } from '../contexts/AuthContext'
 import { showNotification } from '../utils/notifications'
 import LoadingSpinner from './LoadingSpinner'
 import ErrorMessage from './ErrorMessage'
@@ -16,7 +15,6 @@ interface Workspace {
 }
 
 function WorkspaceManager() {
-  const { user } = useAuth()
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -69,7 +67,7 @@ function WorkspaceManager() {
         id: `workspace_${Date.now()}`,
         name: newWorkspaceName,
         description: newWorkspaceDescription || undefined,
-        tier: user?.tier || 'FREE',
+        tier: 'FREE',
         createdAt: new Date().toISOString(),
       }
 

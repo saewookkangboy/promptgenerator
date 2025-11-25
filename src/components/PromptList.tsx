@@ -35,15 +35,22 @@ function PromptList() {
       setLoading(true)
       setError(null)
       
-      const response = await promptAPI.list({
-        category: selectedCategory !== 'all' ? selectedCategory : undefined,
-        search: searchQuery || undefined,
-        page,
-        limit: 20,
-      })
+      // 로그인 없이도 사용 가능하도록 API 호출 시도
+      try {
+        const response = await promptAPI.list({
+          category: selectedCategory !== 'all' ? selectedCategory : undefined,
+          search: searchQuery || undefined,
+          page,
+          limit: 20,
+        })
 
-      setPrompts(response.prompts || [])
-      setTotalPages(response.pagination?.totalPages || 1)
+        setPrompts(response.prompts || [])
+        setTotalPages(response.pagination?.totalPages || 1)
+      } catch (apiError) {
+        // API 서버가 없거나 인증이 필요한 경우 빈 배열로 처리
+        setPrompts([])
+        setTotalPages(1)
+      }
     } catch (err: any) {
       console.error('프롬프트 로드 실패:', err)
       // API 서버가 없으면 빈 배열로 처리

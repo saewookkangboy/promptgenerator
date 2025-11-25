@@ -22,45 +22,14 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
+  // 로그인 기능 비활성화: 항상 null로 설정하여 로그인 없이 사용 가능
   const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(false)
 
-  // 초기 사용자 정보 로드
+  // 로그인 없이 바로 사용 가능하도록 설정
   useEffect(() => {
-    loadUser()
+    setLoading(false)
   }, [])
-
-  const loadUser = async () => {
-    try {
-      const token = localStorage.getItem('auth_token')
-      if (!token) {
-        setLoading(false)
-        return
-      }
-
-      const response = await authAPI.getMe()
-      setUser(response.user)
-    } catch (error: any) {
-      console.error('사용자 정보 로드 실패:', error)
-      // API 서버가 없으면 로컬 스토리지만 확인하고 계속 진행
-      if (error.message && error.message.includes('서버에 연결할 수 없습니다')) {
-        console.warn('API 서버가 실행되지 않았습니다. 로컬 모드로 전환합니다.')
-        // 로컬 스토리지에서 사용자 정보 확인 (간단한 폴백)
-        const localUser = localStorage.getItem('local_user')
-        if (localUser) {
-          try {
-            setUser(JSON.parse(localUser))
-          } catch (e) {
-            // 파싱 실패 시 무시
-          }
-        }
-      } else {
-        localStorage.removeItem('auth_token')
-      }
-    } finally {
-      setLoading(false)
-    }
-  }
 
   const login = async (email: string, password: string) => {
     try {

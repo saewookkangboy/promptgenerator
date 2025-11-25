@@ -1,21 +1,22 @@
 import { useState, useEffect } from 'react'
+import PromptGenerator from './components/PromptGenerator'
+import ImagePromptGenerator from './components/ImagePromptGenerator'
+import VideoPromptGenerator from './components/VideoPromptGenerator'
+import EngineeringPromptGenerator from './components/EngineeringPromptGenerator'
 import PromptList from './components/PromptList'
+import WorkspaceManager from './components/WorkspaceManager'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
-import Login from './components/Login'
-import Register from './components/Register'
-import { useAuth } from './contexts/AuthContext'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import './App.css'
 
-type AuthMode = 'login' | 'register'
+type TabType = 'text' | 'image' | 'video' | 'engineering' | 'list' | 'workspace'
 
 function App() {
-  const { user, loading } = useAuth()
+  const [activeTab, setActiveTab] = useState<TabType>('text')
   const [isAdmin, setIsAdmin] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
-  const [authMode, setAuthMode] = useState<AuthMode>('login')
 
   useEffect(() => {
     // 방문수 증가
@@ -27,36 +28,6 @@ function App() {
     // 프롬프트 가이드 스케줄러 초기화
     initializeScheduler()
   }, [])
-
-  // 로딩 중
-  if (loading) {
-    return (
-      <div className="app">
-        <div style={{ textAlign: 'center', padding: '40px' }}>
-          <p>로딩 중...</p>
-        </div>
-      </div>
-    )
-  }
-
-  // 로그인되지 않은 경우
-  if (!user) {
-    return (
-      <div className="app">
-        {authMode === 'login' ? (
-          <Login
-            onSwitchToRegister={() => setAuthMode('register')}
-            onSuccess={() => setAuthMode('login')}
-          />
-        ) : (
-          <Register
-            onSwitchToLogin={() => setAuthMode('login')}
-            onSuccess={() => setAuthMode('login')}
-          />
-        )}
-      </div>
-    )
-  }
 
   const handleAdminLogin = () => {
     setIsAdminAuthenticated(true)
@@ -99,7 +70,7 @@ function App() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div style={{ flex: 1 }}>
             <h1>프롬프트 메이커</h1>
-            <p>내 프롬프트를 관리하고 조회하세요</p>
+            <p>텍스트, 이미지, 동영상 생성용 프롬프트를 생성합니다</p>
           </div>
           <div className="header-actions">
             <button
@@ -133,9 +104,53 @@ function App() {
           </div>
         </div>
       </header>
+      
+      <div className="tabs">
+        <button
+          className={`tab-button ${activeTab === 'text' ? 'active' : ''}`}
+          onClick={() => setActiveTab('text')}
+        >
+          텍스트 콘텐츠
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'image' ? 'active' : ''}`}
+          onClick={() => setActiveTab('image')}
+        >
+          이미지 생성
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'video' ? 'active' : ''}`}
+          onClick={() => setActiveTab('video')}
+        >
+          동영상 생성
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'engineering' ? 'active' : ''}`}
+          onClick={() => setActiveTab('engineering')}
+        >
+          프롬프트 엔지니어링
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'list' ? 'active' : ''}`}
+          onClick={() => setActiveTab('list')}
+        >
+          내 프롬프트
+        </button>
+        <button
+          className={`tab-button ${activeTab === 'workspace' ? 'active' : ''}`}
+          onClick={() => setActiveTab('workspace')}
+        >
+          워크스페이스
+        </button>
+      </div>
 
       <div className="tab-content">
-        <PromptList />
+        {activeTab === 'text' && <PromptGenerator />}
+        {activeTab === 'image' && <ImagePromptGenerator />}
+        {activeTab === 'video' && <VideoPromptGenerator />}
+        {activeTab === 'engineering' && <EngineeringPromptGenerator />}
+        {activeTab === 'list' && <PromptList />}
+        {activeTab === 'workspace' && <WorkspaceManager />}
       </div>
 
       <footer className="app-footer">
