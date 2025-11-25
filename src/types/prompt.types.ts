@@ -29,6 +29,13 @@ export interface PromptResult {
   [key: string]: any // 확장 가능한 필드
 }
 
+export interface PromptSummary {
+  id: string
+  title?: string | null
+  category: PromptCategory
+  createdAt: string
+}
+
 // 기존 ContentType 유지 (하위 호환성)
 export type ContentType = 
   | 'blog'

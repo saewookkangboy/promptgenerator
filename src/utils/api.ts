@@ -1,4 +1,5 @@
 // API 클라이언트 유틸리티
+import type { UserOverview } from '../types/user.types'
 
 const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
 
@@ -126,6 +127,16 @@ export const userAPI = {
       method: 'PATCH',
       body: JSON.stringify({ name }),
     })
+  },
+
+  deleteAccount: async () => {
+    return apiRequest<{ message: string }>('/api/users/profile', {
+      method: 'DELETE',
+    })
+  },
+
+  getOverview: async () => {
+    return apiRequest<UserOverview>('/api/users/overview')
   },
 
   getApiKey: async () => {

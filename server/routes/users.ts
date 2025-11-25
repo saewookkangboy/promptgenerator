@@ -90,6 +90,80 @@ router.patch('/profile', async (req: AuthRequest, res: Response) => {
   }
 })
 
+// 사용자 계정 삭제
+router.delete('/profile', async (req: AuthRequest, res: Response) => {
+  try {
+    await prisma.user.delete({
+      where: { id: req.user!.id },
+    })
+
+    res.json({ message: '계정이 삭제되었습니다' })
+  } catch (error: any) {
+    console.error('계정 삭제 오류:', error)
+    if (error.code === 'P2025') {
+      res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
+      return
+    }
+    res.status(500).json({ error: '계정 삭제에 실패했습니다' })
+  }
+})
+
+// 사용자 개요 및 프롬프트 이력
+router.get('/overview', async (req: AuthRequest, res: Response) => {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        tier: true,
+        subscriptionStatus: true,
+        createdAt: true,
+      },
+    })
+
+    if (!user) {
+      res.status(404).json({ error: '사용자를 찾을 수 없습니다' })
+      return
+    }
+
+    const [promptCount, workspaceCount, recentPrompts] = await Promise.all([
+      prisma.prompt.count({
+        where: { userId: req.user!.id, deletedAt: null },
+      }),
+      prisma.workspace.count({
+        where: { ownerId: req.user!.id },
+      }),
+      prisma.prompt.findMany({
+        where: { userId: req.user!.id, deletedAt: null },
+        orderBy: { createdAt: 'desc' },
+        take: 5,
+        select: {
+          id: true,
+          title: true,
+          category: true,
+          createdAt: true,
+        },
+      }),
+    ])
+
+    res.json({
+      user: {
+        ...user,
+        stats: {
+          promptCount,
+          workspaceCount,
+        },
+      },
+      recentPrompts,
+    })
+  } catch (error: any) {
+    console.error('사용자 개요 조회 오류:', error)
+    res.status(500).json({ error: '사용자 개요를 가져오는데 실패했습니다' })
+  }
+})
+
 // API 키 생성/조회
 router.get('/api-key', async (req: AuthRequest, res: Response) => {
   try {
