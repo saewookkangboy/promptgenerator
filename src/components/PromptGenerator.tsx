@@ -7,12 +7,16 @@ import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
 import { translateTextMap } from '../utils/translation'
+import { evaluateQuality, QualityReport } from '../utils/qualityRules'
 import ResultCard from './ResultCard'
 import StructuredPromptCard from './StructuredPromptCard'
+import QualityPanel from './QualityPanel'
+import ExperimentModal from './ExperimentModal'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
 import './PromptGenerator.css'
 import './StructuredPromptCard.css'
+import './QualityPanel.css'
 
 const CONTENT_TYPES: { value: ContentType; label: string }[] = [
   { value: 'blog', label: '블로그 콘텐츠' },
@@ -107,6 +111,8 @@ function PromptGenerator() {
   const [hashtagsCopied, setHashtagsCopied] = useState(false)
   const [useWizardMode, setUseWizardMode] = useState(true)
   const [wizardStep, setWizardStep] = useState(1)
+  const [qualityReport, setQualityReport] = useState<QualityReport | null>(null)
+  const [isExperimentModalOpen, setIsExperimentModalOpen] = useState(false)
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {
@@ -197,6 +203,7 @@ function PromptGenerator() {
         }
 
         setResults(enrichedResults)
+        setQualityReport(evaluateQuality(enrichedResults, options))
         
         // 로컬 스토리지에 저장 (Admin 기록용)
         savePromptRecord({
@@ -672,6 +679,12 @@ function PromptGenerator() {
 
       {results && !isGenerating && (
         <div className="results-section">
+          {qualityReport && (
+            <QualityPanel
+              report={qualityReport}
+              onAddExperiment={() => setIsExperimentModalOpen(true)}
+            />
+          )}
           {results.metaTemplate && (
             <StructuredPromptCard
               title="표준 메타 프롬프트 템플릿"
@@ -716,6 +729,14 @@ function PromptGenerator() {
           </div>
         </div>
       )}
+
+      <ExperimentModal
+        isOpen={isExperimentModalOpen}
+        onClose={() => setIsExperimentModalOpen(false)}
+        promptPreview={results?.metaPrompt || ''}
+        qualityScore={qualityReport?.score || 0}
+        goal={detailedOptions.goal}
+      />
     </div>
   )
 }

@@ -1,0 +1,56 @@
+.experiment-modal__backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.experiment-modal {
+  width: 360px;
+  background: #fff;
+  border-radius: 16px;
+  padding: 24px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+}
+
+.experiment-modal h3 {
+  margin-top: 0;
+}
+
+.experiment-modal .form-group {
+  margin-bottom: 16px;
+}
+
+.experiment-modal input,
+.experiment-modal select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.modal-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+
+.modal-actions .secondary {
+  background: #f0f0f0;
+}
+
+.modal-actions button:not(.secondary) {
+  background: #000;
+  color: #fff;
+}
+
