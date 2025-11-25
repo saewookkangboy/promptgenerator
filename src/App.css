@@ -206,6 +206,12 @@
   }
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .admin-toggle-button {
   padding: 8px 16px;
   background: #f5f5f5;
@@ -225,6 +231,39 @@
   border-color: #000000;
 }
 
+.github-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 8px;
+  background: #f5f5f5;
+  color: #666666;
+  border: 1px solid #e5e5e5;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.github-link:hover {
+  background: #000000;
+  color: #ffffff;
+  border-color: #000000;
+}
+
+.github-link:focus {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
+}
+
+.github-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 @media (max-width: 768px) {
   .app-header > div {
     flex-direction: column;
@@ -232,8 +271,41 @@
     gap: 16px;
   }
 
-  .admin-toggle-button {
+  .header-actions {
     align-self: flex-end;
+  }
+
+  .github-link {
+    width: 32px;
+    height: 32px;
+    padding: 6px;
+  }
+
+  .github-icon {
+    width: 18px;
+    height: 18px;
+  }
+}
+
+@media (max-width: 480px) {
+  .header-actions {
+    gap: 8px;
+  }
+
+  .admin-toggle-button {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .github-link {
+    width: 30px;
+    height: 30px;
+    padding: 5px;
+  }
+
+  .github-icon {
+    width: 16px;
+    height: 16px;
   }
 }
 
