@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { getAllLatestGuides } from '../utils/prompt-guide-storage'
-import { triggerManualCollection, getCollectionStatus as getScheduleStatus } from '../utils/prompt-guide-scheduler'
+import { getCollectionStatus as getScheduleStatus } from '../utils/prompt-guide-scheduler'
 import { GuideUpdateResult, ModelName } from '../types/prompt-guide.types'
 import { saveGuideCollectionHistory, getGuideCollectionHistories, updateGuideCollectionHistory, GuideCollectionHistory } from '../utils/storage'
 import './GuideManager.css'
@@ -12,6 +12,13 @@ function GuideManager() {
   const [collectionResults, setCollectionResults] = useState<GuideUpdateResult[]>([])
   const [collectionHistories, setCollectionHistories] = useState<GuideCollectionHistory[]>([])
   const [showHistory, setShowHistory] = useState(false)
+  const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const [collectionProgress, setCollectionProgress] = useState<{
+    total: number
+    completed: number
+    current: string | null
+    percentage: number
+  } | null>(null)
 
   useEffect(() => {
     loadData()
@@ -35,29 +42,118 @@ function GuideManager() {
   const handleManualCollection = async () => {
     setIsCollecting(true)
     setCollectionResults([])
+    setCollectionProgress(null)
     
     try {
-      const results = await triggerManualCollection()
-      setCollectionResults(results)
-      loadData()
+      const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
       
-      // 수집 이력 저장
-      results.forEach(result => {
-        saveGuideCollectionHistory({
-          success: result.success,
-          modelName: result.modelName,
-          guidesAdded: result.guidesAdded,
-          guidesUpdated: result.guidesUpdated,
-          errors: result.errors,
-          appliedToService: result.success && (result.guidesAdded > 0 || result.guidesUpdated > 0), // 성공하고 변경사항이 있으면 적용됨
-          collectionType: 'manual',
-        })
+      // 백그라운드 작업 시작
+      const response = await fetch(`${API_BASE_URL}/api/guides/collect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
       })
       
-      loadHistories()
+      if (!response.ok) {
+        throw new Error('수집 작업 시작 실패')
+      }
+      
+      const data = await response.json()
+      const jobId = data.jobId
+      setCurrentJobId(jobId)
+      
+      // 실시간 진행 상황 수신 (Server-Sent Events)
+      const eventSource = new EventSource(`${API_BASE_URL}/api/guides/jobs/${jobId}/progress`)
+      
+      eventSource.onmessage = (event) => {
+        const progress = JSON.parse(event.data)
+        
+        if (progress.error) {
+          eventSource.close()
+          throw new Error(progress.error)
+        }
+        
+        // 진행 상황 업데이트
+        if (progress.progress) {
+          const percentage = progress.progress.total > 0
+            ? Math.round((progress.progress.completed / progress.progress.total) * 100)
+            : 0
+          
+          setCollectionProgress({
+            total: progress.progress.total,
+            completed: progress.progress.completed,
+            current: progress.progress.current,
+            percentage,
+          })
+        }
+        
+        // 작업 완료 확인
+        if (progress.status === 'completed' || progress.status === 'failed') {
+          eventSource.close()
+          
+          if (progress.status === 'completed' && progress.results) {
+            // 결과 변환
+            const results: GuideUpdateResult[] = progress.results.results.map((r: any) => ({
+              success: r.success,
+              modelName: r.modelName as ModelName,
+              guidesAdded: r.guide ? 1 : 0,
+              guidesUpdated: r.guide ? 0 : 0,
+              errors: r.error ? [r.error] : [],
+            }))
+            
+            setCollectionResults(results)
+            loadData()
+            
+            // 수집 이력 저장
+            results.forEach(result => {
+              saveGuideCollectionHistory({
+                success: result.success,
+                modelName: result.modelName,
+                guidesAdded: result.guidesAdded,
+                guidesUpdated: result.guidesUpdated,
+                errors: result.errors,
+                appliedToService: result.success && (result.guidesAdded > 0 || result.guidesUpdated > 0),
+                collectionType: 'manual',
+              })
+            })
+            
+            loadHistories()
+          } else if (progress.status === 'failed') {
+            const errorResult: GuideUpdateResult = {
+              success: false,
+              modelName: 'all' as ModelName,
+              guidesAdded: 0,
+              guidesUpdated: 0,
+              errors: [progress.error || '수집 중 오류가 발생했습니다'],
+            }
+            setCollectionResults([errorResult])
+            
+            saveGuideCollectionHistory({
+              success: false,
+              modelName: 'all',
+              guidesAdded: 0,
+              guidesUpdated: 0,
+              errors: errorResult.errors,
+              appliedToService: false,
+              collectionType: 'manual',
+            })
+            loadHistories()
+          }
+          
+          setIsCollecting(false)
+          setCurrentJobId(null)
+          setCollectionProgress(null)
+        }
+      }
+      
+      eventSource.onerror = () => {
+        eventSource.close()
+        setIsCollecting(false)
+        setCurrentJobId(null)
+        setCollectionProgress(null)
+      }
     } catch (error: any) {
       console.error('수집 실패:', error)
-      // 에러 메시지를 결과에 추가
       const errorResult: GuideUpdateResult = {
         success: false,
         modelName: 'all' as ModelName,
@@ -70,7 +166,6 @@ function GuideManager() {
       }
       setCollectionResults([errorResult])
       
-      // 실패 이력도 저장
       saveGuideCollectionHistory({
         success: false,
         modelName: 'all',
@@ -81,8 +176,9 @@ function GuideManager() {
         collectionType: 'manual',
       })
       loadHistories()
-    } finally {
       setIsCollecting(false)
+      setCurrentJobId(null)
+      setCollectionProgress(null)
     }
   }
 
@@ -136,6 +232,26 @@ function GuideManager() {
           {showHistory ? '이력 숨기기' : '수집 이력 보기'}
         </button>
       </div>
+
+      {collectionProgress && (
+        <div className="collection-progress">
+          <div className="progress-header">
+            <span>수집 진행 중...</span>
+            <span>{collectionProgress.completed}/{collectionProgress.total} ({collectionProgress.percentage}%)</span>
+          </div>
+          <div className="progress-bar-container">
+            <div 
+              className="progress-bar" 
+              style={{ width: `${collectionProgress.percentage}%` }}
+            />
+          </div>
+          {collectionProgress.current && (
+            <div className="progress-current">
+              현재 수집 중: <strong>{collectionProgress.current}</strong>
+            </div>
+          )}
+        </div>
+      )}
 
       {collectionResults.length > 0 && (
         <div className="collection-results">

@@ -235,36 +235,220 @@ app.post('/api/translate', async (req, res) => {
   }
 })
 
-// 가이드 수집 API
-app.post('/api/guides/collect', async (req, res) => {
+// 백그라운드 작업 큐
+const { createJob, getJob, updateJob, updateJobProgress, completeJob, cancelJob, JOB_STATUS } = require('./utils/jobQueue')
+const { collectAllGuides } = require('./scraper/guideScraper')
+
+// 가이드 수집 작업 처리 (백그라운드)
+async function processCollectionJob(jobId, modelNames = null) {
+  const job = getJob(jobId)
+  if (!job) {
+    console.error(`작업 ${jobId}를 찾을 수 없습니다`)
+    return
+  }
+  
   try {
-    console.log('가이드 수집 요청 받음...')
-    const results = await collectAllGuides()
+    updateJob(jobId, {
+      status: JOB_STATUS.RUNNING,
+      startedAt: Date.now(),
+    })
+    
+    // 진행 상황 콜백
+    const onProgress = (progress) => {
+      updateJobProgress(jobId, {
+        total: progress.total,
+        completed: progress.completed,
+        current: progress.current,
+      })
+    }
+    
+    // 가이드 수집 실행
+    const results = await collectAllGuides(modelNames, onProgress)
     
     // 결과 요약
     const successCount = results.filter(r => r.success).length
     const failCount = results.filter(r => !r.success).length
     
-    console.log(`수집 완료: 성공 ${successCount}개, 실패 ${failCount}개`)
+    console.log(`[작업 ${jobId}] 수집 완료: 성공 ${successCount}개, 실패 ${failCount}개`)
     
-    res.json({
-      success: true,
+    // 작업 완료
+    completeJob(jobId, {
       results,
       summary: {
         total: results.length,
         success: successCount,
         failed: failCount,
       },
+    })
+  } catch (error) {
+    console.error(`[작업 ${jobId}] 수집 중 오류:`, error)
+    completeJob(jobId, null, error.message)
+  }
+}
+
+// 가이드 수집 API (백그라운드 작업)
+app.post('/api/guides/collect', async (req, res) => {
+  try {
+    const { models } = req.body || {}
+    const modelNames = models && Array.isArray(models) ? models : null
+    
+    // 작업 생성
+    const job = createJob('collect', { models: modelNames })
+    
+    // 백그라운드에서 작업 시작 (비동기)
+    processCollectionJob(job.id, modelNames).catch(err => {
+      console.error(`작업 ${job.id} 실행 중 오류:`, err)
+    })
+    
+    console.log(`가이드 수집 작업 생성: ${job.id}`)
+    
+    // 즉시 응답
+    res.json({
+      success: true,
+      jobId: job.id,
+      message: '수집 작업이 시작되었습니다',
+      statusUrl: `/api/guides/jobs/${job.id}`,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
-    console.error('가이드 수집 오류:', error)
+    console.error('가이드 수집 요청 오류:', error)
     res.status(500).json({
       success: false,
       error: error.message,
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
     })
   }
+})
+
+// 작업 상태 조회 API
+app.get('/api/guides/jobs/:jobId', (req, res) => {
+  const { jobId } = req.params
+  const job = getJob(jobId)
+  
+  if (!job) {
+    return res.status(404).json({
+      success: false,
+      error: '작업을 찾을 수 없습니다',
+    })
+  }
+  
+  res.json({
+    success: true,
+    job: {
+      id: job.id,
+      type: job.type,
+      status: job.status,
+      createdAt: job.createdAt,
+      startedAt: job.startedAt,
+      completedAt: job.completedAt,
+      progress: job.progress,
+      results: job.results,
+      error: job.error,
+    },
+  })
+})
+
+// 실시간 진행 상황 스트림 (Server-Sent Events)
+app.get('/api/guides/jobs/:jobId/progress', (req, res) => {
+  const { jobId } = req.params
+  const job = getJob(jobId)
+  
+  if (!job) {
+    return res.status(404).json({
+      success: false,
+      error: '작업을 찾을 수 없습니다',
+    })
+  }
+  
+  // SSE 헤더 설정
+  res.setHeader('Content-Type', 'text/event-stream')
+  res.setHeader('Cache-Control', 'no-cache')
+  res.setHeader('Connection', 'keep-alive')
+  res.setHeader('X-Accel-Buffering', 'no') // Nginx 버퍼링 비활성화
+  
+  // 초기 상태 전송
+  const sendProgress = () => {
+    const currentJob = getJob(jobId)
+    if (!currentJob) {
+      res.write(`data: ${JSON.stringify({ error: '작업을 찾을 수 없습니다' })}\n\n`)
+      res.end()
+      return
+    }
+    
+    const progress = {
+      id: currentJob.id,
+      status: currentJob.status,
+      progress: currentJob.progress,
+      startedAt: currentJob.startedAt,
+      completedAt: currentJob.completedAt,
+      error: currentJob.error,
+    }
+    
+    res.write(`data: ${JSON.stringify(progress)}\n\n`)
+    
+    // 작업이 완료되면 연결 종료
+    if (currentJob.status === JOB_STATUS.COMPLETED || 
+        currentJob.status === JOB_STATUS.FAILED ||
+        currentJob.status === JOB_STATUS.CANCELLED) {
+      // 최종 결과 포함하여 전송
+      res.write(`data: ${JSON.stringify({
+        ...progress,
+        results: currentJob.results,
+      })}\n\n`)
+      res.end()
+      return
+    }
+  }
+  
+  // 즉시 초기 상태 전송
+  sendProgress()
+  
+  // 주기적으로 상태 확인 (1초마다)
+  const interval = setInterval(() => {
+    const currentJob = getJob(jobId)
+    if (!currentJob) {
+      clearInterval(interval)
+      res.end()
+      return
+    }
+    
+    sendProgress()
+    
+    // 작업이 완료되면 인터벌 정리
+    if (currentJob.status === JOB_STATUS.COMPLETED || 
+        currentJob.status === JOB_STATUS.FAILED ||
+        currentJob.status === JOB_STATUS.CANCELLED) {
+      clearInterval(interval)
+    }
+  }, 1000)
+  
+  // 클라이언트 연결 종료 시 정리
+  req.on('close', () => {
+    clearInterval(interval)
+    res.end()
+  })
+})
+
+// 작업 취소 API
+app.post('/api/guides/jobs/:jobId/cancel', (req, res) => {
+  const { jobId } = req.params
+  const job = cancelJob(jobId)
+  
+  if (!job) {
+    return res.status(404).json({
+      success: false,
+      error: '작업을 찾을 수 없거나 취소할 수 없습니다',
+    })
+  }
+  
+  res.json({
+    success: true,
+    message: '작업이 취소되었습니다',
+    job: {
+      id: job.id,
+      status: job.status,
+    },
+  })
 })
 
 // 특정 모델 가이드 수집

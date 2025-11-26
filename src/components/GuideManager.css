@@ -379,6 +379,51 @@
   border-top: 1px solid #e5e5e5;
 }
 
+.collection-progress {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  border-radius: 8px;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #000000;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 8px;
+  background: #e5e5e5;
+  border-radius: 4px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #000000 0%, #333333 100%);
+  transition: width 0.3s ease;
+  border-radius: 4px;
+}
+
+.progress-current {
+  font-size: 0.875rem;
+  color: #666666;
+  text-align: center;
+}
+
+.progress-current strong {
+  color: #000000;
+  font-weight: 600;
+}
+
 @media (max-width: 768px) {
   .guide-manager {
     padding: 16px;
@@ -411,6 +456,12 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
+  }
+
+  .progress-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
   }
 }
 

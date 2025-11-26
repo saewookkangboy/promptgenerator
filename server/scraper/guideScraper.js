@@ -290,7 +290,65 @@ function extractContent($, modelName) {
   return content
 }
 
-// 특정 모델의 가이드 수집
+// 스마트 재시도 로직
+async function scrapeGuideWithRetry(url, modelName, maxRetries = 3) {
+  let lastError = null
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const result = await scrapeGuideFromURL(url, modelName)
+      
+      // 성공한 경우 즉시 반환
+      if (result.success) {
+        return result
+      }
+      
+      // 403 봇 차단인 경우 지수 백오프로 재시도
+      if (result.error?.includes('403') || result.error?.includes('Forbidden')) {
+        if (attempt < maxRetries) {
+          const delay = Math.pow(2, attempt) * 1000 // 2초, 4초, 8초
+          console.log(`  ⚠️ 403 오류 - ${delay}ms 후 재시도 (${attempt}/${maxRetries})`)
+          await new Promise(resolve => setTimeout(resolve, delay))
+          lastError = result.error
+          continue
+        }
+      }
+      
+      // 다른 오류는 즉시 반환
+      return result
+    } catch (error) {
+      lastError = error.message
+      
+      // 네트워크 오류나 타임아웃인 경우 재시도
+      if (attempt < maxRetries && (
+        error.message.includes('timeout') ||
+        error.message.includes('ECONNRESET') ||
+        error.message.includes('ENOTFOUND')
+      )) {
+        const delay = 1000 * attempt // 1초, 2초, 3초
+        console.log(`  ⚠️ 네트워크 오류 - ${delay}ms 후 재시도 (${attempt}/${maxRetries})`)
+        await new Promise(resolve => setTimeout(resolve, delay))
+        continue
+      }
+      
+      // 마지막 시도이거나 재시도 불가능한 오류
+      return {
+        success: false,
+        error: error.message,
+        source: url,
+      }
+    }
+  }
+  
+  // 모든 재시도 실패
+  return {
+    success: false,
+    error: lastError || '재시도 실패',
+    source: url,
+  }
+}
+
+// 특정 모델의 가이드 수집 (재시도 로직 포함)
 async function collectGuideForModel(modelName) {
   const sources = COLLECTION_SOURCES[modelName] || []
   if (sources.length === 0) {
@@ -304,7 +362,8 @@ async function collectGuideForModel(modelName) {
   let successCount = 0
   
   for (const sourceUrl of sources) {
-    const result = await scrapeGuideFromURL(sourceUrl, modelName)
+    // 재시도 로직이 포함된 스크래핑
+    const result = await scrapeGuideWithRetry(sourceUrl, modelName)
     results.push(result)
     
     if (result.success) {
@@ -373,58 +432,125 @@ async function collectGuideForModel(modelName) {
     return currentCount > bestCount ? current : best
   })
   
+  // 가이드 생성
+  const guide = {
+    modelName,
+    category: getCategoryFromModel(modelName),
+    version: '1.0.0',
+    title: bestResult.title,
+    description: bestResult.description,
+    lastUpdated: Date.now(),
+    source: bestResult.source,
+    content: bestResult.content,
+    metadata: {
+      collectedAt: Date.now(),
+      collectedBy: 'scraper',
+      confidence: calculateConfidence(bestResult.content),
+    },
+  }
+  
+  // 데이터 검증
+  const validation = validateGuide(guide)
+  
+  // 검증 결과를 메타데이터에 추가
+  guide.metadata.validation = {
+    valid: validation.valid,
+    issues: validation.issues,
+    warnings: validation.warnings,
+  }
+  
+  // 신뢰도 업데이트 (검증 결과 반영)
+  if (!validation.valid) {
+    guide.metadata.confidence = Math.max(0, guide.metadata.confidence - 0.2)
+  }
+  
   return {
     success: true,
     modelName,
-    guide: {
-      modelName,
-      category: getCategoryFromModel(modelName),
-      version: '1.0.0',
-      title: bestResult.title,
-      description: bestResult.description,
-      lastUpdated: Date.now(),
-      source: bestResult.source,
-      content: bestResult.content,
-      metadata: {
-        collectedAt: Date.now(),
-        collectedBy: 'scraper',
-        confidence: calculateConfidence(bestResult.content),
-      },
-    },
+    guide,
     results,
+    validation,
   }
 }
 
-// 모든 모델의 가이드 수집
-async function collectAllGuides() {
-  const modelNames = Object.keys(COLLECTION_SOURCES)
+// 배열을 배치로 나누는 헬퍼 함수
+function chunkArray(array, chunkSize) {
+  const chunks = []
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize))
+  }
+  return chunks
+}
+
+// 모든 모델의 가이드 수집 (병렬 처리)
+async function collectAllGuides(modelNames = null, onProgress = null) {
+  const targetModels = modelNames || Object.keys(COLLECTION_SOURCES)
   const results = []
+  const BATCH_SIZE = 3 // 동시에 처리할 모델 수
   
-  console.log(`총 ${modelNames.length}개 모델의 가이드 수집 시작...`)
+  console.log(`총 ${targetModels.length}개 모델의 가이드 수집 시작... (병렬 처리: ${BATCH_SIZE}개씩)`)
   
-  for (const modelName of modelNames) {
-    try {
-      console.log(`\n[${modelName}] 수집 중...`)
-      const result = await collectGuideForModel(modelName)
-      results.push({
-        modelName,
-        success: result.success,
-        guide: result.guide,
-        error: result.error,
+  // 배치로 나누어 처리
+  const batches = chunkArray(targetModels, BATCH_SIZE)
+  
+  for (let batchIndex = 0; batchIndex < batches.length; batchIndex++) {
+    const batch = batches[batchIndex]
+    console.log(`\n배치 ${batchIndex + 1}/${batches.length} 처리 중... (${batch.join(', ')})`)
+    
+    // 배치 내 모델들을 병렬로 처리
+    const batchPromises = batch.map(async (modelName) => {
+      try {
+        console.log(`[${modelName}] 수집 중...`)
+        const result = await collectGuideForModel(modelName)
+        return {
+          modelName,
+          success: result.success,
+          guide: result.guide,
+          error: result.error,
+        }
+      } catch (error) {
+        console.error(`[${modelName}] 수집 중 오류:`, error.message)
+        return {
+          modelName,
+          success: false,
+          error: error.message,
+        }
+      }
+    })
+    
+    // 배치 완료 대기
+    const batchResults = await Promise.allSettled(batchPromises)
+    
+    // 결과 처리
+    batchResults.forEach((settled, index) => {
+      if (settled.status === 'fulfilled') {
+        results.push(settled.value)
+      } else {
+        results.push({
+          modelName: batch[index],
+          success: false,
+          error: settled.reason?.message || '알 수 없는 오류',
+        })
+      }
+    })
+    
+    // 진행 상황 콜백 호출
+    if (onProgress) {
+      onProgress({
+        total: targetModels.length,
+        completed: results.length,
+        current: batch[batchIndex] || null,
+        results: results,
       })
-      
-      // 모델 간 딜레이
-      await new Promise(resolve => setTimeout(resolve, 3000))
-    } catch (error) {
-      console.error(`[${modelName}] 수집 중 오류:`, error.message)
-      results.push({
-        modelName,
-        success: false,
-        error: error.message,
-      })
+    }
+    
+    // 배치 간 딜레이 (서버 부하 방지)
+    if (batchIndex < batches.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1000))
     }
   }
   
+  console.log(`\n수집 완료: 성공 ${results.filter(r => r.success).length}개, 실패 ${results.filter(r => !r.success).length}개`)
   return results
 }
 
@@ -460,9 +586,92 @@ function calculateConfidence(content) {
   return Math.min(score, 1.0)
 }
 
+// 가이드 데이터 검증
+function validateGuide(guide) {
+  const issues = []
+  const warnings = []
+  
+  if (!guide) {
+    return {
+      valid: false,
+      issues: ['가이드 데이터가 없습니다'],
+      warnings: [],
+      confidence: 0,
+    }
+  }
+  
+  // 최소 내용 확인
+  const hasBestPractices = guide.content?.bestPractices?.length > 0
+  const hasTips = guide.content?.tips?.length > 0
+  const hasExamples = guide.content?.examples?.length > 0
+  
+  if (!hasBestPractices && !hasTips && !hasExamples) {
+    issues.push('내용이 부족합니다 (bestPractices, tips, examples 모두 없음)')
+  }
+  
+  // 제목 확인
+  if (!guide.title || guide.title.trim().length === 0) {
+    warnings.push('제목이 없습니다')
+  }
+  
+  // 중복 확인
+  if (guide.content?.bestPractices) {
+    const duplicates = findDuplicates(guide.content.bestPractices)
+    if (duplicates.length > 0) {
+      warnings.push(`중복된 bestPractices가 ${duplicates.length}개 있습니다`)
+    }
+  }
+  
+  if (guide.content?.tips) {
+    const duplicates = findDuplicates(guide.content.tips)
+    if (duplicates.length > 0) {
+      warnings.push(`중복된 tips가 ${duplicates.length}개 있습니다`)
+    }
+  }
+  
+  // 내용 길이 확인
+  if (guide.content?.bestPractices) {
+    const shortItems = guide.content.bestPractices.filter(item => item.length < 10)
+    if (shortItems.length > 0) {
+      warnings.push(`너무 짧은 bestPractices가 ${shortItems.length}개 있습니다`)
+    }
+  }
+  
+  // 신뢰도 계산
+  const confidence = calculateConfidence(guide.content)
+  if (confidence < 0.5) {
+    warnings.push('신뢰도가 낮습니다 (0.5 미만)')
+  }
+  
+  return {
+    valid: issues.length === 0,
+    issues,
+    warnings,
+    confidence,
+  }
+}
+
+// 중복 찾기
+function findDuplicates(array) {
+  const seen = new Set()
+  const duplicates = []
+  
+  array.forEach((item, index) => {
+    const normalized = item.toLowerCase().trim()
+    if (seen.has(normalized)) {
+      duplicates.push(index)
+    } else {
+      seen.add(normalized)
+    }
+  })
+  
+  return duplicates
+}
+
 module.exports = {
   collectGuideForModel,
   collectAllGuides,
   scrapeGuideFromURL,
+  validateGuide,
 }
 
