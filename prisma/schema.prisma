@@ -42,6 +42,7 @@ model User {
   analytics             Analytics[]
   auditLogs             AdminAuditLog[]
   createdVersions       PromptVersion[] @relation("VersionCreator")
+  guideFeedbacks        GuideFeedback[] @relation("GuideFeedbackUser")
 
   @@index([email])
   @@index([tier])
@@ -207,6 +208,7 @@ model Prompt {
   multiModelResults MultiModelResult[]
   comments        Comment[]
   shares          PromptShare[]
+  guideFeedbacks  GuideFeedback[] @relation("GuideFeedbackPrompt")
 
   @@index([userId])
   @@index([workspaceId])
@@ -650,8 +652,8 @@ model GuideFeedback {
   createdAt  DateTime           @default(now()) @map("created_at")
 
   guide      PromptGuide        @relation(fields: [guideId], references: [id], onDelete: Cascade)
-  user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
-  prompt     Prompt?            @relation(fields: [promptId], references: [id], onDelete: SetNull)
+  user       User?              @relation("GuideFeedbackUser", fields: [userId], references: [id], onDelete: SetNull)
+  prompt     Prompt?            @relation("GuideFeedbackPrompt", fields: [promptId], references: [id], onDelete: SetNull)
 
   @@index([guideId])
   @@index([promptId])
