@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getAllLatestGuides } from '../utils/prompt-guide-storage'
+import { getAllLatestGuides, upsertGuide } from '../utils/prompt-guide-storage'
 import { getCollectionStatus as getScheduleStatus } from '../utils/prompt-guide-scheduler'
 import { GuideUpdateResult, ModelName } from '../types/prompt-guide.types'
 import { saveGuideCollectionHistory, getGuideCollectionHistories, updateGuideCollectionHistory, GuideCollectionHistory } from '../utils/storage'
@@ -36,7 +36,10 @@ function GuideManager() {
   }
 
   const loadHistories = () => {
-    setCollectionHistories(getGuideCollectionHistories())
+    const histories = getGuideCollectionHistories()
+    // 최신 순으로 정렬 (timestamp 내림차순)
+    const sortedHistories = [...histories].sort((a, b) => b.timestamp - a.timestamp)
+    setCollectionHistories(sortedHistories)
   }
 
   const handleManualCollection = async () => {
@@ -130,6 +133,21 @@ function GuideManager() {
               const resultsArray = progress.results.results || []
               console.log('[GuideManager] 결과 배열:', resultsArray.length, '개')
               
+              // 수집된 가이드를 로컬 스토리지에 저장
+              let guidesSaved = 0
+              resultsArray.forEach((r: any) => {
+                if (r.success && r.guide) {
+                  try {
+                    upsertGuide(r.guide)
+                    guidesSaved++
+                    console.log(`[GuideManager] 가이드 저장됨: ${r.modelName}`)
+                  } catch (error) {
+                    console.error(`[GuideManager] 가이드 저장 실패 (${r.modelName}):`, error)
+                  }
+                }
+              })
+              console.log(`[GuideManager] 총 ${guidesSaved}개 가이드 저장 완료`)
+              
               const results: GuideUpdateResult[] = resultsArray.map((r: any) => ({
                 success: r.success,
                 modelName: r.modelName as ModelName,
@@ -140,7 +158,7 @@ function GuideManager() {
               
               console.log('[GuideManager] 변환된 결과:', results.length, '개')
               setCollectionResults(results)
-              loadData()
+              loadData() // 가이드 목록 새로고침
               
               // 수집 이력 저장
               results.forEach(result => {
@@ -208,6 +226,22 @@ function GuideManager() {
                 if (job.status === 'completed' && job.results) {
                   const resultsArray = job.results.results || []
                   console.log('[GuideManager] 결과 배열 (fallback):', resultsArray.length, '개')
+                  
+                  // 수집된 가이드를 로컬 스토리지에 저장
+                  let guidesSaved = 0
+                  resultsArray.forEach((r: any) => {
+                    if (r.success && r.guide) {
+                      try {
+                        upsertGuide(r.guide)
+                        guidesSaved++
+                        console.log(`[GuideManager] 가이드 저장됨 (fallback): ${r.modelName}`)
+                      } catch (error) {
+                        console.error(`[GuideManager] 가이드 저장 실패 (${r.modelName}):`, error)
+                      }
+                    }
+                  })
+                  console.log(`[GuideManager] 총 ${guidesSaved}개 가이드 저장 완료 (fallback)`)
+                  
                   const results: GuideUpdateResult[] = resultsArray.map((r: any) => ({
                     success: r.success,
                     modelName: r.modelName as ModelName,
@@ -216,7 +250,7 @@ function GuideManager() {
                     errors: r.error ? [r.error] : [],
                   }))
                   setCollectionResults(results)
-                  loadData()
+                  loadData() // 가이드 목록 새로고침
                   
                   // 수집 이력 저장
                   results.forEach(result => {
