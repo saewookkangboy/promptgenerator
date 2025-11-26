@@ -2,6 +2,7 @@
 
 const axios = require('axios')
 const cheerio = require('cheerio')
+const { prisma } = require('../db/prisma.js')
 let fetchFn = null
 async function getFetch() {
   if (typeof globalThis.fetch === 'function') {
@@ -406,8 +407,12 @@ async function fetchSearchResults(query, limit = 5) {
 
     const data = await response.json()
     const links = (data.items || [])
-      .map((item) => item.link)
-      .filter((link) => typeof link === 'string' && link.startsWith('http'))
+      .map((item) => ({
+        url: item.link,
+        title: item.title,
+        snippet: item.snippet,
+      }))
+      .filter((item) => typeof item.url === 'string' && item.url.startsWith('http'))
     return links.slice(0, limit)
   } catch (error) {
     console.warn(`[GuideScraper] Google 검색 실패 (${query}):`, error.message)
@@ -416,27 +421,47 @@ async function fetchSearchResults(query, limit = 5) {
 }
 
 async function buildSourcesForModel(modelName) {
-  const staticSources = COLLECTION_SOURCES[modelName] || []
+  const staticSources = (COLLECTION_SOURCES[modelName] || []).map((url) => ({
+    url,
+    type: 'STATIC',
+    query: null,
+    status: 'PENDING',
+    metadata: {},
+  }))
+
   const queries = [
     ...SEARCH_QUERIES.map((q) => `${modelName} ${q}`),
-    ...SEARCH_QUERIES, // 일반 가이드 키워드
+    ...SEARCH_QUERIES,
   ]
-  const searchResults = new Set()
 
+  const searchSources = []
   for (const query of queries) {
     const links = await fetchSearchResults(query, 5)
-    links.forEach((link) => searchResults.add(link))
+    links.forEach((item) => {
+      searchSources.push({
+        url: item.url,
+        type: 'SEARCH',
+        query,
+        status: 'PENDING',
+        metadata: {
+          title: item.title,
+          snippet: item.snippet,
+        },
+      })
+    })
   }
 
-  const merged = [...staticSources, ...searchResults]
+  const merged = [...staticSources, ...searchSources]
   const seen = new Set()
 
-  return merged.filter((url) => {
-    if (!url || typeof url !== 'string') return false
-    const normalized = url.trim()
-    if (!normalized) return false
-    if (seen.has(normalized)) return false
+  return merged.filter((source) => {
+    if (!source?.url) return false
+    const normalized = source.url.trim()
+    if (!normalized || seen.has(normalized)) {
+      return false
+    }
     seen.add(normalized)
+    source.url = normalized
     return true
   })
 }
@@ -453,23 +478,24 @@ async function collectGuideForModel(modelName) {
   const results = []
   let successCount = 0
   
-  for (const sourceUrl of sources) {
-    // 재시도 로직이 포함된 스크래핑
-    const result = await scrapeGuideWithRetry(sourceUrl, modelName)
+  for (const source of sources) {
+    const result = await scrapeGuideWithRetry(source.url, modelName)
+    source.status = result.success ? 'SUCCESS' : 'FAILED'
+    source.metadata = {
+      ...(source.metadata || {}),
+      error: result.success ? undefined : result.error,
+    }
     results.push(result)
     
     if (result.success) {
       successCount++
     }
     
-    // 요청 간 딜레이 (서버 부하 방지)
     await new Promise(resolve => setTimeout(resolve, 2000))
     
-    // 하나라도 성공하면 계속 진행
     if (result.success && result.content && 
         ((result.content.bestPractices?.length || 0) + 
          (result.content.tips?.length || 0)) > 0) {
-      // 충분한 내용을 얻었으면 중단
       break
     }
   }
@@ -555,6 +581,13 @@ async function collectGuideForModel(modelName) {
   if (!validation.valid) {
     guide.metadata.confidence = Math.max(0, guide.metadata.confidence - 0.2)
   }
+
+  await persistGuideRecord({
+    modelName,
+    guide,
+    sources,
+    validation,
+  })
   
   return {
     success: true,
@@ -655,6 +688,94 @@ function getCategoryFromModel(modelName) {
     return 'video'
   }
   return 'llm'
+}
+
+async function persistGuideRecord({ modelName, guide, sources = [], validation }) {
+  try {
+    const latest = await prisma.promptGuide.findFirst({
+      where: { modelName },
+      orderBy: { version: 'desc' },
+      select: { version: true },
+    })
+
+    const nextVersion = (latest?.version || 0) + 1
+    const categoryEnum = mapCategoryToEnum(guide.category)
+    const collectedByEnum = mapCollectedByEnum(guide.metadata?.collectedBy)
+
+    const dbGuide = await prisma.promptGuide.create({
+      data: {
+        modelName,
+        category: categoryEnum,
+        version: nextVersion,
+        title: guide.title || `${modelName} Prompt Guide`,
+        description: guide.description || '',
+        bestPractices: guide.content?.bestPractices || [],
+        promptStructure: guide.content?.promptStructure || null,
+        examples: guide.content?.examples || [],
+        parameters: guide.content?.parameters || {},
+        tips: guide.content?.tips || [],
+        metadata: {
+          ...(guide.metadata || {}),
+          validation,
+          source: guide.source,
+        },
+        confidence: guide.metadata?.confidence ?? 0.4,
+        collectedBy: collectedByEnum,
+        collectedAt: new Date(guide.metadata?.collectedAt || Date.now()),
+        sources: {
+          create: sources.slice(0, 25).map((source) => ({
+            modelName,
+            query: source.query,
+            url: source.url,
+            type: mapSourceTypeEnum(source.type),
+            status: mapSourceStatusEnum(source.status),
+            metadata: source.metadata || {},
+          })),
+        },
+      },
+    })
+
+    console.log(`[GuideScraper] 가이드 저장 완료: ${modelName} v${dbGuide.version}`)
+    return dbGuide
+  } catch (error) {
+    console.error('[GuideScraper] 가이드 DB 저장 실패:', error)
+    return null
+  }
+}
+
+function mapCategoryToEnum(category) {
+  if (!category) return 'LLM'
+  const normalized = category.toLowerCase()
+  if (normalized === 'image') return 'IMAGE'
+  if (normalized === 'video') return 'VIDEO'
+  return 'LLM'
+}
+
+function mapCollectedByEnum(value) {
+  if (!value) return 'SCRAPER'
+  const normalized = value.toString().toUpperCase()
+  if (['SCRAPER', 'MANUAL', 'API'].includes(normalized)) {
+    return normalized
+  }
+  return 'SCRAPER'
+}
+
+function mapSourceTypeEnum(value) {
+  if (!value) return 'STATIC'
+  const normalized = value.toString().toUpperCase()
+  if (['STATIC', 'SEARCH', 'MANUAL', 'API'].includes(normalized)) {
+    return normalized
+  }
+  return 'STATIC'
+}
+
+function mapSourceStatusEnum(value) {
+  if (!value) return 'SUCCESS'
+  const normalized = value.toString().toUpperCase()
+  if (['SUCCESS', 'FAILED', 'PARTIAL'].includes(normalized)) {
+    return normalized
+  }
+  return 'SUCCESS'
 }
 
 // 신뢰도 계산

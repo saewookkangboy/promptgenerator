@@ -1,30 +1,80 @@
 // 프롬프트 가이드 저장 및 관리
 
 import { PromptGuide, GuideCollection, ModelName } from '../types/prompt-guide.types'
+import { guideAPI } from './api'
 
 const STORAGE_KEYS = {
   PROMPT_GUIDES: 'prompt_guides_collection',
   GUIDE_UPDATE_SCHEDULE: 'guide_update_schedule',
 } as const
 
-// 가이드 컬렉션 조회
-export function getGuideCollection(): GuideCollection {
+let collectionCache: GuideCollection = readCollectionFromStorage()
+let lastSyncedAt = 0
+let syncPromise: Promise<GuideCollection> | null = null
+
+function readCollectionFromStorage(): GuideCollection {
+  if (typeof window === 'undefined') {
+    return { guides: [], lastCollectionDate: 0, nextScheduledCollection: 0 }
+  }
   try {
     const data = localStorage.getItem(STORAGE_KEYS.PROMPT_GUIDES)
-    return data ? JSON.parse(data) : { guides: [], lastCollectionDate: 0, nextScheduledCollection: 0 }
+    if (!data) {
+      return { guides: [], lastCollectionDate: 0, nextScheduledCollection: 0 }
+    }
+    return JSON.parse(data)
   } catch (error) {
     console.error('가이드 컬렉션 조회 실패:', error)
     return { guides: [], lastCollectionDate: 0, nextScheduledCollection: 0 }
   }
 }
 
+// 가이드 컬렉션 조회
+export function getGuideCollection(): GuideCollection {
+  return collectionCache
+}
+
 // 가이드 컬렉션 저장
 export function saveGuideCollection(collection: GuideCollection): void {
   try {
-    localStorage.setItem(STORAGE_KEYS.PROMPT_GUIDES, JSON.stringify(collection))
+    collectionCache = collection
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(STORAGE_KEYS.PROMPT_GUIDES, JSON.stringify(collection))
+    }
   } catch (error) {
     console.error('가이드 컬렉션 저장 실패:', error)
   }
+}
+
+export async function syncGuideCollection(force = false): Promise<GuideCollection> {
+  if (!force && collectionCache.guides.length > 0 && Date.now() - lastSyncedAt < 5 * 60 * 1000) {
+    return collectionCache
+  }
+
+  if (!syncPromise) {
+    syncPromise = guideAPI
+      .getLatest()
+      .then((response) => {
+        if (response?.guides) {
+          const updated: GuideCollection = {
+            guides: response.guides,
+            lastCollectionDate: response.stats?.lastUpdatedAt || Date.now(),
+            nextScheduledCollection: collectionCache.nextScheduledCollection,
+          }
+          saveGuideCollection(updated)
+          lastSyncedAt = Date.now()
+        }
+        return collectionCache
+      })
+      .catch((error) => {
+        console.error('가이드 동기화 실패:', error)
+        throw error
+      })
+      .finally(() => {
+        syncPromise = null
+      })
+  }
+
+  return syncPromise
 }
 
 // 특정 모델의 최신 가이드 조회
@@ -54,7 +104,7 @@ export function getAllLatestGuides(): Map<ModelName, PromptGuide> {
 
 // 가이드 추가 또는 업데이트
 export function upsertGuide(guide: PromptGuide): void {
-  const collection = getGuideCollection()
+  const collection = { ...getGuideCollection(), guides: [...getGuideCollection().guides] }
   const existingIndex = collection.guides.findIndex(
     g => g.modelName === guide.modelName && g.version === guide.version
   )

@@ -556,19 +556,21 @@ app.get('/api/guides/status', (req, res) => {
 try {
   // TypeScript로 컴파일된 JavaScript 파일 사용
   // 먼저 routes/routes 경로를 시도하고, 없으면 routes 경로 사용
-  let promptsRouter, authRouter, usersRouter, adminRouter
+  let promptsRouter, authRouter, usersRouter, adminRouter, guidesRouter
   
   try {
     promptsRouter = require('./routes/routes/prompts')
     authRouter = require('./routes/routes/auth')
     usersRouter = require('./routes/routes/users')
     adminRouter = require('./routes/routes/admin')
+    guidesRouter = require('./routes/routes/guides')
   } catch (e) {
     // routes/routes 경로에 없으면 routes 경로에서 로드
     promptsRouter = require('./routes/prompts')
     authRouter = require('./routes/auth')
     usersRouter = require('./routes/users')
     adminRouter = require('./routes/admin')
+    guidesRouter = require('./routes/guides')
   }
   
   // 라우터가 제대로 로드되었는지 확인
@@ -580,6 +582,7 @@ try {
   const finalAuthRouter = authRouter.default || authRouter
   const finalUsersRouter = usersRouter.default || usersRouter
   const finalPromptsRouter = promptsRouter.default || promptsRouter
+  const finalGuidesRouter = guidesRouter?.default || guidesRouter
   
   // 라우터 등록 전에 라우트 확인
   if (finalAdminRouter && finalAdminRouter.stack) {
@@ -615,6 +618,9 @@ try {
   app.use('/api/auth', finalAuthRouter)
   app.use('/api/users', finalUsersRouter)
   app.use('/api/prompts', finalPromptsRouter)
+  if (finalGuidesRouter) {
+    app.use('/api/guides', finalGuidesRouter)
+  }
   app.use('/api/admin', finalAdminRouter)
   
   // 라우트 등록 확인용 엔드포인트 (개발/프로덕션 모두)

@@ -585,3 +585,137 @@ model AdminAuditLog {
   @@map("admin_audit_logs")
 }
 
+// ============================================
+// 20. Prompt Guides (가이드 저장/버전 관리)
+// ============================================
+
+model PromptGuide {
+  id              String             @id @default(uuid())
+  modelName       String             @map("model_name")
+  category        GuideCategory
+  version         Int                @default(1)
+  title           String
+  description     String?
+  bestPractices   Json?              @map("best_practices")
+  promptStructure String?            @map("prompt_structure")
+  examples        Json?
+  parameters      Json?
+  tips            Json?
+  metadata        Json?              @default("{}")
+  confidence      Float              @default(0.5)
+  status          GuideStatus        @default(ACTIVE)
+  collectedBy     GuideCollectedBy   @default(SCRAPER) @map("collected_by")
+  collectedAt     DateTime           @default(now())   @map("collected_at")
+  appliedToService Boolean           @default(false)   @map("applied_to_service")
+  appliedAt       DateTime?          @map("applied_at")
+  createdAt       DateTime           @default(now())   @map("created_at")
+  updatedAt       DateTime           @updatedAt        @map("updated_at")
+
+  sources         GuideSource[]
+  feedbacks       GuideFeedback[]
+
+  @@index([modelName])
+  @@index([status])
+  @@unique([modelName, version])
+  @@map("prompt_guides")
+}
+
+model GuideSource {
+  id          String            @id @default(uuid())
+  guideId     String?           @map("guide_id")
+  modelName   String            @map("model_name")
+  query       String?
+  url         String
+  type        GuideSourceType
+  status      GuideSourceStatus @default(SUCCESS)
+  metadata    Json?             @default("{}")
+  fetchedAt   DateTime          @default(now()) @map("fetched_at")
+
+  guide       PromptGuide?      @relation(fields: [guideId], references: [id], onDelete: SetNull)
+
+  @@index([guideId])
+  @@index([modelName])
+  @@map("guide_sources")
+}
+
+model GuideFeedback {
+  id         String             @id @default(uuid())
+  guideId    String             @map("guide_id")
+  promptId   String?            @map("prompt_id")
+  userId     String?            @map("user_id")
+  feedbackType GuideFeedbackType @map("feedback_type")
+  score      Int?
+  notes      String?
+  metadata   Json?              @default("{}")
+  createdAt  DateTime           @default(now()) @map("created_at")
+
+  guide      PromptGuide        @relation(fields: [guideId], references: [id], onDelete: Cascade)
+  user       User?              @relation(fields: [userId], references: [id], onDelete: SetNull)
+  prompt     Prompt?            @relation(fields: [promptId], references: [id], onDelete: SetNull)
+
+  @@index([guideId])
+  @@index([promptId])
+  @@index([userId])
+  @@map("guide_feedbacks")
+}
+
+model GuideCollectionJob {
+  id          String          @id @default(uuid())
+  jobId       String          @unique @map("job_id")
+  status      GuideJobStatus  @default(PENDING)
+  models      Json?           @default("[]")
+  progress    Json?           @default("{}")
+  error       String?
+  startedAt   DateTime?       @map("started_at")
+  completedAt DateTime?       @map("completed_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+
+  @@index([status])
+  @@map("guide_collection_jobs")
+}
+
+enum GuideCategory {
+  LLM
+  IMAGE
+  VIDEO
+}
+
+enum GuideStatus {
+  ACTIVE
+  DEPRECATED
+  DRAFT
+}
+
+enum GuideSourceType {
+  STATIC
+  SEARCH
+  MANUAL
+  API
+}
+
+enum GuideSourceStatus {
+  SUCCESS
+  FAILED
+  PARTIAL
+}
+
+enum GuideCollectedBy {
+  SCRAPER
+  MANUAL
+  API
+}
+
+enum GuideFeedbackType {
+  USAGE_SUCCESS
+  USAGE_FAILURE
+  MANUAL_REVIEW
+  AUTO_EVAL
+}
+
+enum GuideJobStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+

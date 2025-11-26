@@ -1,3 +1,5 @@
+import type { PromptGuide } from '../types/prompt-guide.types'
+
 // API 클라이언트 유틸리티
 
 // API 서버 주소를 환경 변수 → 현재 호스트 → 로컬호스트 순으로 해석
@@ -264,6 +266,38 @@ export const promptAPI = {
 
   getVersions: async (id: string) => {
     return apiRequest<any[]>(`/api/prompts/${id}/versions`)
+  },
+}
+
+// 프롬프트 가이드 API
+export const guideAPI = {
+  getLatest: async (params?: { modelName?: string; category?: string; limit?: number }) => {
+    const query = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== '') {
+          query.append(key, String(value))
+        }
+      })
+    }
+    const suffix = query.toString() ? `?${query.toString()}` : ''
+    return apiRequest<{ success: boolean; guides: PromptGuide[]; stats?: Record<string, any> }>(
+      `/api/guides/latest${suffix}`,
+    )
+  },
+
+  getHistory: async (modelName: string, limit = 20) => {
+    const suffix = limit ? `?limit=${limit}` : ''
+    return apiRequest<{ success: boolean; guides: PromptGuide[] }>(
+      `/api/guides/${encodeURIComponent(modelName)}/history${suffix}`,
+    )
+  },
+
+  markApplied: async (guideId: string, applied = true) => {
+    return apiRequest<{ success: boolean; guide: PromptGuide }>(`/api/guides/${guideId}/apply`, {
+      method: 'POST',
+      body: JSON.stringify({ applied }),
+    })
   },
 }
 
