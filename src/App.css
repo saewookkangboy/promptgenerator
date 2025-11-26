@@ -230,6 +230,9 @@
 
 .footer-github-link {
   margin-left: auto;
+  color: #e5e5e5;
+  border-color: #efefef;
+  background: #fafafa;
 }
 
 .app-footer p {
@@ -388,6 +391,17 @@
   }
 }
 
+/* Footer GitHub 아이콘을 더 옅은 색으로 표시 */
+.footer-github-link .github-icon {
+  color: inherit;
+  stroke: currentColor;
+}
+.footer-github-link:hover {
+  background: #f2f2f2;
+  color: #ffffff;
+  border-color: #f2f2f2;
+}
+
 @media (max-width: 480px) {
   .header-actions {
     gap: var(--spacing-sm);
@@ -412,4 +426,3 @@
     height: 18px;
   }
 }
-
