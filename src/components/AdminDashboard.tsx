@@ -83,22 +83,35 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
     }
   }, [usersPage, promptsPage, serverConnected])
 
-  // 서버 연결 확인
+  // 서버 연결 확인 (인증 불필요한 엔드포인트 사용)
   const checkServerConnection = async () => {
     setLoading(true)
     try {
-      // 타임아웃 설정 (3초)
+      const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
+      
+      // 타임아웃 설정 (5초로 증가)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('타임아웃')), 3000)
+        setTimeout(() => reject(new Error('타임아웃')), 5000)
       })
       
-      const statsPromise = adminAPI.getStats()
-      await Promise.race([statsPromise, timeoutPromise])
+      // Health check 엔드포인트 사용 (인증 불필요)
+      const healthPromise = fetch(`${API_BASE_URL}/health`, {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      }).then(async (res) => {
+        if (!res.ok) {
+          throw new Error(`HTTP ${res.status}`)
+        }
+        return res.json()
+      })
       
+      await Promise.race([healthPromise, timeoutPromise])
+      
+      // Health check 성공 시 서버 연결됨으로 설정
       setServerConnected(true)
       // 연결 성공 시 서버 데이터 로드
       await loadServerData()
-    } catch (error) {
+    } catch (error: any) {
       console.error('서버 연결 확인 실패:', error)
       setServerConnected(false)
       // 서버 연결 실패 시 빈 상태로 설정
@@ -138,18 +151,66 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
       }
 
       // 사용자 목록 로드
-      const usersData = await adminAPI.getUsers({ page: usersPage, limit: 20 })
-      setUsers(usersData.users)
+      try {
+        const usersData = await adminAPI.getUsers({ page: usersPage, limit: 20 })
+        setUsers(usersData.users)
+      } catch (userError: any) {
+        console.warn('사용자 목록 로드 실패:', userError)
+        // 인증 오류인 경우 서버는 연결되어 있지만 인증이 필요함
+        if (userError.message?.includes('인증') || userError.message?.includes('401')) {
+          // 서버 연결은 유지하되 데이터는 로드하지 않음
+        } else {
+          // 다른 오류는 무시하고 계속 진행
+        }
+      }
 
-      // 프롬프트 목록 로드 (통계 및 기록용)
-      const promptsData = await adminAPI.getPrompts({ page: promptsPage, limit: 20 })
-      setServerPrompts(promptsData.prompts)
-    } catch (error) {
-      // 서버 데이터 로드 실패는 정상적인 상황 (서버가 없을 수 있음)
-      // 콘솔에만 로그하고 사용자에게는 방해하지 않음
-      console.log('서버 데이터 로드 실패 (로컬 모드로 계속 작동):', error)
-      // 서버 연결 실패 시 연결 상태 업데이트
-      setServerConnected(false)
+      // 프롬프트 목록 로드 (관리용)
+      try {
+        const promptsData = await adminAPI.getPrompts({ page: promptsPage, limit: 20 })
+        setServerPrompts(promptsData.prompts)
+      } catch (promptError: any) {
+        console.warn('프롬프트 목록 로드 실패:', promptError)
+        // 인증 오류인 경우 서버는 연결되어 있지만 인증이 필요함
+        if (promptError.message?.includes('인증') || promptError.message?.includes('401')) {
+          // 서버 연결은 유지하되 데이터는 로드하지 않음
+        }
+      }
+      
+      // 프롬프트 기록 로드 (통계 섹션용 - 모든 카테고리)
+      try {
+        const allPromptsData = await adminAPI.getPrompts({ page: 1, limit: 1000 })
+        // 서버 프롬프트를 로컬 기록 형식으로 변환
+        const convertedRecords: ServerPromptRecord[] = allPromptsData.prompts.map((p: any) => ({
+          id: p.id,
+          title: p.title,
+          content: p.content,
+          category: p.category,
+          model: p.model,
+          userId: p.userId,
+          user: p.user,
+          createdAt: p.createdAt,
+          updatedAt: p.updatedAt,
+          options: p.options,
+        }))
+        setRecords(convertedRecords)
+      } catch (recordError: any) {
+        console.warn('프롬프트 기록 로드 실패:', recordError)
+        // 기록 로드 실패해도 계속 진행
+      }
+    } catch (error: any) {
+      // 서버 데이터 로드 실패 처리
+      console.error('서버 데이터 로드 실패:', error)
+      
+      // 인증 오류인 경우 서버는 연결되어 있지만 인증이 필요한 상태
+      if (error.message?.includes('인증') || error.message?.includes('401')) {
+        // 서버는 연결되어 있지만 인증이 필요함
+        // Admin 모드에서는 인증 없이도 일부 기능 사용 가능하도록 유지
+        console.log('서버 연결됨, 인증 필요')
+        // 서버 연결 상태는 유지
+      } else {
+        // 다른 오류는 서버 연결 실패로 간주하지 않음 (이미 health check로 확인함)
+        // 단지 데이터 로드 실패일 뿐
+      }
     }
   }
 
