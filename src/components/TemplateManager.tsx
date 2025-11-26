@@ -3,6 +3,7 @@ import { adminAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
 import StructuredPromptCard from './StructuredPromptCard'
 import { PromptTemplate } from '../types/prompt.types'
+import { MODEL_OPTIONS } from '../config/model-options'
 import './TemplateManager.css'
 
 type TemplateHistoryEntry = {
@@ -44,22 +45,6 @@ const DEFAULT_TEMPLATE: PromptTemplate = {
 
 const tierOptions = ['FREE', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE']
 const categoryOptions = ['text', 'image', 'video', 'engineering']
-const modelOptions = [
-  'openai-gpt-4',
-  'openai-gpt-3.5',
-  'claude-3',
-  'claude-3.5',
-  'gemini-pro',
-  'gemini-ultra',
-  'gemini-nano-banana-pro',
-  'midjourney',
-  'dalle-3',
-  'stable-diffusion',
-  'sora',
-  'veo-3',
-  'llama-3',
-  'llama-3.1',
-]
 
 interface FormState {
   name: string
@@ -434,9 +419,9 @@ function TemplateManager() {
                       onChange={(e) => handleInputChange('model', e.target.value)}
                     >
                       <option value="">모델 선택</option>
-                      {modelOptions.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
+                      {MODEL_OPTIONS.map((m) => (
+                        <option key={m.value} value={m.value}>
+                          {m.label} · {m.category.toUpperCase()}
                         </option>
                       ))}
                     </select>

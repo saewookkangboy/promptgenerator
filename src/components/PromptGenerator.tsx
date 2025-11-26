@@ -155,7 +155,8 @@ function PromptGenerator() {
   // 품질 평가 패널 제거로 인한 상태 비활성화
   const [, setQualityReport] = useState<QualityReport | null>(null)
   const [guideInsight, setGuideInsight] = useState<PromptGuide | null>(null)
-  const [targetModel, setTargetModel] = useState<ModelName>('openai-gpt-4')
+  // 모델 선택 UI는 Admin 템플릿 관리로 이동했으므로 기본값만 유지
+  const [targetModel] = useState<ModelName>('openai-gpt-4')
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {
@@ -409,25 +410,6 @@ function PromptGenerator() {
     </div>
   )
 
-  const renderModelSelector = () => (
-    <div className="form-group">
-      <label htmlFor="model-select">타겟 모델 선택</label>
-      <select
-        id="model-select"
-        value={targetModel}
-        onChange={(e) => setTargetModel(e.target.value as ModelName)}
-        className="content-type-select"
-      >
-        {MODEL_OPTIONS.map((model) => (
-          <option key={model.value} value={model.value}>
-            {model.label} · {model.category.toUpperCase()}
-          </option>
-        ))}
-      </select>
-      <p className="helper-text">선택한 모델의 최신 가이드라인이 프롬프트에 자동 반영됩니다.</p>
-    </div>
-  )
-
   const renderPromptTextarea = () => (
     <div className="form-group">
       <label htmlFor="user-prompt">자연어 프롬프트 입력</label>
@@ -472,7 +454,6 @@ function PromptGenerator() {
     <div className="detailed-options">
       <div className="options-grid">
         {renderGoalSelector()}
-        {renderModelSelector()}
         <div className="form-group">
           <label htmlFor="age">나이</label>
           <select
@@ -674,7 +655,6 @@ function PromptGenerator() {
               </p>
               <div className="wizard-dual-grid">
                 {renderContentTypeSelector()}
-                {renderModelSelector()}
                 {renderGoalSelector()}
               </div>
               <div className="wizard-panel__summary">
@@ -774,7 +754,6 @@ function PromptGenerator() {
       ) : (
         <div className="input-section">
           {renderContentTypeSelector()}
-          {renderModelSelector()}
           {renderPromptTextarea()}
 
           <div className="detailed-options-section">
