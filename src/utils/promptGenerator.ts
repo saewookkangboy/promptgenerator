@@ -1,4 +1,5 @@
 import { ContentType, PromptResult, DetailedOptions } from '../types'
+import { GuideContextSummary } from '../types/prompt-guide.types'
 import { PromptTemplate } from '../types/prompt.types'
 
 const CONTENT_TYPE_INFO = {
@@ -57,10 +58,12 @@ const CONTENT_GOALS: Record<
 export function generatePrompts(
   userPrompt: string,
   contentType: ContentType,
-  options?: DetailedOptions
+  options?: DetailedOptions,
+  guideContext?: GuideContextSummary | null,
 ): PromptResult {
   const typeInfo = CONTENT_TYPE_INFO[contentType]
   const goalInfo = options?.goal ? CONTENT_GOALS[options.goal] : undefined
+  const guideNotes = buildGuideNotes(guideContext)
   
   // 타겟 독자 정보 구성
   const targetAudience = buildTargetAudience(options)
@@ -84,12 +87,14 @@ ${goalInfo ? `\n콘텐츠 목표: ${goalInfo.label}` : ''}
 ${goalInfo ? `- ${goalInfo.description}` : ''}
 ${goalInfo?.checklist?.length ? goalInfo.checklist.map((item) => `- ${item}`).join('\n') : ''}
 ${toneAndStyle ? `- ${toneAndStyle}` : ''}
+${guideNotes ? `- 최신 가이드라인 반영 (아래 참고)` : ''}
 
 콘텐츠를 작성할 때 다음을 고려해주세요:
 1. 독자의 니즈와 관심사${options?.age || options?.gender || options?.occupation ? ' (타겟 독자 특성 반영)' : ''}
 2. 명확한 메시지 전달
 3. 적절한 톤앤매너${options?.conversational ? ' (대화체 사용)' : ''}
-4. 행동 유도 요소 포함`
+4. 행동 유도 요소 포함
+${guideNotes ? `\n[모델별 최신 가이드]\n${guideNotes}` : ''}`
 
   // 컨텍스트 프롬프트 생성
   const contextPrompt = `콘텐츠 작성 컨텍스트:
@@ -102,6 +107,7 @@ ${toneAndStyle ? `톤앤매너: ${toneAndStyle}` : ''}
 
 작성 가이드라인:
 ${getContentGuidelines(contentType)}
+${guideNotes ? `\n최근 가이드 참고:\n${guideNotes}` : ''}
 
 구조 요구사항:
 ${getStructureRequirements(contentType)}
@@ -140,6 +146,7 @@ ${options?.conversational ? '- 대화체 사용 (구어체, 친근한 표현)' :
     hashtags,
     metaTemplate,
     contextTemplate,
+    appliedGuide: guideContext ? { ...guideContext } : undefined,
   }
 }
 
@@ -244,6 +251,21 @@ function getContentGuidelines(contentType: ContentType): string {
     default:
       return ''
   }
+}
+
+function buildGuideNotes(guide?: GuideContextSummary | null): string {
+  if (!guide) return ''
+  const notes: string[] = []
+  if (guide.summary) {
+    notes.push(`- ${guide.summary}`)
+  }
+  if (guide.bestPractices?.length) {
+    guide.bestPractices.slice(0, 3).forEach((tip) => notes.push(`- ${tip}`))
+  }
+  if (guide.tips?.length) {
+    guide.tips.slice(0, 2).forEach((tip) => notes.push(`- ${tip}`))
+  }
+  return notes.join('\n')
 }
 
 function getStructureRequirements(contentType: ContentType): string {

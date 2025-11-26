@@ -32,7 +32,7 @@ export function getLatestGuide(modelName: ModelName): PromptGuide | null {
   const collection = getGuideCollection()
   const modelGuides = collection.guides
     .filter(g => g.modelName === modelName)
-    .sort((a, b) => b.lastUpdated - a.lastUpdated)
+    .sort((a, b) => (b.lastUpdated ?? 0) - (a.lastUpdated ?? 0))
   
   return modelGuides.length > 0 ? modelGuides[0] : null
 }
@@ -44,7 +44,7 @@ export function getAllLatestGuides(): Map<ModelName, PromptGuide> {
   
   collection.guides.forEach(guide => {
     const existing = latestGuides.get(guide.modelName)
-    if (!existing || guide.lastUpdated > existing.lastUpdated) {
+    if (!existing || (guide.lastUpdated ?? 0) > (existing.lastUpdated ?? 0)) {
       latestGuides.set(guide.modelName, guide)
     }
   })
@@ -100,9 +100,8 @@ export function cleanupOldGuides(daysToKeep: number = 90): void {
   const cutoffDate = Date.now() - daysToKeep * 24 * 60 * 60 * 1000
   
   collection.guides = collection.guides.filter(
-    guide => guide.metadata.collectedAt > cutoffDate
+    guide => (guide.metadata?.collectedAt ?? 0) > cutoffDate
   )
   
   saveGuideCollection(collection)
 }
-

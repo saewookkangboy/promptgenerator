@@ -1,3 +1,5 @@
+import { GuideContextSummary } from './prompt-guide.types'
+
 // 기본 프롬프트 타입 정의
 
 export type PromptCategory = 
@@ -43,6 +45,7 @@ export interface PromptResult {
   contextTemplate?: PromptTemplate
   englishMetaTemplate?: PromptTemplate
   englishContextTemplate?: PromptTemplate
+  appliedGuide?: GuideContextSummary
   [key: string]: any // 확장 가능한 필드
 }
 
