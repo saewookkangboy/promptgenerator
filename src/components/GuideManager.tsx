@@ -22,16 +22,6 @@ function GuideManager() {
   } | null>(null)
   const [, setRealtimeApplied] = useState<Set<ModelName>>(new Set())
 
-  useEffect(() => {
-    loadData()
-    loadHistories()
-    const interval = setInterval(() => {
-      loadData()
-      loadHistories()
-    }, 60000) // 1분마다 새로고침
-    return () => clearInterval(interval)
-  }, [loadData])
-
   const guideMapFromArray = useCallback((guides: PromptGuide[]): Map<ModelName, PromptGuide> => {
     const map = new Map<ModelName, PromptGuide>()
     guides.forEach((guide) => {
@@ -67,6 +57,16 @@ function GuideManager() {
     setCollectionHistories(sortedHistories)
   }
 
+  useEffect(() => {
+    loadData()
+    loadHistories()
+    const interval = setInterval(() => {
+      loadData()
+      loadHistories()
+    }, 60000) // 1분마다 새로고침
+    return () => clearInterval(interval)
+  }, [loadData])
+
   const applyRealtimeGuides = useCallback((results: any[] | null | undefined) => {
     if (!Array.isArray(results) || results.length === 0) return
 
@@ -87,14 +87,6 @@ function GuideManager() {
     })
 
     if (newGuides.length === 0) return
-
-    newGuides.forEach(({ guide }) => {
-      try {
-        upsertGuide(guide)
-      } catch (error) {
-        console.error('[GuideManager] 실시간 가이드 저장 실패:', error)
-      }
-    })
 
     setLatestGuides((prev) => {
       const updated = new Map(prev)

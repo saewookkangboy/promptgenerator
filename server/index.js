@@ -7,6 +7,7 @@ const cron = require('node-cron')
 const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
+const { prisma } = require('./db/prisma')
 const { GoogleGenerativeAI } = require('@google/generative-ai')
 const { collectAllGuides } = require('./scraper/guideScraper')
 const { initializeScheduler } = require('./scheduler/guideScheduler')
@@ -125,6 +126,87 @@ async function translateWithGemini(text, context = 'general', compress = false) 
 
 // Import new routes
 const promptsRouter = require('./routes/prompts')
+
+// 가이드 수집 결과를 DB에 저장 (raw + live + job 로그)
+async function persistGuideResults(jobId, results = []) {
+  if (!Array.isArray(results) || results.length === 0) {
+    return { saved: 0, liveUpdated: 0, failed: 0 }
+  }
+
+  let saved = 0
+  let liveUpdated = 0
+  let failed = 0
+
+  for (const r of results) {
+    const detail = {
+      modelName: r?.modelName,
+      success: !!r?.success,
+      hasGuide: !!r?.guide,
+      error: r?.error || null,
+    }
+
+    // 작업 로그 기록
+    try {
+      await prisma.guideJobLog.create({
+        data: {
+          jobId,
+          stage: 'COLLECT',
+          status: r?.success ? 'COMPLETED' : 'FAILED',
+          detail,
+        },
+      })
+    } catch (logError) {
+      console.error('[persistGuideResults] 로그 기록 실패:', logError)
+    }
+
+    if (!r?.success || !r?.guide) {
+      failed++
+      continue
+    }
+
+    const guidePayload = r.guide
+    const score = guidePayload?.metadata?.confidence ?? null
+
+    try {
+      const raw = await prisma.guideRaw.create({
+        data: {
+          modelName: r.modelName,
+          sourceUrl: guidePayload?.source || guidePayload?.sourceUrl || null,
+          title: guidePayload?.title || null,
+          content: guidePayload,
+          score,
+          status: 'SCRAPED',
+          jobId,
+        },
+      })
+      saved++
+
+      await prisma.guideLive.upsert({
+        where: { modelName: r.modelName },
+        create: {
+          modelName: r.modelName,
+          content: guidePayload,
+          score,
+          status: 'ACTIVE',
+          sourceRawId: raw.id,
+        },
+        update: {
+          version: { increment: 1 },
+          content: guidePayload,
+          score,
+          status: 'ACTIVE',
+          sourceRawId: raw.id,
+        },
+      })
+      liveUpdated++
+    } catch (dbError) {
+      console.error('[persistGuideResults] 가이드 저장 실패:', dbError)
+      failed++
+    }
+  }
+
+  return { saved, liveUpdated, failed }
+}
 
 const app = express()
 const PORT = process.env.PORT || 3001
@@ -344,6 +426,15 @@ async function processCollectionJob(jobId, modelNames = null) {
         failed: failCount,
       },
     }
+
+    try {
+      const persistence = await persistGuideResults(jobId, results)
+      jobResults.persistence = persistence
+      console.log(`[작업 ${jobId}] DB 저장 완료: raw ${persistence.saved}, live ${persistence.liveUpdated}, 실패 ${persistence.failed}`)
+    } catch (persistError) {
+      console.error(`[작업 ${jobId}] DB 저장 중 오류:`, persistError)
+      jobResults.persistence = { error: persistError.message }
+    }
     
     console.log(`[작업 ${jobId}] 작업 완료 처리 시작...`)
     const completedJob = completeJob(jobId, jobResults)
@@ -411,6 +502,7 @@ app.get('/api/guides/jobs/:jobId', (req, res) => {
       completedAt: job.completedAt,
       progress: job.progress,
       results: job.results,
+      resultsReady: !!job.results,
       error: job.error,
     },
   })
@@ -449,6 +541,7 @@ app.get('/api/guides/jobs/:jobId/progress', (req, res) => {
       progress: currentJob.progress,
       startedAt: currentJob.startedAt,
       completedAt: currentJob.completedAt,
+      resultsReady: !!currentJob.results,
       error: currentJob.error,
     }
     
@@ -462,6 +555,7 @@ app.get('/api/guides/jobs/:jobId/progress', (req, res) => {
       const finalProgress = {
         ...progress,
         results: currentJob.results,
+        resultsReady: !!currentJob.results,
       }
       console.log(`[SSE ${jobId}] 최종 결과 전송:`, JSON.stringify({
         status: finalProgress.status,
@@ -550,6 +644,32 @@ app.get('/api/guides/status', (req, res) => {
   const { getCollectionStatus } = require('./scheduler/guideScheduler')
   const status = getCollectionStatus()
   res.json(status)
+})
+
+// 라이브 가이드 조회 (승인/배포된 최신 가이드)
+app.get('/api/guides/live', async (req, res) => {
+  const { model } = req.query
+  try {
+    const guides = await prisma.guideLive.findMany({
+      where: model ? { modelName: model } : {},
+      orderBy: { updatedAt: 'desc' },
+    })
+    res.json({ success: true, guides })
+  } catch (error) {
+    console.error('라이브 가이드 조회 오류:', error)
+    res.status(500).json({ success: false, error: '라이브 가이드를 가져오지 못했습니다' })
+  }
+})
+
+// 라이브 가이드 캐시 무효화(향후 메모리 캐시용 훅; 현재는 no-op)
+app.post('/api/guides/reload', async (req, res) => {
+  try {
+    // 향후 in-memory 캐시를 쓰게 되면 여기서 무효화
+    res.json({ success: true, message: '가이드 캐시가 갱신되었습니다' })
+  } catch (error) {
+    console.error('가이드 캐시 갱신 오류:', error)
+    res.status(500).json({ success: false, error: '가이드 캐시 갱신에 실패했습니다' })
+  }
 })
 
 // 프리미엄 기능 API 라우트
@@ -708,4 +828,3 @@ process.on('SIGINT', () => {
 })
 
 module.exports = app
-

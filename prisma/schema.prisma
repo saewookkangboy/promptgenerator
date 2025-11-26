@@ -721,3 +721,79 @@ enum GuideJobStatus {
   FAILED
 }
 
+// ============================================
+// 21. Guide Pipeline (수집/승인/라이브 반영)
+// ============================================
+
+model GuideRaw {
+  id          String         @id @default(uuid())
+  modelName   String         @map("model_name")
+  sourceUrl   String?
+  title       String?
+  content     Json
+  score       Float?
+  status      GuideRawStatus @default(SCRAPED)
+  jobId       String?        @map("job_id")
+  scrapedAt   DateTime       @default(now()) @map("scraped_at")
+  createdAt   DateTime       @default(now()) @map("created_at")
+  updatedAt   DateTime       @updatedAt      @map("updated_at")
+  error       String?
+  guideLiveId String?        @map("guide_live_id")
+
+  live        GuideLive?     @relation(fields: [guideLiveId], references: [id], onDelete: SetNull)
+
+  @@index([modelName])
+  @@index([jobId])
+  @@map("guide_raw")
+}
+
+model GuideLive {
+  id          String          @id @default(uuid())
+  modelName   String          @unique @map("model_name")
+  version     Int             @default(1)
+  content     Json
+  score       Float?
+  status      GuideLiveStatus @default(ACTIVE)
+  sourceRawId String?         @map("source_raw_id")
+  approvedBy  String?         @map("approved_by")
+  approvedAt  DateTime?       @map("approved_at")
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt      @map("updated_at")
+
+  sourceRaw   GuideRaw?       @relation(fields: [sourceRawId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@map("guide_live")
+}
+
+model GuideJobLog {
+  id        String             @id @default(uuid())
+  jobId     String             @map("job_id")
+  stage     String
+  status    GuideJobLogStatus  @default(PENDING)
+  detail    Json               @default("{}")
+  createdAt DateTime           @default(now()) @map("created_at")
+
+  @@index([jobId])
+  @@index([stage])
+  @@map("guide_job_logs")
+}
+
+enum GuideRawStatus {
+  SCRAPED
+  CLEANED
+  FAILED
+}
+
+enum GuideLiveStatus {
+  ACTIVE
+  DRAFT
+  DEPRECATED
+}
+
+enum GuideJobLogStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
