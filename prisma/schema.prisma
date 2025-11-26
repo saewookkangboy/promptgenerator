@@ -738,9 +738,8 @@ model GuideRaw {
   createdAt   DateTime       @default(now()) @map("created_at")
   updatedAt   DateTime       @updatedAt      @map("updated_at")
   error       String?
-  guideLiveId String?        @map("guide_live_id")
 
-  live        GuideLive?     @relation(fields: [guideLiveId], references: [id], onDelete: SetNull)
+  liveVersions GuideLive[]   @relation("GuideLiveSource")
 
   @@index([modelName])
   @@index([jobId])
@@ -754,13 +753,13 @@ model GuideLive {
   content     Json
   score       Float?
   status      GuideLiveStatus @default(ACTIVE)
-  sourceRawId String?         @map("source_raw_id")
+  sourceRawId String?         @unique @map("source_raw_id")
   approvedBy  String?         @map("approved_by")
   approvedAt  DateTime?       @map("approved_at")
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt      @map("updated_at")
 
-  sourceRaw   GuideRaw?       @relation(fields: [sourceRawId], references: [id], onDelete: SetNull)
+  sourceRaw   GuideRaw?       @relation("GuideLiveSource", fields: [sourceRawId], references: [id], onDelete: SetNull)
 
   @@index([status])
   @@map("guide_live")
