@@ -22,11 +22,15 @@ export interface PromptGuide {
   id: string
   modelName: ModelName
   category: ModelCategory
-  version: string
+  version: string | number
   title: string
   description: string
-  lastUpdated: number // timestamp
-  source: string // 출처 URL
+  summary?: string | null
+  lastUpdated?: number
+  source?: string
+  sourcePrimary?: string | null
+  status?: string
+  confidence?: number
   content: {
     bestPractices?: string[]
     promptStructure?: string
@@ -48,9 +52,10 @@ export interface PromptGuide {
     styleGuide?: string
   }
   metadata: {
-    collectedAt: number
-    collectedBy: 'manual' | 'scraper' | 'api'
-    confidence: number // 0-1, 수집된 데이터의 신뢰도
+    collectedAt?: number
+    collectedBy?: 'manual' | 'scraper' | 'api'
+    confidence?: number
+    [key: string]: any
   }
 }
 
@@ -66,5 +71,32 @@ export interface GuideUpdateResult {
   guidesAdded: number
   guidesUpdated: number
   errors?: string[]
+}
+
+export interface GuideHistoryEntry {
+  id: string
+  modelName: ModelName
+  success: boolean
+  errorMessage?: string | null
+  completedAt: string
+  guide?: PromptGuide | null
+  job?: {
+    id: string
+    status: string
+    triggerType?: string | null
+    triggeredBy?: string | null
+    startedAt?: string | null
+    completedAt?: string | null
+  } | null
+}
+
+export interface GuideContextSummary {
+  guideId: string
+  modelName: string
+  title?: string
+  summary?: string | null
+  bestPractices?: string[]
+  tips?: string[]
+  confidence?: number
 }
 
