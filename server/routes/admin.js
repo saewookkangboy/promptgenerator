@@ -9,6 +9,11 @@ const MAX_TEMPLATE_HISTORY = 20;
 // 모든 라우트는 Admin 권한 필요
 router.use(auth_1.authenticateToken);
 router.use(auth_1.requireAdmin);
+// 디버깅: 라우트 등록 확인
+router.use((req, res, next) => {
+    console.log(`[Admin Route] ${req.method} ${req.path} - User: ${req.user?.email || 'none'}`);
+    next();
+});
 // 감사 로그 기록 헬퍼
 async function logAdminAction(adminUserId, action, resourceType, resourceId, details, req) {
     try {

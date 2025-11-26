@@ -10,6 +10,12 @@ const MAX_TEMPLATE_HISTORY = 20
 router.use(authenticateToken)
 router.use(requireAdmin)
 
+// 디버깅: 라우트 등록 확인
+router.use((req: AuthRequest, res, next) => {
+  console.log(`[Admin Route] ${req.method} ${req.path} - User: ${req.user?.email || 'none'}`)
+  next()
+})
+
 // 감사 로그 기록 헬퍼
 async function logAdminAction(
   adminUserId: string,
