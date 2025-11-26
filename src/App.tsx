@@ -44,41 +44,68 @@ function App() {
     }
   }, [])
 
-  // isAdmin 상태 변경 시 인증 상태 확인
+  // isAdmin 상태 변경 시 인증 상태 확인 및 admin_mode 설정
   useEffect(() => {
     if (isAdmin) {
       // Admin 모드가 활성화되면 인증 상태 확인
       const adminAuth = getAdminAuth()
       console.log('[Admin] 모드 활성화, 인증 상태:', adminAuth)
       setIsAdminAuthenticated(adminAuth)
+      
+      // Admin 모드임을 localStorage에 저장 (리다이렉트 방지)
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('admin_mode', 'true')
+      }
     } else {
       console.log('[Admin] 모드 비활성화')
       setIsAdminAuthenticated(false)
+      
+      // Admin 모드 해제 시 localStorage에서 제거
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('admin_mode')
+      }
+    }
+  }, [isAdmin])
+
+  // Admin 인증 상태 변경 감지 (다른 탭에서 로그아웃 등)
+  useEffect(() => {
+    const checkAdminAuth = () => {
+      const adminAuth = getAdminAuth()
+      if (isAdmin && !adminAuth) {
+        // Admin 모드인데 인증이 해제된 경우
+        setIsAdminAuthenticated(false)
+      } else if (isAdmin && adminAuth) {
+        setIsAdminAuthenticated(true)
+      }
+    }
+    
+    // 주기적으로 인증 상태 확인 (5초마다)
+    const interval = setInterval(checkAdminAuth, 5000)
+    
+    // storage 이벤트 리스너 (다른 탭에서 변경 감지)
+    window.addEventListener('storage', checkAdminAuth)
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('storage', checkAdminAuth)
     }
   }, [isAdmin])
 
   const handleAdminLogin = () => {
     console.log('[Admin] 로그인 성공')
     setIsAdminAuthenticated(true)
+    // Admin 인증 상태가 이미 setAdminAuth로 저장되었으므로 추가 작업 불필요
   }
 
   const handleAdminLogout = () => {
+    console.log('[Admin] 로그아웃')
     setIsAdminAuthenticated(false)
     setIsAdmin(false) // 로그아웃 시 메인 페이지로 돌아감
+    // clearAdminAuth는 AdminDashboard에서 호출됨
   }
 
   // Admin 모드 - 별도 페이지로 이동
   if (isAdmin) {
-    // Admin 로그인 페이지에서는 admin_mode를 localStorage에 설정하여 리다이렉트 방지
-    useEffect(() => {
-      if (isAdmin && !isAdminAuthenticated) {
-        // Admin 로그인 페이지임을 표시 (리다이렉트 방지)
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('admin_mode', 'true')
-        }
-      }
-    }, [isAdmin, isAdminAuthenticated])
-    
     if (!isAdminAuthenticated) {
       return (
         <div className="app">
@@ -86,9 +113,6 @@ function App() {
             onLogin={handleAdminLogin}
             onBack={() => {
               setIsAdmin(false)
-              if (typeof window !== 'undefined') {
-                localStorage.removeItem('admin_mode')
-              }
             }}
           />
         </div>
@@ -100,9 +124,6 @@ function App() {
           onLogout={handleAdminLogout}
           onBackToMain={() => {
             setIsAdmin(false)
-            if (typeof window !== 'undefined') {
-              localStorage.removeItem('admin_mode')
-            }
           }}
         />
       </div>

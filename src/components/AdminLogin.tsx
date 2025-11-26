@@ -35,7 +35,11 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
         // JWT 토큰이 성공적으로 받아졌으면 Admin 인증 완료
         console.log('[Admin Login] 로그인 성공, 토큰 받음')
         setAdminAuth(true)
-        onLogin()
+        
+        // 로그인 성공 후 약간의 딜레이를 두고 콜백 호출 (상태 업데이트 보장)
+        setTimeout(() => {
+          onLogin()
+        }, 100)
       } else {
         setError('로그인에 실패했습니다. 토큰을 받을 수 없습니다.')
       }
