@@ -3,13 +3,24 @@
   border-radius: 12px;
   padding: var(--spacing-xl);
   border: 1px solid #e5e5e5;
-  transition: all 0.2s ease;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .result-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  transform: translateY(-2px) translateZ(0);
+}
+
+/* 모바일에서 호버 효과 비활성화 */
+@media (hover: none) {
+  .result-card:hover {
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .result-card-header {
@@ -31,6 +42,40 @@
   line-height: var(--line-height-normal);
   flex: 1;
   min-width: 0;
+  word-break: break-word;
+}
+
+/* 모바일에서 결과 카드 헤더 최적화 */
+@media (max-width: 768px) {
+  .result-card-header {
+    margin-bottom: var(--spacing-md);
+    gap: var(--spacing-sm);
+  }
+  
+  .result-card-header h3 {
+    font-size: var(--font-size-sm);
+    flex: 1 1 100%;
+    margin-bottom: var(--spacing-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .result-card-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-sm);
+  }
+  
+  .result-card-header h3 {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-xs);
+  }
+  
+  .result-card-header > div {
+    width: 100%;
+    display: flex;
+    gap: var(--spacing-sm);
+  }
 }
 
 .copy-button {
@@ -46,12 +91,42 @@
   cursor: pointer;
   transition: all 0.2s ease;
   min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
   display: flex;
   align-items: center;
   justify-content: center;
   white-space: nowrap;
   flex-shrink: 0;
   line-height: var(--line-height-normal);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 모바일에서 복사 버튼 최적화 */
+@media (max-width: 768px) {
+  .copy-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-xs);
+    min-width: auto;
+    flex: 1;
+  }
+}
+
+@media (max-width: 480px) {
+  .copy-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-xs);
+    width: 100%;
+    min-width: 0;
+  }
+  
+  .result-card-header > div {
+    flex-direction: column;
+  }
+  
+  .result-card-header > div .copy-button {
+    width: 100%;
+  }
 }
 
 .copy-button:hover {
@@ -74,16 +149,65 @@
   max-height: 400px;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.2) transparent;
+  contain: layout style paint;
+  content-visibility: auto;
+}
+
+.result-card-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.result-card-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.result-card-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.result-card-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .result-card-content pre {
   margin: 0;
   white-space: pre-wrap;
   word-wrap: break-word;
+  overflow-wrap: break-word;
   font-family: inherit;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-relaxed);
   color: #000000;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 모바일에서 결과 카드 내용 최적화 */
+@media (max-width: 768px) {
+  .result-card-content {
+    padding: var(--spacing-md);
+    max-height: 300px;
+  }
+  
+  .result-card-content pre {
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
+}
+
+@media (max-width: 480px) {
+  .result-card-content {
+    padding: var(--spacing-sm) var(--spacing-md);
+    max-height: 250px;
+  }
+  
+  .result-card-content pre {
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
+  }
 }
 
 .hashtags-card {
@@ -125,6 +249,34 @@
   letter-spacing: 0;
   transition: all 0.2s ease;
   line-height: var(--line-height-normal);
+  word-break: break-word;
+  max-width: 100%;
+}
+
+/* 모바일에서 해시태그 최적화 */
+@media (max-width: 768px) {
+  .hashtags-container {
+    gap: var(--spacing-xs);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .hashtag {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .hashtags-container {
+    gap: var(--spacing-xs);
+  }
+  
+  .hashtag {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+    flex: 1 1 auto;
+    min-width: 0;
+  }
 }
 
 .hashtag:hover {

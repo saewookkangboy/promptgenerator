@@ -6,51 +6,231 @@
   justify-content: center;
   align-items: center;
   z-index: 1000;
+  padding: var(--spacing-lg);
+  animation: fadeIn 0.2s ease;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 애니메이션 성능 최적화 */
+.experiment-modal__backdrop,
+.experiment-modal {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .experiment-modal__backdrop {
+    animation: none;
+  }
+  
+  .experiment-modal {
+    animation: none;
+  }
+  
+  @keyframes slideUpMobile {
+    from, to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
 }
 
 .experiment-modal {
-  width: 360px;
+  width: 100%;
+  max-width: 360px;
   background: #fff;
   border-radius: 16px;
-  padding: 24px;
+  padding: var(--spacing-xl);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
+  animation: slideUp 0.3s ease;
+  max-height: 90vh;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  position: relative;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
 }
 
 .experiment-modal h3 {
   margin-top: 0;
+  margin-bottom: var(--spacing-lg);
+  font-size: var(--font-size-xl);
+  font-weight: 600;
+  color: #000000;
+  line-height: var(--line-height-normal);
 }
 
 .experiment-modal .form-group {
-  margin-bottom: 16px;
+  margin-bottom: var(--spacing-lg);
+}
+
+.experiment-modal .form-group label {
+  display: block;
+  margin-bottom: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  color: #000000;
+  line-height: var(--line-height-normal);
 }
 
 .experiment-modal input,
 .experiment-modal select {
   width: 100%;
-  padding: 10px 12px;
+  padding: var(--spacing-md) var(--spacing-lg);
   border: 1px solid #e0e0e0;
   border-radius: 8px;
+  font-size: var(--font-size-base);
+  font-family: inherit;
+  background: #ffffff;
+  color: #000000;
+  min-height: var(--touch-target-min);
+  line-height: var(--line-height-normal);
+  transition: all 0.2s ease;
+}
+
+.experiment-modal input:focus,
+.experiment-modal select:focus {
+  outline: none;
+  border-color: #000000;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
-  gap: 8px;
+  gap: var(--spacing-sm);
+  margin-top: var(--spacing-xl);
+  flex-wrap: wrap;
 }
 
 .modal-actions button {
   border: none;
   border-radius: 999px;
-  padding: 8px 16px;
+  padding: var(--spacing-md) var(--spacing-lg);
   cursor: pointer;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  line-height: var(--line-height-normal);
 }
 
 .modal-actions .secondary {
   background: #f0f0f0;
+  color: #000000;
+}
+
+.modal-actions .secondary:hover {
+  background: #e0e0e0;
 }
 
 .modal-actions button:not(.secondary) {
   background: #000;
   color: #fff;
+}
+
+.modal-actions button:not(.secondary):hover {
+  background: #333333;
+}
+
+/* 모바일 최적화 */
+@media (max-width: 768px) {
+  .experiment-modal__backdrop {
+    padding: var(--spacing-md);
+    align-items: flex-end;
+  }
+  
+  .experiment-modal {
+    max-width: 100%;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: var(--spacing-lg);
+    max-height: 85vh;
+    animation: slideUpMobile 0.3s ease;
+  }
+  
+  @keyframes slideUpMobile {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  
+  .experiment-modal h3 {
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .experiment-modal .form-group {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .experiment-modal .form-group label {
+    font-size: var(--font-size-xs);
+  }
+  
+  .experiment-modal input,
+  .experiment-modal select {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-base);
+  }
+  
+  .modal-actions {
+    flex-direction: column-reverse;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+  }
+  
+  .modal-actions button {
+    width: 100%;
+    padding: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .experiment-modal__backdrop {
+    padding: 0;
+  }
+  
+  .experiment-modal {
+    border-radius: 16px 16px 0 0;
+    padding: var(--spacing-md);
+    max-height: 90vh;
+  }
+  
+  .experiment-modal h3 {
+    font-size: var(--font-size-base);
+  }
 }
 

@@ -9,8 +9,12 @@
   align-items: center;
   justify-content: center;
   z-index: 1000;
-  padding: 20px;
+  padding: var(--spacing-lg);
   animation: fadeIn 0.2s ease;
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 @keyframes fadeIn {
@@ -19,6 +23,31 @@
   }
   to {
     opacity: 1;
+  }
+}
+
+/* 애니메이션 성능 최적화 */
+.visit-graph-modal-overlay,
+.visit-graph-modal {
+  will-change: opacity, transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .visit-graph-modal-overlay {
+    animation: none;
+  }
+  
+  .visit-graph-modal {
+    animation: none;
+  }
+  
+  @keyframes slideUpMobile {
+    from, to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 }
 
@@ -33,6 +62,8 @@
   flex-direction: column;
   animation: slideUp 0.3s ease;
   border: 1px solid #e5e5e5;
+  position: relative;
+  overflow: hidden;
 }
 
 @keyframes slideUp {
@@ -69,13 +100,18 @@
   color: #666666;
   cursor: pointer;
   padding: 0;
-  width: 32px;
-  height: 32px;
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 6px;
   transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  flex-shrink: 0;
 }
 
 .visit-graph-modal-close:hover {
@@ -131,15 +167,22 @@
 }
 
 .visit-graph-modal-button {
-  padding: 10px 24px;
+  padding: var(--spacing-md) var(--spacing-xl);
   background: #000000;
   color: #ffffff;
   border: 1px solid #000000;
   border-radius: 6px;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  line-height: var(--line-height-normal);
 }
 
 .visit-graph-modal-button:hover {
@@ -155,80 +198,110 @@
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .visit-graph-modal-overlay {
-    padding: 12px;
+    padding: var(--spacing-md);
+    align-items: flex-end;
   }
 
   .visit-graph-modal {
     max-height: 95vh;
+    border-radius: 16px 16px 0 0;
+    animation: slideUpMobile 0.3s ease;
+  }
+  
+  @keyframes slideUpMobile {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 
   .visit-graph-modal-header {
-    padding: 20px;
+    padding: var(--spacing-lg);
   }
 
   .visit-graph-modal-header h2 {
-    font-size: 1.25rem;
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-normal);
   }
 
   .visit-graph-stats {
     flex-direction: column;
-    gap: 12px;
-    padding: 16px 20px;
+    gap: var(--spacing-md);
+    padding: var(--spacing-lg);
   }
 
   .visit-stat-value {
-    font-size: 1.25rem;
+    font-size: var(--font-size-xl);
+    line-height: var(--line-height-normal);
   }
 
   .visit-graph-container {
-    padding: 16px 20px;
+    padding: var(--spacing-lg);
     min-height: 300px;
     max-height: 400px;
   }
 
   .visit-graph-modal-footer {
-    padding: 16px 20px;
+    padding: var(--spacing-lg);
+  }
+  
+  .visit-graph-modal-button {
+    width: 100%;
   }
 }
 
 @media (max-width: 480px) {
   .visit-graph-modal-overlay {
-    padding: 8px;
+    padding: 0;
+  }
+
+  .visit-graph-modal {
+    border-radius: 16px 16px 0 0;
+    max-height: 90vh;
   }
 
   .visit-graph-modal-header {
-    padding: 16px;
+    padding: var(--spacing-md);
   }
 
   .visit-graph-modal-header h2 {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-normal);
   }
 
   .visit-graph-stats {
-    padding: 12px 16px;
+    padding: var(--spacing-md);
+    gap: var(--spacing-sm);
   }
 
   .visit-stat-label {
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
+    line-height: var(--line-height-normal);
   }
 
   .visit-stat-value {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
+    line-height: var(--line-height-normal);
   }
 
   .visit-graph-container {
-    padding: 12px 16px;
+    padding: var(--spacing-md);
     min-height: 250px;
     max-height: 350px;
   }
 
   .visit-graph-modal-footer {
-    padding: 12px 16px;
+    padding: var(--spacing-md);
   }
 
   .visit-graph-modal-button {
-    padding: 8px 20px;
-    font-size: 0.85rem;
+    padding: var(--spacing-md);
+    font-size: var(--font-size-xs);
+    width: 100%;
   }
 }
 

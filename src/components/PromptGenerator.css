@@ -5,6 +5,7 @@
   padding: var(--spacing-2xl);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: box-shadow 0.2s ease;
+  contain: layout style paint;
 }
 
 .prompt-generator:hover {
@@ -28,9 +29,34 @@
   text-transform: none;
   letter-spacing: 0;
   line-height: var(--line-height-normal);
+  width: 100%;
 }
 
-.content-type-select {
+/* 모바일에서 폼 그룹 최적화 */
+@media (max-width: 768px) {
+  .form-group {
+    margin-bottom: var(--spacing-lg);
+  }
+  
+  .form-group label {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .form-group {
+    margin-bottom: var(--spacing-md);
+  }
+  
+  .form-group label {
+    font-size: var(--font-size-xs);
+    margin-bottom: var(--spacing-xs);
+  }
+}
+
+.content-type-select,
+.option-select {
   width: 100%;
   padding: var(--spacing-md) var(--spacing-lg);
   border: 1px solid #e5e5e5;
@@ -41,12 +67,42 @@
   cursor: pointer;
   transition: all 0.2s ease;
   appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right var(--spacing-md) center;
   padding-right: 40px;
   min-height: var(--touch-target-min);
   line-height: var(--line-height-normal);
+  touch-action: manipulation;
+}
+
+/* 모바일에서 셀렉트 최적화 */
+@media (max-width: 768px) {
+  .content-type-select,
+  .option-select {
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-size: var(--font-size-base);
+    padding-right: 36px;
+  }
+  
+  /* iOS Safari 줌 방지 */
+  @supports (-webkit-touch-callout: none) {
+    .content-type-select,
+    .option-select {
+      font-size: 16px;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .content-type-select,
+  .option-select {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+    padding-right: 32px;
+  }
 }
 
 .content-type-select:hover {
@@ -72,6 +128,10 @@
   resize: vertical;
   transition: all 0.2s ease;
   line-height: var(--line-height-relaxed);
+  min-height: 120px;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
 }
 
 .prompt-input:hover {
@@ -83,6 +143,30 @@
   background: #ffffff;
   border-color: #000000;
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+/* 모바일에서 텍스트 입력 최적화 */
+@media (max-width: 768px) {
+  .prompt-input {
+    padding: var(--spacing-md);
+    font-size: var(--font-size-base);
+    min-height: 100px;
+    line-height: var(--line-height-relaxed);
+  }
+  
+  /* iOS Safari 줌 방지 */
+  @supports (-webkit-touch-callout: none) {
+    .prompt-input {
+      font-size: 16px; /* iOS에서 자동 줌 방지 */
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .prompt-input {
+    padding: var(--spacing-sm) var(--spacing-md);
+    min-height: 80px;
+  }
 }
 
 .generate-button {
@@ -104,6 +188,27 @@
   align-items: center;
   justify-content: center;
   line-height: var(--line-height-normal);
+  position: relative;
+  overflow: hidden;
+  will-change: transform;
+}
+
+.generate-button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.3s ease, height 0.3s ease;
+}
+
+.generate-button:active::before {
+  width: 300px;
+  height: 300px;
 }
 
 .generate-button:hover:not(:disabled) {
@@ -444,6 +549,23 @@
   letter-spacing: 0;
   min-height: var(--touch-target-min);
   line-height: var(--line-height-normal);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 모바일에서 토글 버튼 최적화 */
+@media (max-width: 768px) {
+  .toggle-options-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .toggle-options-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-xs);
+  }
 }
 
 .toggle-options-button:hover {
@@ -457,6 +579,21 @@
   background: #fafafa;
   border: 1px solid #e5e5e5;
   border-radius: 8px;
+}
+
+/* 모바일에서 상세 옵션 최적화 */
+@media (max-width: 768px) {
+  .detailed-options {
+    padding: var(--spacing-md);
+    margin-top: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .detailed-options {
+    padding: var(--spacing-sm) var(--spacing-md);
+    border-radius: 6px;
+  }
 }
 
 .options-grid {
@@ -518,6 +655,10 @@
   line-height: var(--line-height-normal);
   min-height: var(--touch-target-min);
   padding: var(--spacing-xs) 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .checkbox-input {
@@ -529,6 +670,36 @@
   cursor: pointer;
   accent-color: #000000;
   flex-shrink: 0;
+  touch-action: manipulation;
+}
+
+/* 모바일에서 체크박스 최적화 */
+@media (max-width: 768px) {
+  .checkbox-label {
+    font-size: var(--font-size-sm);
+    padding: var(--spacing-sm) 0;
+  }
+  
+  .checkbox-input {
+    width: 22px;
+    height: 22px;
+    min-width: 22px;
+    min-height: 22px;
+    margin-right: var(--spacing-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .checkbox-label {
+    font-size: var(--font-size-xs);
+  }
+  
+  .checkbox-input {
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+  }
 }
 
 /* 톤 스타일 그리드 */

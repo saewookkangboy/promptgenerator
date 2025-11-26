@@ -13,6 +13,9 @@
   border-top-color: transparent;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .spinner-small {
@@ -49,6 +52,18 @@
 @keyframes spin {
   to {
     transform: rotate(360deg);
+  }
+}
+
+/* 애니메이션 성능 최적화 */
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+    border-top-color: #000000;
+  }
+  
+  .spinner-inner {
+    animation: none;
   }
 }
 

@@ -161,6 +161,35 @@ body {
 *:focus-visible {
   outline: 2px solid #000000;
   outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* 키보드 네비게이션 개선 */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
+  z-index: 1;
+}
+
+/* 스킵 링크 (스크린 리더용) */
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #000000;
+  color: #ffffff;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 10000;
+  border-radius: 0 0 4px 0;
+}
+
+.skip-link:focus {
+  top: 0;
 }
 
 /* 스크린 리더 전용 텍스트 */
@@ -185,6 +214,24 @@ select,
 label {
   min-height: var(--touch-target-min);
   min-width: var(--touch-target-min);
+}
+
+/* 성능 최적화: 이미지 최적화 */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* 스크롤 성능 최적화 */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 /* 작은 버튼/링크는 패딩으로 보완 */
@@ -214,6 +261,32 @@ a.small {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* GPU 가속 최적화 */
+.prompt-generator,
+.result-card,
+.structured-card,
+.wizard-section,
+.experiment-modal,
+.visit-graph-modal {
+  will-change: transform;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+
+/* 스크롤 성능 최적화 */
+@media (max-width: 768px) {
+  * {
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
