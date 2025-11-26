@@ -142,6 +142,8 @@ function App() {
             <button
               onClick={(e) => {
                 e.preventDefault()
+                e.stopPropagation()
+                console.log('[Admin] Admin 버튼 클릭, Admin 모드 활성화')
                 setIsAdmin(true)
               }}
               className="admin-toggle-button"
