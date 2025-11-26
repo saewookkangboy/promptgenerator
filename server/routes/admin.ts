@@ -106,6 +106,7 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
       totalWorkspaces,
       tierDistribution,
       recentUsers,
+      categoryStats,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.user.count({
@@ -134,7 +135,31 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
           createdAt: true,
         },
       }),
+      // 카테고리별 프롬프트 통계
+      prisma.prompt.groupBy({
+        by: ['category'],
+        where: { deletedAt: null },
+        _count: {
+          id: true,
+        },
+      }),
     ])
+
+    // 카테고리별 통계 변환
+    const categoryCounts = {
+      text: 0,
+      image: 0,
+      video: 0,
+      engineering: 0,
+      total: totalPrompts,
+    }
+    
+    categoryStats.forEach((stat: { category: string; _count: { id: number } }) => {
+      const category = stat.category.toLowerCase()
+      if (category === 'text' || category === 'image' || category === 'video' || category === 'engineering') {
+        categoryCounts[category as keyof typeof categoryCounts] = stat._count.id
+      }
+    })
 
     await logAdminAction(
       req.user!.id,
@@ -157,6 +182,9 @@ router.get('/stats', async (req: AuthRequest, res: Response) => {
         count: t._count.id,
       })),
       recentUsers,
+      // 프론트엔드 호환성을 위한 통계
+      stats: categoryCounts,
+      visitCount: totalUsers, // 사용자 수를 방문 카운트로 사용 (실제 방문 카운트는 별도 구현 필요)
     })
   } catch (error: any) {
     console.error('통계 조회 오류:', error)

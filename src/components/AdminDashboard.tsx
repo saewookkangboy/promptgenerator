@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getStats, getPromptRecords, getVisitCount, clearAdminAuth, PromptRecord } from '../utils/storage'
+import { clearAdminAuth } from '../utils/storage'
 import { adminAPI } from '../utils/api'
 import VisitGraphModal from './VisitGraphModal'
 import GuideManager from './GuideManager'
@@ -11,28 +11,57 @@ interface AdminDashboardProps {
   onBackToMain?: () => void
 }
 
+// 프롬프트 기록 타입 (서버 응답 기반)
+interface ServerPromptRecord {
+  id: string
+  title?: string | null
+  content: string
+  category: string
+  model?: string | null
+  userId: string
+  user?: {
+    id: string
+    email: string
+    name?: string | null
+  } | null
+  createdAt: string
+  updatedAt: string
+  options?: any
+}
+
 function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
-  const [stats, setStats] = useState(getStats())
-  const [records, setRecords] = useState<PromptRecord[]>([])
+  // 서버 기반 상태
+  const [stats, setStats] = useState<{
+    total: number
+    text: number
+    image: number
+    video: number
+    engineering: number
+  }>({
+    total: 0,
+    text: 0,
+    image: 0,
+    video: 0,
+    engineering: 0,
+  })
   const [visitCount, setVisitCount] = useState(0)
+  const [records, setRecords] = useState<ServerPromptRecord[]>([])
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'text' | 'image' | 'video' | 'engineering'>('all')
   const [isGraphModalOpen, setIsGraphModalOpen] = useState(false)
-  const [selectedRecord, setSelectedRecord] = useState<PromptRecord | null>(null)
+  const [selectedRecord, setSelectedRecord] = useState<ServerPromptRecord | null>(null)
   const [activeSection, setActiveSection] = useState<'stats' | 'guides' | 'users' | 'prompts' | 'templates'>('stats')
   
-  // 새로운 상태: 서버 통계
+  // 서버 통계 및 데이터
   const [serverStats, setServerStats] = useState<any>(null)
   const [users, setUsers] = useState<any[]>([])
   const [serverPrompts, setServerPrompts] = useState<any[]>([])
   const [usersPage, setUsersPage] = useState(1)
   const [promptsPage, setPromptsPage] = useState(1)
   const [serverConnected, setServerConnected] = useState<boolean | null>(null) // null: 확인 중, true: 연결됨, false: 연결 안됨
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // 로컬 데이터는 즉시 로드 (서버와 무관)
-    loadData()
-    
-    // 서버 연결 확인은 백그라운드에서 비동기로 수행 (블로킹하지 않음)
+    // 서버 연결 확인 및 데이터 로드
     if (serverConnected === null) {
       checkServerConnection()
     }
@@ -42,31 +71,25 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
       loadServerData()
     }
     
-    // 로컬 데이터는 5초마다 새로고침 (서버와 무관)
-    const localInterval = setInterval(() => {
-      loadData()
-    }, 5000)
-    
-    // 서버 데이터는 서버 연결된 경우에만 새로고침
+    // 서버 데이터는 10초마다 새로고침
     const serverInterval = setInterval(() => {
       if (serverConnected === true) {
         loadServerData()
       }
-    }, 10000) // 서버 데이터는 10초마다
+    }, 10000)
     
     return () => {
-      clearInterval(localInterval)
       clearInterval(serverInterval)
     }
   }, [usersPage, promptsPage, serverConnected])
 
-  // 서버 연결 확인 (타임아웃 포함, 비동기, 블로킹하지 않음)
+  // 서버 연결 확인
   const checkServerConnection = async () => {
-    // 로딩 상태는 설정하지 않음 (사용자 경험 방해하지 않음)
+    setLoading(true)
     try {
-      // 타임아웃 설정 (2초로 단축)
+      // 타임아웃 설정 (3초)
       const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('타임아웃')), 2000)
+        setTimeout(() => reject(new Error('타임아웃')), 3000)
       })
       
       const statsPromise = adminAPI.getStats()
@@ -74,12 +97,16 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
       
       setServerConnected(true)
       // 연결 성공 시 서버 데이터 로드
-      loadServerData()
+      await loadServerData()
     } catch (error) {
-      // 서버 연결 실패는 정상적인 상황 (로컬 모드)
-      // 콘솔에만 로그하고 사용자에게는 방해하지 않음
-      console.log('서버 연결 확인 실패 (로컬 모드로 작동):', error)
+      console.error('서버 연결 확인 실패:', error)
       setServerConnected(false)
+      // 서버 연결 실패 시 빈 상태로 설정
+      setStats({ total: 0, text: 0, image: 0, video: 0, engineering: 0 })
+      setVisitCount(0)
+      setRecords([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -88,16 +115,33 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
     if (serverConnected !== true) return
     
     try {
-      // 로딩 상태는 설정하지 않음 (사용자 경험 방해하지 않음)
       // 서버 통계 로드
       const statsData = await adminAPI.getStats()
       setServerStats(statsData)
+      
+      // 통계 데이터 설정
+      if (statsData.stats) {
+        setStats({
+          total: statsData.stats.total || 0,
+          text: statsData.stats.text || 0,
+          image: statsData.stats.image || 0,
+          video: statsData.stats.video || 0,
+          engineering: statsData.stats.engineering || 0,
+        })
+      }
+      
+      // 방문 카운트 설정
+      if (statsData.visitCount !== undefined) {
+        setVisitCount(statsData.visitCount)
+      } else if (statsData.overview?.totalUsers) {
+        setVisitCount(statsData.overview.totalUsers)
+      }
 
       // 사용자 목록 로드
       const usersData = await adminAPI.getUsers({ page: usersPage, limit: 20 })
       setUsers(usersData.users)
 
-      // 프롬프트 목록 로드
+      // 프롬프트 목록 로드 (통계 및 기록용)
       const promptsData = await adminAPI.getPrompts({ page: promptsPage, limit: 20 })
       setServerPrompts(promptsData.prompts)
     } catch (error) {
@@ -109,11 +153,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
     }
   }
 
-  const loadData = () => {
-    setStats(getStats())
-    setRecords(getPromptRecords())
-    setVisitCount(getVisitCount())
-  }
+  // loadData 함수 제거 (서버 기반으로 변경)
 
   const handleLogout = () => {
     clearAdminAuth()
@@ -122,10 +162,10 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
 
   const filteredRecords = selectedCategory === 'all' 
     ? records 
-    : records.filter(r => r.category === selectedCategory)
+    : records.filter(r => r.category.toLowerCase() === selectedCategory)
 
-  const formatDate = (timestamp: number) => {
-    const date = new Date(timestamp)
+  const formatDate = (timestamp: number | string) => {
+    const date = typeof timestamp === 'string' ? new Date(timestamp) : new Date(timestamp)
     return date.toLocaleString('ko-KR', {
       year: 'numeric',
       month: '2-digit',
@@ -140,19 +180,20 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
     return text.substring(0, maxLength) + '...'
   }
 
-  const renderOptionsTable = (record: PromptRecord) => {
+  const renderOptionsTable = (record: ServerPromptRecord) => {
     if (!record.options) return null
 
     const options = record.options
     const rows: Array<{ label: string; value: string | number | boolean | undefined }> = []
 
-    if (record.category === 'text') {
+    const category = record.category.toLowerCase()
+    if (category === 'text') {
       if (options.contentType) rows.push({ label: '콘텐츠 타입', value: options.contentType })
       if (options.age) rows.push({ label: '나이', value: options.age })
       if (options.gender) rows.push({ label: '성별', value: options.gender })
       if (options.occupation) rows.push({ label: '직업', value: options.occupation })
       if (options.conversational !== undefined) rows.push({ label: '대화체', value: options.conversational ? '예' : '아니오' })
-    } else if (record.category === 'image') {
+    } else if (category === 'image') {
       if (options.artStyle) rows.push({ label: '아트 스타일', value: options.artStyle })
       if (options.framing) rows.push({ label: '프레이밍', value: options.framing })
       if (options.lighting) rows.push({ label: '조명', value: options.lighting })
@@ -162,7 +203,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
       if (options.negativePrompt && Array.isArray(options.negativePrompt) && options.negativePrompt.length > 0) {
         rows.push({ label: '네거티브 프롬프트', value: options.negativePrompt.join(', ') })
       }
-    } else if (record.category === 'video') {
+    } else if (category === 'video') {
       if (options.genre) rows.push({ label: '장르', value: options.genre })
       if (options.mood) rows.push({ label: '무드', value: options.mood })
       if (options.totalDuration) rows.push({ label: '총 길이', value: `${options.totalDuration}초` })
@@ -170,7 +211,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
       if (options.resolution) rows.push({ label: '해상도', value: options.resolution })
       if (options.sceneCount) rows.push({ label: '장면 수', value: options.sceneCount })
       if (options.hasReferenceImage !== undefined) rows.push({ label: '참조 이미지', value: options.hasReferenceImage ? '예' : '아니오' })
-    } else if (record.category === 'engineering') {
+    } else if (category === 'engineering') {
       if (options.method) rows.push({ label: '엔지니어링 방법', value: options.method })
     }
 
@@ -494,6 +535,25 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
 
             {activeSection === 'stats' && (
         <>
+          {loading && (
+            <div style={{ padding: '24px', textAlign: 'center' }}>
+              서버 데이터를 불러오는 중...
+            </div>
+          )}
+          {!loading && serverConnected === false && (
+            <div style={{ 
+              padding: '24px', 
+              textAlign: 'center',
+              background: '#fff3cd',
+              border: '1px solid #ffc107',
+              borderRadius: '4px',
+              marginBottom: '24px'
+            }}>
+              ⚠️ 서버에 연결할 수 없습니다. Railway 서버가 실행 중인지 확인해주세요.
+            </div>
+          )}
+          {!loading && (
+          <>
           <div className="admin-stats-grid">
             <div className="stat-card stat-card-clickable" onClick={() => setIsGraphModalOpen(true)}>
               <div className="stat-label">총 방문수</div>
@@ -588,15 +648,15 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                   >
                     <td>{index + 1}</td>
                     <td>
-                      <span className={`category-badge category-${record.category}`}>
-                        {record.category === 'text' ? '텍스트' :
-                         record.category === 'image' ? '이미지' :
-                         record.category === 'video' ? '동영상' : '엔지니어링'}
+                      <span className={`category-badge category-${record.category.toLowerCase()}`}>
+                        {record.category.toLowerCase() === 'text' ? '텍스트' :
+                         record.category.toLowerCase() === 'image' ? '이미지' :
+                         record.category.toLowerCase() === 'video' ? '동영상' : '엔지니어링'}
                       </span>
                     </td>
                     <td>{record.model || '-'}</td>
-                    <td className="prompt-cell" title={record.userInput}>
-                      {truncateText(record.userInput, 40)}
+                    <td className="prompt-cell" title={record.title || record.content}>
+                      {truncateText(record.title || record.content, 40)}
                     </td>
                     <td>
                       {record.options ? (
@@ -605,7 +665,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                         <span className="options-indicator empty">옵션 없음</span>
                       )}
                     </td>
-                    <td>{formatDate(record.timestamp)}</td>
+                    <td>{formatDate(record.createdAt)}</td>
                   </tr>
                 ))
               )}
@@ -626,9 +686,19 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
             </div>
             <div className="options-detail-content">
               <div className="detail-item">
-                <strong>프롬프트:</strong>
-                <p>{selectedRecord.userInput}</p>
+                <strong>제목:</strong>
+                <p>{selectedRecord.title || '-'}</p>
               </div>
+              <div className="detail-item">
+                <strong>프롬프트:</strong>
+                <p>{selectedRecord.content}</p>
+              </div>
+              {selectedRecord.user && (
+                <div className="detail-item">
+                  <strong>사용자:</strong>
+                  <p>{selectedRecord.user.email} {selectedRecord.user.name ? `(${selectedRecord.user.name})` : ''}</p>
+                </div>
+              )}
               {selectedRecord.model && (
                 <div className="detail-item">
                   <strong>모델:</strong>
@@ -640,6 +710,8 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
           </div>
         )}
           </div>
+          </>
+          )}
         </>
       )}
 
