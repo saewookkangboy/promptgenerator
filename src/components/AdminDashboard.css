@@ -303,6 +303,18 @@
   font-family: "IBM Plex Sans KR", sans-serif;
 }
 
+.section-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.section-updated {
+  font-size: var(--font-size-xs);
+  color: #777777;
+}
+
 .category-filter {
   display: flex;
   gap: var(--spacing-sm);
@@ -375,6 +387,30 @@
   font-size: var(--font-size-sm);
   font-weight: 300;
   line-height: var(--line-height-normal);
+}
+
+.admin-status-card {
+  padding: 24px;
+  text-align: center;
+  color: #666666;
+  background: #f8f9fa;
+  border-radius: 12px;
+  margin-bottom: 24px;
+}
+
+.admin-warning-card {
+  padding: 24px;
+  text-align: center;
+  background: #fff3cd;
+  border: 1px solid #ffc107;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  color: #856404;
+  font-weight: 500;
+}
+
+.admin-warning-card .warning-title {
+  margin-bottom: 12px;
 }
 
 .admin-table tbody tr:hover {

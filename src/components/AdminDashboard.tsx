@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { clearAdminAuth } from '../utils/storage'
-import { adminAPI } from '../utils/api'
 import VisitGraphModal from './VisitGraphModal'
 import GuideManager from './GuideManager'
 import TemplateManager from './TemplateManager'
+import { useAdminData, AdminPromptRecord } from '../hooks/useAdminData'
 import './AdminDashboard.css'
 
 interface AdminDashboardProps {
@@ -11,208 +11,38 @@ interface AdminDashboardProps {
   onBackToMain?: () => void
 }
 
-// 프롬프트 기록 타입 (서버 응답 기반)
-interface ServerPromptRecord {
-  id: string
-  title?: string | null
-  content: string
-  category: string
-  model?: string | null
-  userId: string
-  user?: {
-    id: string
-    email: string
-    name?: string | null
-  } | null
-  createdAt: string
-  updatedAt: string
-  options?: any
-}
-
 function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
-  // 서버 기반 상태
-  const [stats, setStats] = useState<{
-    total: number
-    text: number
-    image: number
-    video: number
-    engineering: number
-  }>({
-    total: 0,
-    text: 0,
-    image: 0,
-    video: 0,
-    engineering: 0,
-  })
-  const [visitCount, setVisitCount] = useState(0)
-  const [records, setRecords] = useState<ServerPromptRecord[]>([])
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'text' | 'image' | 'video' | 'engineering'>('all')
   const [isGraphModalOpen, setIsGraphModalOpen] = useState(false)
-  const [selectedRecord, setSelectedRecord] = useState<ServerPromptRecord | null>(null)
+  const [selectedRecord, setSelectedRecord] = useState<AdminPromptRecord | null>(null)
   const [activeSection, setActiveSection] = useState<'stats' | 'guides' | 'users' | 'prompts' | 'templates'>('stats')
-  
-  // 서버 통계 및 데이터
-  const [serverStats, setServerStats] = useState<any>(null)
-  const [users, setUsers] = useState<any[]>([])
-  const [serverPrompts, setServerPrompts] = useState<any[]>([])
   const [usersPage, setUsersPage] = useState(1)
   const [promptsPage, setPromptsPage] = useState(1)
-  const [serverConnected, setServerConnected] = useState<boolean | null>(null) // null: 확인 중, true: 연결됨, false: 연결 안됨
-  const [loading, setLoading] = useState(true)
+  const {
+    generationStats: stats,
+    statsOverview: serverStats,
+    visitCount,
+    promptRecords: records,
+    users,
+    prompts: serverPrompts,
+    pagination,
+    loading,
+    serverStatus,
+    errors: adminErrors,
+    refresh,
+    lastUpdated,
+  } = useAdminData({ usersPage, promptsPage })
 
-  useEffect(() => {
-    // 서버 연결 확인 및 데이터 로드
-    if (serverConnected === null) {
-      checkServerConnection()
-    }
-    
-    // 서버가 연결된 경우에만 서버 데이터 로드
-    if (serverConnected === true) {
-      loadServerData()
-    }
-    
-    // 서버 데이터는 10초마다 새로고침
-    const serverInterval = setInterval(() => {
-      if (serverConnected === true) {
-        loadServerData()
-      }
-    }, 10000)
-    
-    return () => {
-      clearInterval(serverInterval)
-    }
-  }, [usersPage, promptsPage, serverConnected])
-
-  // 서버 연결 확인 (인증 불필요한 엔드포인트 사용)
-  const checkServerConnection = async () => {
-    setLoading(true)
-    try {
-      const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
-      
-      // 타임아웃 설정 (5초로 증가)
-      const timeoutPromise = new Promise((_, reject) => {
-        setTimeout(() => reject(new Error('타임아웃')), 5000)
-      })
-      
-      // Health check 엔드포인트 사용 (인증 불필요)
-      const healthPromise = fetch(`${API_BASE_URL}/health`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
-      }).then(async (res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`)
-        }
-        return res.json()
-      })
-      
-      await Promise.race([healthPromise, timeoutPromise])
-      
-      // Health check 성공 시 서버 연결됨으로 설정
-      setServerConnected(true)
-      // 연결 성공 시 서버 데이터 로드
-      await loadServerData()
-    } catch (error: any) {
-      console.error('서버 연결 확인 실패:', error)
-      setServerConnected(false)
-      // 서버 연결 실패 시 빈 상태로 설정
-      setStats({ total: 0, text: 0, image: 0, video: 0, engineering: 0 })
-      setVisitCount(0)
-      setRecords([])
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const loadServerData = async () => {
-    // 서버가 연결되지 않은 경우 호출하지 않음
-    if (serverConnected !== true) return
-    
-    try {
-      // 서버 통계 로드
-      const statsData = await adminAPI.getStats()
-      setServerStats(statsData)
-      
-      // 통계 데이터 설정
-      if (statsData.stats) {
-        setStats({
-          total: statsData.stats.total || 0,
-          text: statsData.stats.text || 0,
-          image: statsData.stats.image || 0,
-          video: statsData.stats.video || 0,
-          engineering: statsData.stats.engineering || 0,
-        })
-      }
-      
-      // 방문 카운트 설정
-      if (statsData.visitCount !== undefined) {
-        setVisitCount(statsData.visitCount)
-      } else if (statsData.overview?.totalUsers) {
-        setVisitCount(statsData.overview.totalUsers)
-      }
-
-      // 사용자 목록 로드
-      try {
-        const usersData = await adminAPI.getUsers({ page: usersPage, limit: 20 })
-        setUsers(usersData.users)
-      } catch (userError: any) {
-        console.warn('사용자 목록 로드 실패:', userError)
-        // 인증 오류인 경우 서버는 연결되어 있지만 인증이 필요함
-        if (userError.message?.includes('인증') || userError.message?.includes('401')) {
-          // 서버 연결은 유지하되 데이터는 로드하지 않음
-        } else {
-          // 다른 오류는 무시하고 계속 진행
-        }
-      }
-
-      // 프롬프트 목록 로드 (관리용)
-      try {
-        const promptsData = await adminAPI.getPrompts({ page: promptsPage, limit: 20 })
-        setServerPrompts(promptsData.prompts)
-      } catch (promptError: any) {
-        console.warn('프롬프트 목록 로드 실패:', promptError)
-        // 인증 오류인 경우 서버는 연결되어 있지만 인증이 필요함
-        if (promptError.message?.includes('인증') || promptError.message?.includes('401')) {
-          // 서버 연결은 유지하되 데이터는 로드하지 않음
-        }
-      }
-      
-      // 프롬프트 기록 로드 (통계 섹션용 - 모든 카테고리)
-      try {
-        const allPromptsData = await adminAPI.getPrompts({ page: 1, limit: 1000 })
-        // 서버 프롬프트를 로컬 기록 형식으로 변환
-        const convertedRecords: ServerPromptRecord[] = allPromptsData.prompts.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          content: p.content,
-          category: p.category,
-          model: p.model,
-          userId: p.userId,
-          user: p.user,
-          createdAt: p.createdAt,
-          updatedAt: p.updatedAt,
-          options: p.options,
-        }))
-        setRecords(convertedRecords)
-      } catch (recordError: any) {
-        console.warn('프롬프트 기록 로드 실패:', recordError)
-        // 기록 로드 실패해도 계속 진행
-      }
-    } catch (error: any) {
-      // 서버 데이터 로드 실패 처리
-      console.error('서버 데이터 로드 실패:', error)
-      
-      // 인증 오류인 경우 서버는 연결되어 있지만 인증이 필요한 상태
-      if (error.message?.includes('인증') || error.message?.includes('401')) {
-        // 서버는 연결되어 있지만 인증이 필요함
-        // Admin 모드에서는 인증 없이도 일부 기능 사용 가능하도록 유지
-        console.log('서버 연결됨, 인증 필요')
-        // 서버 연결 상태는 유지
-      } else {
-        // 다른 오류는 서버 연결 실패로 간주하지 않음 (이미 health check로 확인함)
-        // 단지 데이터 로드 실패일 뿐
-      }
-    }
-  }
+  const globalErrorMessage = adminErrors.global || adminErrors.stats || null
+  const isServerOnline = serverStatus === 'online'
+  const isServerChecking = serverStatus === 'connecting'
+  const isServerOffline = serverStatus === 'offline'
+  const isServerAuthError = serverStatus === 'auth_error'
+  const serverWarningMessage =
+    globalErrorMessage ||
+    (isServerAuthError
+      ? 'Admin 권한이 없거나 세션이 만료되었습니다. 다시 로그인해주세요.'
+      : '서버에 연결할 수 없습니다. Railway 서버가 실행 중인지 확인해주세요.')
 
   // loadData 함수 제거 (서버 기반으로 변경)
 
@@ -241,7 +71,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
     return text.substring(0, maxLength) + '...'
   }
 
-  const renderOptionsTable = (record: ServerPromptRecord) => {
+  const renderOptionsTable = (record: AdminPromptRecord) => {
     if (!record.options) return null
 
     const options = record.options
@@ -354,53 +184,45 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
               <div className="admin-section">
                 <div className="admin-section-header">
                   <h2>사용자 관리</h2>
-                </div>
-                {loading && serverConnected === null && (
-                  <div style={{ 
-                    padding: '24px', 
-                    textAlign: 'center',
-                    color: '#666666'
-                  }}>
-                    서버 연결 확인 중...
+                  <div className="section-actions">
+                    <button className="template-button secondary" onClick={refresh}>
+                      새로고침
+                    </button>
+                    {lastUpdated && (
+                      <span className="section-updated">
+                        업데이트: {new Date(lastUpdated).toLocaleTimeString('ko-KR')}
+                      </span>
+                    )}
                   </div>
+                </div>
+                {isServerChecking && (
+                  <div className="admin-status-card">서버 연결 확인 중...</div>
                 )}
-                {!loading && serverConnected === false && (
-                  <div style={{ 
-                    padding: '24px', 
-                    textAlign: 'center',
-                    background: '#fff3cd',
-                    border: '1px solid #ffc107',
-                    borderRadius: '8px',
-                    marginBottom: '24px'
-                  }}>
-                    <p style={{ margin: '0 0 12px 0', color: '#856404', fontWeight: '500' }}>
-                      ⚠️ 서버에 연결할 수 없습니다.
-                    </p>
-                    <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#856404' }}>
-                      Railway 서버가 실행 중인지 확인해주세요.
-                    </p>
-                    <button
-                      onClick={checkServerConnection}
-                      className="template-button"
-                      style={{ marginTop: '8px' }}
-                    >
-                      연결 재시도
+                {!isServerChecking && (isServerOffline || isServerAuthError) && (
+                  <div className="admin-warning-card">
+                    <p className="warning-title">⚠️ {serverWarningMessage}</p>
+                    <button onClick={refresh} className="template-button" style={{ marginTop: '8px' }}>
+                      다시 시도
                     </button>
                   </div>
                 )}
-                {!loading && serverConnected === true && serverStats && (
+                {!loading && isServerOnline && serverStats && (
                   <div className="admin-stats-grid" style={{ marginBottom: '24px' }}>
                     <div className="stat-card">
                       <div className="stat-label">총 사용자</div>
-                      <div className="stat-value">{serverStats.overview?.totalUsers?.toLocaleString() || 0}</div>
+                      <div className="stat-value">
+                        {serverStats.overview?.totalUsers?.toLocaleString() || 0}
+                      </div>
                     </div>
                     <div className="stat-card">
                       <div className="stat-label">활성 사용자</div>
-                      <div className="stat-value">{serverStats.overview?.activeUsers?.toLocaleString() || 0}</div>
+                      <div className="stat-value">
+                        {serverStats.overview?.activeUsers?.toLocaleString() || 0}
+                      </div>
                     </div>
                   </div>
                 )}
-                {!loading && serverConnected === true ? (
+                {!loading && isServerOnline ? (
                   <>
                     <div className="admin-table-container">
                       <table className="admin-table">
@@ -459,38 +281,14 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                       <span>페이지 {usersPage}</span>
                       <button
                         onClick={() => setUsersPage(usersPage + 1)}
+                        disabled={
+                          usersPage >= (pagination.users.totalPages || usersPage)
+                        }
                       >
                         다음
                       </button>
                     </div>
                   </>
-                ) : serverConnected === false ? (
-                  <div style={{ 
-                    padding: '24px', 
-                    textAlign: 'center',
-                    background: '#f8f9fa',
-                    borderRadius: '4px',
-                    color: '#6c757d'
-                  }}>
-                    <p>서버에 연결할 수 없습니다.</p>
-                    <p style={{ marginTop: '8px', fontSize: '0.9em' }}>
-                      서버를 시작하려면: <code>npm run server</code>
-                    </p>
-                    <button
-                      onClick={checkServerConnection}
-                      style={{
-                        marginTop: '16px',
-                        padding: '8px 16px',
-                        background: '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      연결 재시도
-                    </button>
-                  </div>
                 ) : null}
               </div>
             )}
@@ -499,49 +297,34 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
               <div className="admin-section">
                 <div className="admin-section-header">
                   <h2>프롬프트 관리</h2>
-                </div>
-                {loading && serverConnected === null && (
-                  <div style={{ 
-                    padding: '24px', 
-                    textAlign: 'center',
-                    color: '#666666'
-                  }}>
-                    서버 연결 확인 중...
+                  <div className="section-actions">
+                    <button className="template-button secondary" onClick={refresh}>
+                      새로고침
+                    </button>
                   </div>
+                </div>
+                {isServerChecking && (
+                  <div className="admin-status-card">서버 연결 확인 중...</div>
                 )}
-                {!loading && serverConnected === false && (
-                  <div style={{ 
-                    padding: '24px', 
-                    textAlign: 'center',
-                    background: '#fff3cd',
-                    border: '1px solid #ffc107',
-                    borderRadius: '8px',
-                    marginBottom: '24px'
-                  }}>
-                    <p style={{ margin: '0 0 12px 0', color: '#856404', fontWeight: '500' }}>
-                      ⚠️ 서버에 연결할 수 없습니다.
-                    </p>
-                    <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#856404' }}>
-                      Railway 서버가 실행 중인지 확인해주세요.
-                    </p>
-                    <button
-                      onClick={checkServerConnection}
-                      className="template-button"
-                      style={{ marginTop: '8px' }}
-                    >
-                      연결 재시도
+                {!isServerChecking && (isServerOffline || isServerAuthError) && (
+                  <div className="admin-warning-card">
+                    <p className="warning-title">⚠️ {serverWarningMessage}</p>
+                    <button onClick={refresh} className="template-button" style={{ marginTop: '8px' }}>
+                      다시 시도
                     </button>
                   </div>
                 )}
-                {!loading && serverConnected === true && serverStats && (
+                {!loading && isServerOnline && serverStats && (
                   <div className="admin-stats-grid" style={{ marginBottom: '24px' }}>
                     <div className="stat-card">
                       <div className="stat-label">총 프롬프트</div>
-                      <div className="stat-value">{serverStats.overview?.totalPrompts?.toLocaleString() || 0}</div>
+                      <div className="stat-value">
+                        {serverStats.overview?.totalPrompts?.toLocaleString() || 0}
+                      </div>
                     </div>
                   </div>
                 )}
-                {!loading && serverConnected === true ? (
+                {!loading && isServerOnline ? (
                   <>
                     <div className="admin-table-container">
                       <table className="admin-table">
@@ -600,62 +383,29 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                       <span>페이지 {promptsPage}</span>
                       <button
                         onClick={() => setPromptsPage(promptsPage + 1)}
+                        disabled={
+                          promptsPage >= (pagination.prompts.totalPages || promptsPage)
+                        }
                       >
                         다음
                       </button>
                     </div>
                   </>
-                ) : serverConnected === false ? (
-                  <div style={{ 
-                    padding: '24px', 
-                    textAlign: 'center',
-                    background: '#f8f9fa',
-                    borderRadius: '4px',
-                    color: '#6c757d'
-                  }}>
-                    <p>서버에 연결할 수 없습니다.</p>
-                    <p style={{ marginTop: '8px', fontSize: '0.9em' }}>
-                      서버를 시작하려면: <code>npm run server</code>
-                    </p>
-                    <button
-                      onClick={checkServerConnection}
-                      style={{
-                        marginTop: '16px',
-                        padding: '8px 16px',
-                        background: '#007bff',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      연결 재시도
-                    </button>
-                  </div>
                 ) : null}
               </div>
             )}
 
             {activeSection === 'stats' && (
         <>
-          {loading && (
-            <div style={{ padding: '24px', textAlign: 'center' }}>
-              서버 데이터를 불러오는 중...
+          {isServerChecking && (
+            <div className="admin-status-card">서버 데이터를 불러오는 중...</div>
+          )}
+          {!isServerChecking && (isServerOffline || isServerAuthError) && (
+            <div className="admin-warning-card">
+              ⚠️ {serverWarningMessage}
             </div>
           )}
-          {!loading && serverConnected === false && (
-            <div style={{ 
-              padding: '24px', 
-              textAlign: 'center',
-              background: '#fff3cd',
-              border: '1px solid #ffc107',
-              borderRadius: '4px',
-              marginBottom: '24px'
-            }}>
-              ⚠️ 서버에 연결할 수 없습니다. Railway 서버가 실행 중인지 확인해주세요.
-            </div>
-          )}
-          {!loading && (
+          {!loading && isServerOnline && (
           <>
           <div className="admin-stats-grid">
             <div className="stat-card stat-card-clickable" onClick={() => setIsGraphModalOpen(true)}>
