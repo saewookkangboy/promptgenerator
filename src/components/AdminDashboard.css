@@ -1,5 +1,5 @@
 .admin-dashboard {
-  padding: 32px 20px;
+  padding: var(--spacing-2xl) var(--spacing-lg);
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -8,43 +8,60 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: 32px;
-  padding-bottom: 24px;
+  margin-bottom: var(--spacing-2xl);
+  padding-bottom: var(--spacing-xl);
   border-bottom: 1px solid #e5e5e5;
 }
 
 .admin-header-buttons {
   display: flex;
-  gap: 12px;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
 }
 
 .admin-section-tabs {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: var(--spacing-xs);
+  margin-bottom: var(--spacing-xl);
   border-bottom: 1px solid #e5e5e5;
   flex-wrap: wrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.admin-section-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .admin-pagination {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 16px;
-  margin-top: 24px;
-  padding: 16px;
+  gap: var(--spacing-lg);
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-lg);
 }
 
 .admin-pagination button {
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-lg);
   background: #ffffff;
   border: 1px solid #e5e5e5;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
+  font-family: "IBM Plex Sans KR", sans-serif;
   color: #000000;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .admin-pagination button:hover:not(:disabled) {
@@ -57,18 +74,27 @@
   background: #f5f5f5;
   color: #cccccc;
   cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .admin-action-button {
-  padding: 6px 12px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: #ffffff;
   border: 1px solid #e5e5e5;
   border-radius: 6px;
-  font-size: 12px;
+  font-size: var(--font-size-xs);
   font-weight: 500;
+  font-family: "IBM Plex Sans KR", sans-serif;
   color: #000000;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .admin-action-button:hover {
@@ -98,15 +124,26 @@
 }
 
 .section-tab {
-  padding: 12px 24px;
+  padding: var(--spacing-md) var(--spacing-xl);
   background: transparent;
   border: none;
   border-bottom: 2px solid transparent;
   color: #666666;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
+  font-family: "IBM Plex Sans KR", sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
   cursor: pointer;
   transition: all 0.2s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .section-tab:hover {
@@ -117,33 +154,47 @@
 .section-tab.active {
   color: #000000;
   border-bottom-color: #000000;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .admin-header h1 {
-  font-size: 2rem;
-  font-weight: 600;
+  font-size: var(--font-size-4xl);
+  font-weight: 400;
   color: #000000;
-  margin: 0 0 8px 0;
+  margin: 0 0 var(--spacing-sm) 0;
+  letter-spacing: -0.02em;
+  line-height: var(--line-height-tight);
 }
 
 .admin-subtitle {
-  font-size: 0.9rem;
+  font-size: var(--font-size-base);
+  font-weight: 300;
   color: #666666;
   margin: 0;
+  line-height: var(--line-height-normal);
 }
 
 .admin-back-button,
 .admin-logout-button {
-  padding: 10px 20px;
+  padding: var(--spacing-sm) var(--spacing-lg);
   background: #f5f5f5;
   color: #000000;
   border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  border-radius: 6px;
+  font-size: var(--font-size-sm);
   font-weight: 500;
+  font-family: "IBM Plex Sans KR", sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .admin-back-button:hover,
@@ -156,22 +207,33 @@
 .admin-stats-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 16px;
-  margin-bottom: 40px;
+  gap: var(--spacing-lg);
+  margin-bottom: var(--spacing-3xl);
 }
 
 .stat-card {
   background: #ffffff;
   border: 1px solid #e5e5e5;
   border-radius: 12px;
-  padding: 24px;
+  padding: var(--spacing-xl);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
+  will-change: transform, box-shadow;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
 }
 
 .stat-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  transform: translateY(-2px);
+  transform: translateY(-2px) translateZ(0);
+}
+
+/* 모바일에서 호버 효과 비활성화 */
+@media (hover: none) {
+  .stat-card:hover {
+    transform: none;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  }
 }
 
 .stat-card-clickable {
@@ -183,66 +245,89 @@
 }
 
 .stat-hint {
-  font-size: 0.75rem;
+  font-size: var(--font-size-xs);
   color: #999999;
-  margin-top: 8px;
-  font-weight: 400;
+  margin-top: var(--spacing-sm);
+  font-weight: 300;
+  font-family: "IBM Plex Sans KR", sans-serif;
+  line-height: var(--line-height-normal);
 }
 
 .stat-label {
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   color: #666666;
-  margin-bottom: 8px;
+  margin-bottom: var(--spacing-sm);
   font-weight: 500;
+  font-family: "IBM Plex Sans KR", sans-serif;
+  line-height: var(--line-height-normal);
 }
 
 .stat-value {
-  font-size: 2rem;
-  font-weight: 600;
+  font-size: var(--font-size-3xl);
+  font-weight: 400;
   color: #000000;
-  line-height: 1.2;
+  line-height: var(--line-height-tight);
+  font-family: "IBM Plex Sans KR", sans-serif;
+  letter-spacing: -0.02em;
 }
 
 .admin-section {
   background: #ffffff;
   border: 1px solid #e5e5e5;
   border-radius: 12px;
-  padding: 24px;
+  padding: var(--spacing-2xl);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.2s ease;
+}
+
+.admin-section:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 .admin-section-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 24px;
+  margin-bottom: var(--spacing-xl);
   flex-wrap: wrap;
-  gap: 16px;
+  gap: var(--spacing-lg);
 }
 
 .admin-section-header h2 {
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-size: var(--font-size-2xl);
+  font-weight: 400;
   color: #000000;
   margin: 0;
+  letter-spacing: -0.02em;
+  line-height: var(--line-height-tight);
+  font-family: "IBM Plex Sans KR", sans-serif;
 }
 
 .category-filter {
   display: flex;
-  gap: 8px;
+  gap: var(--spacing-sm);
   flex-wrap: wrap;
 }
 
 .filter-button {
-  padding: 8px 16px;
+  padding: var(--spacing-sm) var(--spacing-lg);
   background: #f5f5f5;
   color: #666666;
   border: 1px solid #e5e5e5;
   border-radius: 6px;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
+  font-family: "IBM Plex Sans KR", sans-serif;
+  text-transform: none;
+  letter-spacing: 0;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .filter-button:hover {
@@ -264,7 +349,8 @@
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+  font-family: "IBM Plex Sans KR", sans-serif;
 }
 
 .admin-table thead {
@@ -273,17 +359,22 @@
 }
 
 .admin-table th {
-  padding: 12px 16px;
+  padding: var(--spacing-md) var(--spacing-lg);
   text-align: left;
-  font-weight: 600;
+  font-weight: 500;
   color: #000000;
   white-space: nowrap;
+  font-size: var(--font-size-sm);
+  line-height: var(--line-height-normal);
 }
 
 .admin-table td {
-  padding: 12px 16px;
+  padding: var(--spacing-md) var(--spacing-lg);
   border-bottom: 1px solid #e5e5e5;
   color: #333333;
+  font-size: var(--font-size-sm);
+  font-weight: 300;
+  line-height: var(--line-height-normal);
 }
 
 .admin-table tbody tr:hover {
@@ -296,10 +387,12 @@
 
 .category-badge {
   display: inline-block;
-  padding: 4px 12px;
+  padding: var(--spacing-xs) var(--spacing-md);
   border-radius: 6px;
-  font-size: 0.8rem;
+  font-size: var(--font-size-xs);
   font-weight: 500;
+  font-family: "IBM Plex Sans KR", sans-serif;
+  line-height: var(--line-height-normal);
 }
 
 .category-text {
@@ -355,39 +448,51 @@
 }
 
 .options-detail-section {
-  margin-top: 24px;
-  padding: 24px;
+  margin-top: var(--spacing-xl);
+  padding: var(--spacing-2xl);
   background: #fafafa;
   border: 1px solid #e5e5e5;
   border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .options-detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 20px;
-  padding-bottom: 16px;
+  margin-bottom: var(--spacing-xl);
+  padding-bottom: var(--spacing-lg);
   border-bottom: 1px solid #e5e5e5;
 }
 
 .options-detail-header h3 {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: var(--font-size-xl);
+  font-weight: 400;
   color: #000000;
   margin: 0;
+  letter-spacing: -0.02em;
+  line-height: var(--line-height-tight);
+  font-family: "IBM Plex Sans KR", sans-serif;
 }
 
 .close-detail-button {
-  padding: 6px 12px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: #f5f5f5;
   color: #000000;
   border: 1px solid #e5e5e5;
   border-radius: 6px;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
   font-weight: 500;
+  font-family: "IBM Plex Sans KR", sans-serif;
   cursor: pointer;
   transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .close-detail-button:hover {
@@ -399,33 +504,38 @@
 .options-detail-content {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: var(--spacing-xl);
 }
 
 .detail-item {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: var(--spacing-sm);
 }
 
 .detail-item strong {
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
   color: #000000;
+  font-family: "IBM Plex Sans KR", sans-serif;
+  line-height: var(--line-height-normal);
 }
 
 .detail-item p {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
+  font-weight: 300;
   color: #333333;
-  line-height: 1.6;
+  line-height: var(--line-height-relaxed);
   word-break: break-word;
+  font-family: "IBM Plex Sans KR", sans-serif;
 }
 
 .options-table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 8px;
+  margin-top: var(--spacing-sm);
+  font-family: "IBM Plex Sans KR", sans-serif;
 }
 
 .options-table tbody tr {
@@ -437,51 +547,60 @@
 }
 
 .options-label {
-  padding: 8px 12px;
+  padding: var(--spacing-sm) var(--spacing-md);
   background: #f5f5f5;
   font-weight: 500;
   color: #000000;
   width: 30%;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
+  font-family: "IBM Plex Sans KR", sans-serif;
+  line-height: var(--line-height-normal);
 }
 
 .options-value {
-  padding: 8px 12px;
+  padding: var(--spacing-sm) var(--spacing-md);
   color: #333333;
-  font-size: 0.875rem;
+  font-size: var(--font-size-sm);
+  font-weight: 300;
+  font-family: "IBM Plex Sans KR", sans-serif;
   word-break: break-word;
+  line-height: var(--line-height-normal);
 }
 
 /* 반응형 디자인 */
 @media (max-width: 768px) {
   .admin-dashboard {
-    padding: 24px 16px;
+    padding: var(--spacing-xl) var(--spacing-lg);
   }
 
   .admin-header {
     flex-direction: column;
-    gap: 16px;
+    gap: var(--spacing-lg);
   }
 
   .admin-header h1 {
-    font-size: 1.75rem;
+    font-size: var(--font-size-3xl);
+  }
+
+  .admin-subtitle {
+    font-size: var(--font-size-sm);
   }
 
   .admin-stats-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    gap: var(--spacing-md);
   }
 
   .stat-card {
-    padding: 20px;
+    padding: var(--spacing-xl);
   }
 
   .stat-value {
-    font-size: 1.5rem;
+    font-size: var(--font-size-2xl);
   }
 
   .admin-section {
-    padding: 20px;
+    padding: var(--spacing-xl);
   }
 
   .admin-section-header {
@@ -489,44 +608,58 @@
     align-items: flex-start;
   }
 
+  .admin-section-header h2 {
+    font-size: var(--font-size-xl);
+  }
+
   .admin-table {
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
   }
 
   .admin-table th,
   .admin-table td {
-    padding: 8px 12px;
+    padding: var(--spacing-sm) var(--spacing-md);
   }
 
   .prompt-cell {
     max-width: 150px;
   }
+
+  .section-tab {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: var(--font-size-xs);
+  }
 }
 
 @media (max-width: 480px) {
   .admin-dashboard {
-    padding: 20px 12px;
+    padding: var(--spacing-lg) var(--spacing-md);
   }
 
   .admin-header h1 {
-    font-size: 1.5rem;
+    font-size: var(--font-size-2xl);
+  }
+
+  .admin-subtitle {
+    font-size: var(--font-size-xs);
   }
 
   .admin-stats-grid {
     grid-template-columns: 1fr;
+    gap: var(--spacing-md);
   }
 
   .stat-value {
-    font-size: 1.25rem;
+    font-size: var(--font-size-xl);
   }
 
   .admin-table {
-    font-size: 0.75rem;
+    font-size: var(--font-size-xs);
   }
 
   .admin-table th,
   .admin-table td {
-    padding: 6px 8px;
+    padding: var(--spacing-xs) var(--spacing-sm);
   }
 
   .category-filter {
@@ -536,28 +669,41 @@
   .filter-button {
     flex: 1;
     min-width: 0;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
   }
 
   .options-detail-section {
-    padding: 16px;
+    padding: var(--spacing-lg);
   }
 
   .options-detail-header h3 {
-    font-size: 1.1rem;
+    font-size: var(--font-size-lg);
   }
 
   .options-table {
-    font-size: 0.8rem;
+    font-size: var(--font-size-xs);
   }
 
   .options-label,
   .options-value {
-    padding: 6px 8px;
-    font-size: 0.8rem;
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
   }
 
   .options-label {
     width: 35%;
+  }
+
+  .section-tab {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .admin-back-button,
+  .admin-logout-button {
+    padding: var(--spacing-xs) var(--spacing-md);
+    font-size: var(--font-size-xs);
   }
 }
 
