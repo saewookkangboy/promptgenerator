@@ -119,6 +119,7 @@ function TemplateManager() {
   const [templates, setTemplates] = useState<TemplatePreset[]>([])
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 })
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<TemplatePreset | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [jsonError, setJsonError] = useState<string | null>(null)
@@ -129,6 +130,7 @@ function TemplateManager() {
 
   const loadTemplates = async (page = 1) => {
     setLoading(true)
+    setLoadError(null)
     try {
       const data = await adminAPI.getTemplates({ page, limit: 50 })
       setTemplates(data.templates || [])
@@ -139,6 +141,7 @@ function TemplateManager() {
     } catch (error) {
       console.error('템플릿 로드 실패:', error)
       showNotification('템플릿을 불러오는데 실패했습니다.', 'error')
+      setLoadError('템플릿 목록을 불러올 수 없습니다. 네트워크/인증을 확인하고 다시 시도하세요.')
     } finally {
       setLoading(false)
     }
@@ -188,6 +191,7 @@ function TemplateManager() {
     setSelectedTemplate(null)
     setForm({
       ...emptyForm,
+      name: `새 템플릿 ${new Date().toLocaleTimeString('ko-KR')}`,
       templateJson: JSON.stringify(DEFAULT_TEMPLATE, null, 2),
     })
     setJsonError(null)
@@ -238,7 +242,7 @@ function TemplateManager() {
     }
 
     const payload = {
-      name: form.name,
+      name: form.name || `새 템플릿 ${new Date().toLocaleString('ko-KR')}`,
       description: form.description,
       category: form.category,
       model: form.model || undefined,
@@ -310,8 +314,15 @@ function TemplateManager() {
         </div>
         {loading ? (
           <div className="template-loading">템플릿을 불러오는 중...</div>
+        ) : loadError ? (
+          <div className="template-empty">
+            {loadError}
+            <button className="template-button secondary" onClick={() => loadTemplates(pagination.page)} style={{ marginTop: 12 }}>
+              다시 불러오기
+            </button>
+          </div>
         ) : templates.length === 0 ? (
-          <div className="template-empty">등록된 템플릿이 없습니다.</div>
+          <div className="template-empty">등록된 템플릿이 없습니다. 우측에서 새 템플릿을 생성하세요.</div>
         ) : (
           <div className="template-list-container">
             {templates.map((template) => (
