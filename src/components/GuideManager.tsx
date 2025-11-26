@@ -48,121 +48,193 @@ function GuideManager() {
       const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
       
       // 백그라운드 작업 시작
-      const response = await fetch(`${API_BASE_URL}/api/guides/collect`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
-      })
+      let response: Response
+      try {
+        response = await fetch(`${API_BASE_URL}/api/guides/collect`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({}),
+        })
+      } catch (fetchError: any) {
+        // 네트워크 오류 처리
+        throw new Error(
+          fetchError.message?.includes('Failed to fetch') || fetchError.message?.includes('NetworkError')
+            ? `서버에 연결할 수 없습니다. API 서버(${API_BASE_URL})가 실행 중인지 확인해주세요.`
+            : `네트워크 오류: ${fetchError.message}`
+        )
+      }
       
       if (!response.ok) {
-        throw new Error('수집 작업 시작 실패')
+        const errorData = await response.json().catch(() => ({ error: `HTTP ${response.status}` }))
+        throw new Error(errorData.error || `수집 작업 시작 실패 (${response.status})`)
       }
       
       const data = await response.json()
+      
+      if (!data.jobId) {
+        throw new Error('작업 ID를 받지 못했습니다')
+      }
+      
       const jobId = data.jobId
       setCurrentJobId(jobId)
       
       // 실시간 진행 상황 수신 (Server-Sent Events)
-      const eventSource = new EventSource(`${API_BASE_URL}/api/guides/jobs/${jobId}/progress`)
+      let eventSource: EventSource | null = null
+      
+      try {
+        eventSource = new EventSource(`${API_BASE_URL}/api/guides/jobs/${jobId}/progress`)
+      } catch (sseError: any) {
+        throw new Error(`진행 상황 스트림 연결 실패: ${sseError.message}`)
+      }
       
       eventSource.onmessage = (event) => {
-        const progress = JSON.parse(event.data)
-        
-        if (progress.error) {
-          eventSource.close()
-          throw new Error(progress.error)
-        }
-        
-        // 진행 상황 업데이트
-        if (progress.progress) {
-          const percentage = progress.progress.total > 0
-            ? Math.round((progress.progress.completed / progress.progress.total) * 100)
-            : 0
+        try {
+          const progress = JSON.parse(event.data)
           
-          setCollectionProgress({
-            total: progress.progress.total,
-            completed: progress.progress.completed,
-            current: progress.progress.current,
-            percentage,
-          })
-        }
-        
-        // 작업 완료 확인
-        if (progress.status === 'completed' || progress.status === 'failed') {
-          eventSource.close()
-          
-          if (progress.status === 'completed' && progress.results) {
-            // 결과 변환
-            const results: GuideUpdateResult[] = progress.results.results.map((r: any) => ({
-              success: r.success,
-              modelName: r.modelName as ModelName,
-              guidesAdded: r.guide ? 1 : 0,
-              guidesUpdated: r.guide ? 0 : 0,
-              errors: r.error ? [r.error] : [],
-            }))
-            
-            setCollectionResults(results)
-            loadData()
-            
-            // 수집 이력 저장
-            results.forEach(result => {
-              saveGuideCollectionHistory({
-                success: result.success,
-                modelName: result.modelName,
-                guidesAdded: result.guidesAdded,
-                guidesUpdated: result.guidesUpdated,
-                errors: result.errors,
-                appliedToService: result.success && (result.guidesAdded > 0 || result.guidesUpdated > 0),
-                collectionType: 'manual',
-              })
-            })
-            
-            loadHistories()
-          } else if (progress.status === 'failed') {
-            const errorResult: GuideUpdateResult = {
-              success: false,
-              modelName: 'all' as ModelName,
-              guidesAdded: 0,
-              guidesUpdated: 0,
-              errors: [progress.error || '수집 중 오류가 발생했습니다'],
-            }
-            setCollectionResults([errorResult])
-            
-            saveGuideCollectionHistory({
-              success: false,
-              modelName: 'all',
-              guidesAdded: 0,
-              guidesUpdated: 0,
-              errors: errorResult.errors,
-              appliedToService: false,
-              collectionType: 'manual',
-            })
-            loadHistories()
+          if (progress.error) {
+            eventSource?.close()
+            throw new Error(progress.error)
           }
           
-          setIsCollecting(false)
-          setCurrentJobId(null)
-          setCollectionProgress(null)
+          // 진행 상황 업데이트
+          if (progress.progress) {
+            const percentage = progress.progress.total > 0
+              ? Math.round((progress.progress.completed / progress.progress.total) * 100)
+              : 0
+            
+            setCollectionProgress({
+              total: progress.progress.total,
+              completed: progress.progress.completed,
+              current: progress.progress.current,
+              percentage,
+            })
+          }
+          
+          // 작업 완료 확인
+          if (progress.status === 'completed' || progress.status === 'failed') {
+            eventSource?.close()
+            
+            if (progress.status === 'completed' && progress.results) {
+              // 결과 변환
+              const results: GuideUpdateResult[] = progress.results.results.map((r: any) => ({
+                success: r.success,
+                modelName: r.modelName as ModelName,
+                guidesAdded: r.guide ? 1 : 0,
+                guidesUpdated: r.guide ? 0 : 0,
+                errors: r.error ? [r.error] : [],
+              }))
+              
+              setCollectionResults(results)
+              loadData()
+              
+              // 수집 이력 저장
+              results.forEach(result => {
+                saveGuideCollectionHistory({
+                  success: result.success,
+                  modelName: result.modelName,
+                  guidesAdded: result.guidesAdded,
+                  guidesUpdated: result.guidesUpdated,
+                  errors: result.errors,
+                  appliedToService: result.success && (result.guidesAdded > 0 || result.guidesUpdated > 0),
+                  collectionType: 'manual',
+                })
+              })
+              
+              loadHistories()
+            } else if (progress.status === 'failed') {
+              const errorResult: GuideUpdateResult = {
+                success: false,
+                modelName: 'all' as ModelName,
+                guidesAdded: 0,
+                guidesUpdated: 0,
+                errors: [progress.error || '수집 중 오류가 발생했습니다'],
+              }
+              setCollectionResults([errorResult])
+              
+              saveGuideCollectionHistory({
+                success: false,
+                modelName: 'all',
+                guidesAdded: 0,
+                guidesUpdated: 0,
+                errors: errorResult.errors,
+                appliedToService: false,
+                collectionType: 'manual',
+              })
+              loadHistories()
+            }
+            
+            setIsCollecting(false)
+            setCurrentJobId(null)
+            setCollectionProgress(null)
+          }
+        } catch (parseError) {
+          console.error('진행 상황 파싱 오류:', parseError)
         }
       }
       
-      eventSource.onerror = () => {
-        eventSource.close()
-        setIsCollecting(false)
-        setCurrentJobId(null)
-        setCollectionProgress(null)
+      eventSource.onerror = (error) => {
+        console.error('EventSource 오류:', error)
+        eventSource?.close()
+        
+        // 연결 오류인 경우 작업 상태를 직접 확인
+        fetch(`${API_BASE_URL}/api/guides/jobs/${jobId}`)
+          .then(res => res.json())
+          .then(jobData => {
+            if (jobData.job) {
+              const job = jobData.job
+              if (job.status === 'completed' || job.status === 'failed') {
+                if (job.status === 'completed' && job.results) {
+                  const results: GuideUpdateResult[] = job.results.results.map((r: any) => ({
+                    success: r.success,
+                    modelName: r.modelName as ModelName,
+                    guidesAdded: r.guide ? 1 : 0,
+                    guidesUpdated: r.guide ? 0 : 0,
+                    errors: r.error ? [r.error] : [],
+                  }))
+                  setCollectionResults(results)
+                  loadData()
+                  loadHistories()
+                } else if (job.status === 'failed') {
+                  const errorResult: GuideUpdateResult = {
+                    success: false,
+                    modelName: 'all' as ModelName,
+                    guidesAdded: 0,
+                    guidesUpdated: 0,
+                    errors: [job.error || '수집 중 오류가 발생했습니다'],
+                  }
+                  setCollectionResults([errorResult])
+                  loadHistories()
+                }
+                setIsCollecting(false)
+                setCurrentJobId(null)
+                setCollectionProgress(null)
+              }
+            }
+          })
+          .catch(() => {
+            setIsCollecting(false)
+            setCurrentJobId(null)
+            setCollectionProgress(null)
+          })
       }
     } catch (error: any) {
       console.error('수집 실패:', error)
+      
+      // 더 명확한 오류 메시지
+      let errorMessage = error.message || '수집 중 오류가 발생했습니다'
+      
+      // 네트워크 오류인 경우 추가 안내
+      if (errorMessage.includes('Failed to fetch') || errorMessage.includes('NetworkError')) {
+        const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
+        errorMessage = `서버에 연결할 수 없습니다. API 서버(${API_BASE_URL})가 실행 중인지 확인해주세요.`
+      }
+      
       const errorResult: GuideUpdateResult = {
         success: false,
         modelName: 'all' as ModelName,
         guidesAdded: 0,
         guidesUpdated: 0,
-        errors: [
-          error.message || '수집 중 오류가 발생했습니다',
-          '서버가 실행 중인지 확인해주세요 (npm run server 또는 npm run server:dev)',
-        ],
+        errors: [errorMessage],
       }
       setCollectionResults([errorResult])
       
