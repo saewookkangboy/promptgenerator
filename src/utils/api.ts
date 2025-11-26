@@ -200,6 +200,18 @@ export const userAPI = {
   },
 }
 
+const buildQueryString = (params?: Record<string, string | number | boolean | undefined>): string => {
+  if (!params) return ''
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      query.append(key, String(value))
+    }
+  })
+  const queryString = query.toString()
+  return queryString ? `?${queryString}` : ''
+}
+
 // 프롬프트 API
 export const promptAPI = {
   list: async (params?: {
@@ -264,6 +276,41 @@ export const promptAPI = {
 
   getVersions: async (id: string) => {
     return apiRequest<any[]>(`/api/prompts/${id}/versions`)
+  },
+}
+
+// 가이드 API
+export const guideAPI = {
+  getLatest: async (params?: { category?: string; limit?: number; includeInactive?: boolean }) => {
+    const query = buildQueryString({
+      category: params?.category,
+      limit: params?.limit,
+      includeInactive: params?.includeInactive,
+    })
+    return apiRequest<{ guides: any[]; count: number }>(`/api/admin/guides/latest${query}`)
+  },
+
+  getHistory: async (params?: { limit?: number }) => {
+    const query = buildQueryString({ limit: params?.limit })
+    return apiRequest<{ history: any[] }>(`/api/admin/guides/history${query}`)
+  },
+
+  getGuideByModel: async (modelName: string) => {
+    return apiRequest<{ guide: any }>(`/api/admin/guides/model/${modelName}`)
+  },
+
+  getStatus: async () => {
+    return apiRequest<{ nextCollection: number; daysUntilNext: number; isOverdue: boolean }>(
+      '/api/guides/status'
+    )
+  },
+
+  getPublicLatest: async (params?: { category?: string; limit?: number }) => {
+    const query = buildQueryString({
+      category: params?.category,
+      limit: params?.limit,
+    })
+    return apiRequest<{ guides: any[] }>(`/api/guides/public/latest${query}`)
   },
 }
 

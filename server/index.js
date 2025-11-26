@@ -10,6 +10,14 @@ const path = require('path')
 const { GoogleGenerativeAI } = require('@google/generative-ai')
 const { collectAllGuides } = require('./scraper/guideScraper')
 const { initializeScheduler } = require('./scheduler/guideScheduler')
+const { authenticateToken, requireAdmin } = require('./middleware/auth')
+const {
+  persistGuideCollectionResults,
+  getLatestGuidesFromDB,
+  getGuideHistoryFromDB,
+  getGuideByModel,
+  sanitizeGuide,
+} = require('./services/guideService')
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
@@ -345,6 +353,18 @@ async function processCollectionJob(jobId, modelNames = null) {
       },
     }
     
+    try {
+      await persistGuideCollectionResults(jobId, {
+        results,
+        summary: { ...jobResults.summary, status: JOB_STATUS.COMPLETED },
+        triggeredBy: job.params?.triggeredBy || 'system',
+        triggerType: job.params?.triggerType || (modelNames ? 'manual' : 'auto'),
+        models: modelNames || [],
+      })
+    } catch (persistError) {
+      console.error(`[작업 ${jobId}] 가이드 결과 저장 실패:`, persistError)
+    }
+    
     console.log(`[작업 ${jobId}] 작업 완료 처리 시작...`)
     const completedJob = completeJob(jobId, jobResults)
     console.log(`[작업 ${jobId}] 작업 완료 처리 완료. 상태: ${completedJob?.status}, 결과 있음: ${!!completedJob?.results}`)
@@ -550,6 +570,103 @@ app.get('/api/guides/status', (req, res) => {
   const { getCollectionStatus } = require('./scheduler/guideScheduler')
   const status = getCollectionStatus()
   res.json(status)
+})
+
+// Admin 가이드 관리 API
+const guidesAdminRouter = express.Router()
+guidesAdminRouter.use(authenticateToken, requireAdmin)
+
+guidesAdminRouter.get('/latest', async (req, res) => {
+  try {
+    const { category, limit, includeInactive } = req.query
+    const guides = await getLatestGuidesFromDB({
+      category,
+      limit: limit ? Number(limit) : undefined,
+      includeInactive: includeInactive === 'true',
+    })
+    res.json({
+      guides: guides.map((guide) => sanitizeGuide(guide)),
+      count: guides.length,
+      fetchedAt: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('가이드 목록 조회 실패:', error)
+    res.status(500).json({ error: '가이드 목록을 불러오는데 실패했습니다' })
+  }
+})
+
+guidesAdminRouter.get('/history', async (req, res) => {
+  try {
+    const limit = req.query.limit ? Number(req.query.limit) : 40
+    const history = await getGuideHistoryFromDB(limit)
+    res.json({
+      history: history.map((entry) => ({
+        id: entry.id,
+        modelName: entry.modelName,
+        success: entry.success,
+        errorMessage: entry.errorMessage,
+        completedAt: entry.completedAt,
+        guide: entry.guide ? sanitizeGuide(entry.guide) : null,
+        job: entry.job
+          ? {
+              id: entry.job.id,
+              status: entry.job.status,
+              triggerType: entry.job.triggerType,
+              triggeredBy: entry.job.triggeredBy,
+              startedAt: entry.job.startedAt,
+              completedAt: entry.job.completedAt,
+            }
+          : null,
+      })),
+      fetchedAt: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('가이드 히스토리 조회 실패:', error)
+    res.status(500).json({ error: '가이드 히스토리를 불러오는데 실패했습니다' })
+  }
+})
+
+guidesAdminRouter.get('/model/:modelName', async (req, res) => {
+  try {
+    const guide = await getGuideByModel(req.params.modelName)
+    if (!guide) {
+      return res.status(404).json({ error: '해당 모델의 가이드를 찾을 수 없습니다' })
+    }
+    res.json({ guide: sanitizeGuide(guide) })
+  } catch (error) {
+    console.error('단일 가이드 조회 실패:', error)
+    res.status(500).json({ error: '가이드를 불러오는데 실패했습니다' })
+  }
+})
+
+app.use('/api/admin/guides', guidesAdminRouter)
+
+// Public guide summaries for prompt generation
+app.get('/api/guides/public/latest', async (req, res) => {
+  try {
+    const { category, limit } = req.query
+    const guides = await getLatestGuidesFromDB({
+      category,
+      limit: limit ? Number(limit) : 5,
+    })
+    res.json({
+      guides: guides.map((guide) => ({
+        id: guide.id,
+        modelName: guide.modelName,
+        category: guide.category,
+        title: guide.title,
+        summary: guide.summary,
+        bestPractices: guide.bestPractices || [],
+        tips: guide.tips || [],
+        confidence: guide.confidence,
+        updatedAt: guide.updatedAt,
+      })),
+      fetchedAt: new Date().toISOString(),
+    })
+  } catch (error) {
+    console.error('공개 가이드 조회 실패:', error)
+    res.status(500).json({ error: '가이드 데이터를 불러오는데 실패했습니다' })
+  }
 })
 
 // 프리미엄 기능 API 라우트
