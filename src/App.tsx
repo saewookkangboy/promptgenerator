@@ -49,15 +49,19 @@ function App() {
       if (isAdmin) {
         localStorage.setItem('admin_mode', 'true')
         // Admin 모드가 활성화되면 인증 상태도 확인
-        setIsAdminAuthenticated(getAdminAuth())
+        const adminAuth = getAdminAuth()
+        console.log('[Admin] 모드 활성화, 인증 상태:', adminAuth)
+        setIsAdminAuthenticated(adminAuth)
       } else {
         localStorage.removeItem('admin_mode')
+        console.log('[Admin] 모드 비활성화')
         setIsAdminAuthenticated(false)
       }
     }
   }, [isAdmin])
 
   const handleAdminLogin = () => {
+    console.log('[Admin] 로그인 성공')
     setIsAdminAuthenticated(true)
   }
 
@@ -66,8 +70,11 @@ function App() {
   }
 
   // Admin 모드 토글
-  const toggleAdminMode = () => {
+  const toggleAdminMode = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
     const newAdminState = !isAdmin
+    console.log('[Admin] 토글:', { 현재: isAdmin, 새상태: newAdminState })
     setIsAdmin(newAdminState)
     // 상태 변경은 useEffect에서 처리됨
   }
