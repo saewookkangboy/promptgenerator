@@ -207,11 +207,29 @@
 .app-footer {
   margin-top: var(--spacing-3xl);
   padding: var(--spacing-2xl) var(--spacing-lg);
-  text-align: center;
+  text-align: left;
   border-top: 1px solid #e5e5e5;
   background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.footer-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-lg);
+  flex-wrap: wrap;
+}
+
+.footer-content p {
+  flex: 1;
+  margin: 0;
+  text-align: left;
+}
+
+.footer-github-link {
+  margin-left: auto;
 }
 
 .app-footer p {
@@ -245,6 +263,16 @@
     margin-top: var(--spacing-3xl);
     padding: var(--spacing-xl) var(--spacing-lg);
     border-radius: 8px;
+    text-align: center;
+  }
+
+  .footer-content {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .footer-content p {
+    text-align: center;
   }
 
   .app-footer p {
@@ -258,6 +286,11 @@
     margin-top: var(--spacing-2xl);
     padding: var(--spacing-lg) var(--spacing-md);
     border-radius: 8px;
+    text-align: center;
+  }
+
+  .footer-content {
+    gap: var(--spacing-md);
   }
 
   .app-footer p {
