@@ -282,7 +282,20 @@ GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 GEMINI_MODEL="gemini-1.5-flash-latest" # 선택
 OPENAI_API_KEY="YOUR_OPENAI_API_KEY" # 요약 파이프라인 압축용 (선택)
 OPENAI_SUMMARIZE_MODEL="gpt-4o-mini" # 선택, 기본값 gpt-4o-mini
+
+# (신규) Google Programmable Search / CSE
+GOOGLE_CSE_KEY="YOUR_GOOGLE_CUSTOM_SEARCH_API_KEY"
+GOOGLE_CSE_ID="YOUR_GOOGLE_CUSTOM_SEARCH_ENGINE_ID"
+# 또는 동일 목적의 대체 이름
+GOOGLE_SEARCH_API_KEY=""
+GOOGLE_SEARCH_ENGINE_ID=""
+
+# (선택) Prisma Optimize
+OPTIMIZE_API_KEY=""
 ```
+
+- Google Custom Search 키/ID는 [Programmable Search Engine](https://programmablesearchengine.google.com/)에서 검색 엔진 생성 후 얻을 수 있습니다. `googleapis.com/customsearch/v1` 호출이 가능한 API 키를 반드시 활성화하세요.
+- `OPTIMIZE_API_KEY`는 Prisma Client에 `withOptimize` 확장을 적용할 때 필요합니다. 설정하지 않아도 기본 Prisma는 동작하지만, 쿼리 최적화 지표를 확인하려면 키를 발급 받아 입력하세요.
 
 ### 번역 호출 로그
 
@@ -310,6 +323,19 @@ npm run build
 ```bash
 npm run preview
 ```
+
+- 브라우저에서 `http://localhost:4173` 접속
+
+### 테스트 & 검증
+
+| 목적 | 명령어 | 비고 |
+| --- | --- | --- |
+| 프론트 타입/번들 검사 | `npm run build` | Vite + TypeScript 빌드 |
+| 서버 타입 검사 | `npm run build:server` | `tsconfig.server.json` 기반 |
+| 환경 변수 점검 | `npm run check:env` | 누락된 필수 키를 콘솔로 안내 |
+
+- Prompt Guide 파이프라인을 검증하려면 `npm run server` 실행 후 `POST /api/guides/collect`(전체) 또는 `/api/guides/collect/:modelName`(단일)을 호출하고, `GET /api/admin/guides/history` 응답에서 최신 수집 결과를 확인하세요.
+- 프론트엔드에서는 모델 선택 → “가이드 새로고침” → 프롬프트 생성 순으로 진행하면서 결과 카드 상단의 “모델 가이드 반영됨” 영역에 기대한 제목/신뢰도가 표시되는지 확인하면 됩니다.
 
 ---
 
@@ -394,6 +420,21 @@ npm run preview
      - 엔지니어링: 엔지니어링 방법
 5. "메인으로" 버튼으로 일반 모드 복귀
 6. "로그아웃" 버튼으로 Admin 세션 종료
+
+### 모델 가이드 패널 & 실시간 반영
+
+1. 텍스트 PromptGenerator에서 **모델 선택 드롭다운**으로 대상 LLM/이미지/비디오 모델을 선택합니다.
+2. 하단의 **가이드 추천 패널**에서 자동으로 불러온 최신 가이드 칩을 확인하고, 필요한 가이드를 클릭해 강제로 적용할 수 있습니다.
+   - 기본적으로 선택한 모델의 최신 버전이 우선 적용되며, 가이드 신뢰도(%)와 버전 정보를 함께 제공합니다.
+   - "가이드 새로고침" 버튼을 누르면 `guideAPI.getPublicLatest`를 다시 호출하여 서버 DB에 저장된 최신 가이드를 즉시 반영합니다.
+3. 프롬프트를 생성하면 적용된 가이드 정보(`guideId`, 모델명, 신뢰도)가 결과 카드 최상단과 저장 기록에 함께 기록됩니다.
+4. Admin 페이지의 **Guide Manager**에서는 `/api/admin/guides/latest`, `/api/admin/guides/history`, `/api/guides/public/latest` API를 통해
+   - 모델/카테고리 필터별 최신 가이드 상태
+   - 최근 수집 작업 이력 및 성공/실패 로그
+   - 수동 수집 트리거(`/api/guides/collect`, `/api/guides/collect/:modelName`)
+   를 실시간으로 확인할 수 있습니다.
+5. Google Programmable Search 키를 설정하면 백엔드 스크래퍼가 정적 소스 + 동적 검색 URL을 병합하여 가이드를 수집하고,
+   결과는 PostgreSQL의 `PromptGuide`, `GuideCollectionJob`, `GuideCollectionResult` 테이블에 버전 히스토리로 저장됩니다.
 
 ---
 
