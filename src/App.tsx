@@ -33,6 +33,21 @@ function App() {
     
     // 프롬프트 가이드 스케줄러 초기화
     initializeScheduler()
+    
+    // Chrome 확장 프로그램의 Firebase 오류 무시 (개발 환경에서만)
+    if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+      const originalError = console.error
+      console.error = (...args: any[]) => {
+        // Firebase 관련 오류는 무시
+        if (args.some(arg => 
+          typeof arg === 'string' && 
+          (arg.includes('@firebase/auth') || arg.includes('INTERNAL ASSERTION'))
+        )) {
+          return
+        }
+        originalError.apply(console, args)
+      }
+    }
   }, [])
 
   // isAdmin 상태 변경 시 localStorage에 저장 및 인증 상태 확인
@@ -65,10 +80,22 @@ function App() {
   const toggleAdminMode = (e?: React.MouseEvent) => {
     e?.preventDefault()
     e?.stopPropagation()
-    const newAdminState = !isAdmin
-    console.log('[Admin] 토글:', { 현재: isAdmin, 새상태: newAdminState })
-    setIsAdmin(newAdminState)
-    // 상태 변경은 useEffect에서 처리됨
+    
+    try {
+      const newAdminState = !isAdmin
+      console.log('[Admin] 토글:', { 현재: isAdmin, 새상태: newAdminState })
+      setIsAdmin(newAdminState)
+      // 상태 변경은 useEffect에서 처리됨
+    } catch (error) {
+      // Chrome 확장 프로그램 오류 무시
+      if (error instanceof Error && error.message.includes('firebase')) {
+        console.warn('[Admin] Firebase 관련 오류 무시:', error.message)
+        // 오류가 발생해도 상태 변경은 계속 진행
+        setIsAdmin(!isAdmin)
+      } else {
+        throw error
+      }
+    }
   }
 
   // Admin 모드
