@@ -1,6 +1,26 @@
 // API 클라이언트 유틸리티
 
-const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
+// API 서버 주소를 환경 변수 → 현재 호스트 → 로컬호스트 순으로 해석
+const resolveApiBaseUrl = (): string => {
+  const envUrl = (import.meta.env?.VITE_API_BASE_URL as string | undefined)?.trim()
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, '')
+  }
+
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin
+    // 로컬 환경에서는 명시적으로 백엔드 포트로 연결
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return 'http://localhost:3001'
+    }
+    // 배포 환경에서는 동일 도메인으로 프록시된 API 사용
+    return origin.replace(/\/+$/, '')
+  }
+
+  return 'http://localhost:3001'
+}
+
+export const API_BASE_URL = resolveApiBaseUrl()
 
 // Admin 모드 확인 (순환 참조 방지를 위해 직접 확인)
 function isAdminMode(): boolean {
@@ -38,6 +58,8 @@ async function apiRequest<T>(
   options: RequestInit = {}
 ): Promise<T> {
   const token = getToken()
+  const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`
+  const url = `${API_BASE_URL}${normalizedEndpoint}`
   
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -54,7 +76,6 @@ async function apiRequest<T>(
   }
 
   try {
-    const url = `${API_BASE_URL}${endpoint}`
     console.log(`[API Request] ${options.method || 'GET'} ${url}`)
     
     const response = await fetch(url, {
@@ -92,7 +113,7 @@ async function apiRequest<T>(
     // 네트워크 오류 처리
     if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
       console.error('[API Error] 네트워크 오류:', error)
-      throw new Error('서버에 연결할 수 없습니다. API 서버가 실행 중인지 확인해주세요.')
+      throw new Error(`서버에 연결할 수 없습니다. API 서버(${API_BASE_URL})가 실행 중인지 확인해주세요.`)
     }
     console.error('[API Error] 기타 오류:', error)
     throw error
@@ -397,4 +418,3 @@ export const translationAPI = {
     })
   },
 }
-

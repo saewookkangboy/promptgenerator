@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { clearAdminAuth } from '../utils/storage'
+import { removeToken } from '../utils/api'
 import VisitGraphModal from './VisitGraphModal'
 import GuideManager from './GuideManager'
 import TemplateManager from './TemplateManager'
@@ -47,6 +48,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   // loadData 함수 제거 (서버 기반으로 변경)
 
   const handleLogout = () => {
+    removeToken()
     clearAdminAuth()
     onLogout()
   }
@@ -586,4 +588,3 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
 }
 
 export default AdminDashboard
-

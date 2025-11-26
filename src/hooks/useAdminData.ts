@@ -79,6 +79,11 @@ const getErrorMessage = (reason: any): string => {
   }
 }
 
+const isAuthErrorMessage = (message: string): boolean => {
+  if (!message) return false
+  return /401|403|인증|권한/i.test(message)
+}
+
 const mapPromptToRecord = (prompt: any): AdminPromptRecord => ({
   id: prompt.id,
   title: prompt.title,
@@ -200,16 +205,16 @@ export function useAdminData(options: UseAdminDataOptions = {}): AdminDataState 
       }
 
       setErrors(newErrors)
+      const errorMessages = Object.values(newErrors).filter(Boolean) as string[]
+      const hasAuthIssue = errorMessages.some(isAuthErrorMessage)
 
-      if (successCount > 0) {
+      if (successCount > 0 && !hasAuthIssue) {
         setServerStatus('online')
         setLastUpdated(Date.now())
+      } else if (hasAuthIssue) {
+        setServerStatus('auth_error')
       } else {
-        const errorMessages = Object.values(newErrors).filter(Boolean) as string[]
-        const authProblem = errorMessages.some(
-          (msg) => msg.includes('인증') || msg.includes('권한')
-        )
-        setServerStatus(authProblem ? 'auth_error' : 'offline')
+        setServerStatus('offline')
       }
     } catch (error) {
       console.error('[useAdminData] 데이터 로드 실패:', error)
@@ -250,5 +255,4 @@ export function useAdminData(options: UseAdminDataOptions = {}): AdminDataState 
     lastUpdated,
   }
 }
-
 

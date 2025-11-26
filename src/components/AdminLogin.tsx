@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react'
 import { setAdminAuth } from '../utils/storage'
-import { authAPI } from '../utils/api'
+import { authAPI, API_BASE_URL } from '../utils/api'
 import './AdminLogin.css'
 
 interface AdminLoginProps {
@@ -24,7 +24,6 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
       const email = username.includes('@') ? username : `${username}@troe.kr`
       
       // API URL 확인 및 로그
-      const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
       console.log('[Admin Login] API URL:', API_BASE_URL)
       console.log('[Admin Login] Email:', email)
       
@@ -157,4 +156,3 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
 }
 
 export default AdminLogin
-
