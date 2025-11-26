@@ -237,7 +237,7 @@ function VideoPromptGenerator() {
           <label>무드</label>
           <select
             value={overallStyle.mood}
-            onChange={(e) => setOverallStyle({ ...overallStyle, mood: e.target.value })}
+            onChange={(e) => setOverallStyle({ ...overallStyle, mood: e.target.value as VideoStyle['mood'] })}
             className="option-select"
           >
             {MOODS.map((mood) => (
@@ -352,46 +352,55 @@ function VideoPromptGenerator() {
 
   const renderWizardTechnical = () => (
     <div className="wizard-panel">
-      <div className="form-group">
-        <label>총 길이 (초)</label>
-        <input
-          type="number"
-          min={10}
-          max={120}
-          value={technical.totalDuration}
-          onChange={(e) => setTechnical({ ...technical, totalDuration: parseInt(e.target.value) || technical.totalDuration })}
-        />
-      </div>
-      <div className="options-grid">
         <div className="form-group">
-          <label>FPS</label>
+          <label>총 길이 (초)</label>
           <input
             type="number"
-            min={12}
-            max={60}
-            value={technical.fps}
-            onChange={(e) => setTechnical({ ...technical, fps: parseInt(e.target.value) || technical.fps })}
+            min={10}
+            max={120}
+            value={technical.totalDuration}
+            onChange={(e) => {
+              const value = parseInt(e.target.value) || technical.totalDuration
+              setTechnical({ ...technical, totalDuration: value })
+            }}
           />
         </div>
-        <div className="form-group">
-          <label>해상도</label>
-          <select
-            value={technical.resolution}
-            onChange={(e) => setTechnical({ ...technical, resolution: e.target.value })}
-            className="option-select"
-          >
-            <option value="720p">720p</option>
-            <option value="1080p">1080p</option>
-            <option value="4k">4K</option>
-          </select>
-        </div>
-        <div className="form-group">
-          <label>종횡비</label>
-          <select
-            value={technical.aspectRatio}
-            onChange={(e) => setTechnical({ ...technical, aspectRatio: e.target.value })}
-            className="option-select"
-          >
+        <div className="options-grid">
+          <div className="form-group">
+            <label>FPS</label>
+            <select
+              value={technical.fps}
+              onChange={(e) => {
+                const value = parseInt(e.target.value) as 24 | 30 | 60
+                setTechnical({ ...technical, fps: value })
+              }}
+              className="option-select"
+            >
+              <option value="24">24</option>
+              <option value="30">30</option>
+              <option value="60">60</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>해상도</label>
+            <select
+              value={technical.resolution}
+              onChange={(e) => setTechnical({ ...technical, resolution: e.target.value as VideoTechnicalSettings['resolution'] })}
+              className="option-select"
+            >
+              <option value="720p">720p</option>
+              <option value="1080p">1080p</option>
+              <option value="4k">4K</option>
+              <option value="8k">8K</option>
+            </select>
+          </div>
+          <div className="form-group">
+            <label>종횡비</label>
+            <select
+              value={technical.aspectRatio}
+              onChange={(e) => setTechnical({ ...technical, aspectRatio: e.target.value as VideoTechnicalSettings['aspectRatio'] })}
+              className="option-select"
+            >
             <option value="16:9">16:9</option>
             <option value="9:16">9:16</option>
             <option value="2.35:1">2.35:1</option>

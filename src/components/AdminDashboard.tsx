@@ -26,20 +26,69 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   const [serverPrompts, setServerPrompts] = useState<any[]>([])
   const [usersPage, setUsersPage] = useState(1)
   const [promptsPage, setPromptsPage] = useState(1)
+  const [serverConnected, setServerConnected] = useState<boolean | null>(null) // null: 확인 중, true: 연결됨, false: 연결 안됨
 
   useEffect(() => {
+    // 로컬 데이터는 즉시 로드 (서버와 무관)
     loadData()
-    loadServerData()
-    // 5초마다 데이터 새로고침
-    const interval = setInterval(() => {
-      loadData()
+    
+    // 서버 연결 확인은 백그라운드에서 비동기로 수행 (블로킹하지 않음)
+    if (serverConnected === null) {
+      checkServerConnection()
+    }
+    
+    // 서버가 연결된 경우에만 서버 데이터 로드
+    if (serverConnected === true) {
       loadServerData()
+    }
+    
+    // 로컬 데이터는 5초마다 새로고침 (서버와 무관)
+    const localInterval = setInterval(() => {
+      loadData()
     }, 5000)
-    return () => clearInterval(interval)
-  }, [usersPage, promptsPage])
+    
+    // 서버 데이터는 서버 연결된 경우에만 새로고침
+    const serverInterval = setInterval(() => {
+      if (serverConnected === true) {
+        loadServerData()
+      }
+    }, 10000) // 서버 데이터는 10초마다
+    
+    return () => {
+      clearInterval(localInterval)
+      clearInterval(serverInterval)
+    }
+  }, [usersPage, promptsPage, serverConnected])
+
+  // 서버 연결 확인 (타임아웃 포함, 비동기, 블로킹하지 않음)
+  const checkServerConnection = async () => {
+    // 로딩 상태는 설정하지 않음 (사용자 경험 방해하지 않음)
+    try {
+      // 타임아웃 설정 (2초로 단축)
+      const timeoutPromise = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error('타임아웃')), 2000)
+      })
+      
+      const statsPromise = adminAPI.getStats()
+      await Promise.race([statsPromise, timeoutPromise])
+      
+      setServerConnected(true)
+      // 연결 성공 시 서버 데이터 로드
+      loadServerData()
+    } catch (error) {
+      // 서버 연결 실패는 정상적인 상황 (로컬 모드)
+      // 콘솔에만 로그하고 사용자에게는 방해하지 않음
+      console.log('서버 연결 확인 실패 (로컬 모드로 작동):', error)
+      setServerConnected(false)
+    }
+  }
 
   const loadServerData = async () => {
+    // 서버가 연결되지 않은 경우 호출하지 않음
+    if (serverConnected !== true) return
+    
     try {
+      // 로딩 상태는 설정하지 않음 (사용자 경험 방해하지 않음)
       // 서버 통계 로드
       const statsData = await adminAPI.getStats()
       setServerStats(statsData)
@@ -52,8 +101,11 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
       const promptsData = await adminAPI.getPrompts({ page: promptsPage, limit: 20 })
       setServerPrompts(promptsData.prompts)
     } catch (error) {
-      console.error('서버 데이터 로드 실패:', error)
-      // 서버가 없거나 인증되지 않은 경우 무시
+      // 서버 데이터 로드 실패는 정상적인 상황 (서버가 없을 수 있음)
+      // 콘솔에만 로그하고 사용자에게는 방해하지 않음
+      console.log('서버 데이터 로드 실패 (로컬 모드로 계속 작동):', error)
+      // 서버 연결 실패 시 연결 상태 업데이트
+      setServerConnected(false)
     }
   }
 
@@ -200,8 +252,20 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
               <div className="admin-section">
                 <div className="admin-section-header">
                   <h2>사용자 관리</h2>
+                  {serverConnected === false && (
+                    <div style={{ 
+                      marginTop: '12px', 
+                      padding: '12px', 
+                      background: '#fff3cd', 
+                      border: '1px solid #ffc107',
+                      borderRadius: '4px',
+                      color: '#856404'
+                    }}>
+                      ⚠️ 서버에 연결할 수 없습니다. 로컬 모드로 작동 중입니다.
+                    </div>
+                  )}
                 </div>
-                {serverStats && (
+                {serverConnected === true && serverStats && (
                   <div className="admin-stats-grid" style={{ marginBottom: '24px' }}>
                     <div className="stat-card">
                       <div className="stat-label">총 사용자</div>
@@ -213,67 +277,98 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                     </div>
                   </div>
                 )}
-                <div className="admin-table-container">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>이메일</th>
-                        <th>이름</th>
-                        <th>Tier</th>
-                        <th>상태</th>
-                        <th>가입일</th>
-                        <th>액션</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {users.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="no-data">
-                            사용자가 없습니다
-                          </td>
-                        </tr>
-                      ) : (
-                        users.map((user) => (
-                          <tr key={user.id}>
-                            <td>{user.email}</td>
-                            <td>{user.name || '-'}</td>
-                            <td>
-                              <span className={`category-badge tier-${user.tier.toLowerCase()}`}>
-                                {user.tier}
-                              </span>
-                            </td>
-                            <td>{user.subscriptionStatus}</td>
-                            <td>{new Date(user.createdAt).toLocaleDateString('ko-KR')}</td>
-                            <td>
-                              <button
-                                className="admin-action-button"
-                                onClick={() => {
-                                  console.log('사용자 편집:', user.id)
-                                }}
-                              >
-                                편집
-                              </button>
-                            </td>
+                {serverConnected === true ? (
+                  <>
+                    <div className="admin-table-container">
+                      <table className="admin-table">
+                        <thead>
+                          <tr>
+                            <th>이메일</th>
+                            <th>이름</th>
+                            <th>Tier</th>
+                            <th>상태</th>
+                            <th>가입일</th>
+                            <th>액션</th>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="admin-pagination">
-                  <button
-                    onClick={() => setUsersPage(Math.max(1, usersPage - 1))}
-                    disabled={usersPage === 1}
-                  >
-                    이전
-                  </button>
-                  <span>페이지 {usersPage}</span>
-                  <button
-                    onClick={() => setUsersPage(usersPage + 1)}
-                  >
-                    다음
-                  </button>
-                </div>
+                        </thead>
+                        <tbody>
+                          {users.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="no-data">
+                                사용자가 없습니다
+                              </td>
+                            </tr>
+                          ) : (
+                            users.map((user) => (
+                              <tr key={user.id}>
+                                <td>{user.email}</td>
+                                <td>{user.name || '-'}</td>
+                                <td>
+                                  <span className={`category-badge tier-${user.tier.toLowerCase()}`}>
+                                    {user.tier}
+                                  </span>
+                                </td>
+                                <td>{user.subscriptionStatus}</td>
+                                <td>{new Date(user.createdAt).toLocaleDateString('ko-KR')}</td>
+                                <td>
+                                  <button
+                                    className="admin-action-button"
+                                    onClick={() => {
+                                      console.log('사용자 편집:', user.id)
+                                    }}
+                                  >
+                                    편집
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="admin-pagination">
+                      <button
+                        onClick={() => setUsersPage(Math.max(1, usersPage - 1))}
+                        disabled={usersPage === 1}
+                      >
+                        이전
+                      </button>
+                      <span>페이지 {usersPage}</span>
+                      <button
+                        onClick={() => setUsersPage(usersPage + 1)}
+                      >
+                        다음
+                      </button>
+                    </div>
+                  </>
+                ) : serverConnected === false ? (
+                  <div style={{ 
+                    padding: '24px', 
+                    textAlign: 'center',
+                    background: '#f8f9fa',
+                    borderRadius: '4px',
+                    color: '#6c757d'
+                  }}>
+                    <p>서버에 연결할 수 없습니다.</p>
+                    <p style={{ marginTop: '8px', fontSize: '0.9em' }}>
+                      서버를 시작하려면: <code>npm run server</code>
+                    </p>
+                    <button
+                      onClick={checkServerConnection}
+                      style={{
+                        marginTop: '16px',
+                        padding: '8px 16px',
+                        background: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      연결 재시도
+                    </button>
+                  </div>
+                ) : null}
               </div>
             )}
 
@@ -281,8 +376,20 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
               <div className="admin-section">
                 <div className="admin-section-header">
                   <h2>프롬프트 관리</h2>
+                  {serverConnected === false && (
+                    <div style={{ 
+                      marginTop: '12px', 
+                      padding: '12px', 
+                      background: '#fff3cd', 
+                      border: '1px solid #ffc107',
+                      borderRadius: '4px',
+                      color: '#856404'
+                    }}>
+                      ⚠️ 서버에 연결할 수 없습니다. 로컬 모드로 작동 중입니다.
+                    </div>
+                  )}
                 </div>
-                {serverStats && (
+                {serverConnected === true && serverStats && (
                   <div className="admin-stats-grid" style={{ marginBottom: '24px' }}>
                     <div className="stat-card">
                       <div className="stat-label">총 프롬프트</div>
@@ -290,67 +397,98 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                     </div>
                   </div>
                 )}
-                <div className="admin-table-container">
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>제목</th>
-                        <th>카테고리</th>
-                        <th>사용자</th>
-                        <th>모델</th>
-                        <th>생성일</th>
-                        <th>액션</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {serverPrompts.length === 0 ? (
-                        <tr>
-                          <td colSpan={6} className="no-data">
-                            프롬프트가 없습니다
-                          </td>
-                        </tr>
-                      ) : (
-                        serverPrompts.map((prompt) => (
-                          <tr key={prompt.id}>
-                            <td>{prompt.title || prompt.content.substring(0, 50)}</td>
-                            <td>
-                              <span className={`category-badge category-${prompt.category.toLowerCase()}`}>
-                                {prompt.category}
-                              </span>
-                            </td>
-                            <td>{prompt.user?.email || '-'}</td>
-                            <td>{prompt.model || '-'}</td>
-                            <td>{new Date(prompt.createdAt).toLocaleDateString('ko-KR')}</td>
-                            <td>
-                              <button
-                                className="admin-action-button"
-                                onClick={() => {
-                                  console.log('프롬프트 상세:', prompt.id)
-                                }}
-                              >
-                                상세
-                              </button>
-                            </td>
+                {serverConnected === true ? (
+                  <>
+                    <div className="admin-table-container">
+                      <table className="admin-table">
+                        <thead>
+                          <tr>
+                            <th>제목</th>
+                            <th>카테고리</th>
+                            <th>사용자</th>
+                            <th>모델</th>
+                            <th>생성일</th>
+                            <th>액션</th>
                           </tr>
-                        ))
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="admin-pagination">
-                  <button
-                    onClick={() => setPromptsPage(Math.max(1, promptsPage - 1))}
-                    disabled={promptsPage === 1}
-                  >
-                    이전
-                  </button>
-                  <span>페이지 {promptsPage}</span>
-                  <button
-                    onClick={() => setPromptsPage(promptsPage + 1)}
-                  >
-                    다음
-                  </button>
-                </div>
+                        </thead>
+                        <tbody>
+                          {serverPrompts.length === 0 ? (
+                            <tr>
+                              <td colSpan={6} className="no-data">
+                                프롬프트가 없습니다
+                              </td>
+                            </tr>
+                          ) : (
+                            serverPrompts.map((prompt) => (
+                              <tr key={prompt.id}>
+                                <td>{prompt.title || prompt.content.substring(0, 50)}</td>
+                                <td>
+                                  <span className={`category-badge category-${prompt.category.toLowerCase()}`}>
+                                    {prompt.category}
+                                  </span>
+                                </td>
+                                <td>{prompt.user?.email || '-'}</td>
+                                <td>{prompt.model || '-'}</td>
+                                <td>{new Date(prompt.createdAt).toLocaleDateString('ko-KR')}</td>
+                                <td>
+                                  <button
+                                    className="admin-action-button"
+                                    onClick={() => {
+                                      console.log('프롬프트 상세:', prompt.id)
+                                    }}
+                                  >
+                                    상세
+                                  </button>
+                                </td>
+                              </tr>
+                            ))
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="admin-pagination">
+                      <button
+                        onClick={() => setPromptsPage(Math.max(1, promptsPage - 1))}
+                        disabled={promptsPage === 1}
+                      >
+                        이전
+                      </button>
+                      <span>페이지 {promptsPage}</span>
+                      <button
+                        onClick={() => setPromptsPage(promptsPage + 1)}
+                      >
+                        다음
+                      </button>
+                    </div>
+                  </>
+                ) : serverConnected === false ? (
+                  <div style={{ 
+                    padding: '24px', 
+                    textAlign: 'center',
+                    background: '#f8f9fa',
+                    borderRadius: '4px',
+                    color: '#6c757d'
+                  }}>
+                    <p>서버에 연결할 수 없습니다.</p>
+                    <p style={{ marginTop: '8px', fontSize: '0.9em' }}>
+                      서버를 시작하려면: <code>npm run server</code>
+                    </p>
+                    <button
+                      onClick={checkServerConnection}
+                      style={{
+                        marginTop: '16px',
+                        padding: '8px 16px',
+                        background: '#007bff',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '4px',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      연결 재시도
+                    </button>
+                  </div>
+                ) : null}
               </div>
             )}
 
@@ -466,15 +604,6 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                       ) : (
                         <span className="options-indicator empty">옵션 없음</span>
                       )}
-
-            {activeSection === 'templates' && (
-              <div className="admin-section">
-                <div className="admin-section-header">
-                  <h2>템플릿 관리</h2>
-                </div>
-                <TemplateManager />
-              </div>
-            )}
                     </td>
                     <td>{formatDate(record.timestamp)}</td>
                   </tr>
@@ -513,6 +642,15 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
           </div>
         </>
       )}
+
+            {activeSection === 'templates' && (
+              <div className="admin-section">
+                <div className="admin-section-header">
+                  <h2>템플릿 관리</h2>
+                </div>
+                <TemplateManager />
+              </div>
+            )}
 
       <VisitGraphModal
         isOpen={isGraphModalOpen}

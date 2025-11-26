@@ -5,15 +5,19 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
+    "start": "node server/index.js",
     "server": "node server/index.js",
     "server:dev": "nodemon server/index.js",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "build:server": "tsc -p tsconfig.server.json",
-    "dev:server": "tsc -p tsconfig.server.json --watch"
+    "dev:server": "tsc -p tsconfig.server.json --watch",
+    "check:env": "node scripts/check-env.js",
+    "pre-deploy": "node scripts/pre-deploy-check.js"
   },
   "dependencies": {
     "@prisma/client": "^5.19.1",

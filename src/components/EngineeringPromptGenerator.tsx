@@ -223,39 +223,54 @@ function EngineeringPromptGenerator() {
             <label className="checkbox-label">
               <input
                 type="checkbox"
-                checked={config.optimize?.clarity !== false}
-                onChange={(e) =>
+                checked={config.optimize?.clarity ?? true}
+                onChange={(e) => {
+                  const currentOptimize: { clarity: boolean; structure: boolean; keywords: boolean; length?: 'short' | 'medium' | 'long' } = 
+                    config.optimize || { clarity: true, structure: true, keywords: true }
                   setConfig({
                     ...config,
-                    optimize: { ...config.optimize, clarity: e.target.checked },
+                    optimize: { 
+                      ...currentOptimize,
+                      clarity: e.target.checked 
+                    },
                   })
-                }
+                }}
               />
               명확성 유지
             </label>
             <label className="checkbox-label">
               <input
                 type="checkbox"
-                checked={config.optimize?.structure !== false}
-                onChange={(e) =>
+                checked={config.optimize?.structure ?? true}
+                onChange={(e) => {
+                  const currentOptimize: { clarity: boolean; structure: boolean; keywords: boolean; length?: 'short' | 'medium' | 'long' } = 
+                    config.optimize || { clarity: true, structure: true, keywords: true }
                   setConfig({
                     ...config,
-                    optimize: { ...config.optimize, structure: e.target.checked },
+                    optimize: { 
+                      ...currentOptimize,
+                      structure: e.target.checked 
+                    },
                   })
-                }
+                }}
               />
               구조 보강
             </label>
             <label className="checkbox-label">
               <input
                 type="checkbox"
-                checked={config.optimize?.keywords !== false}
-                onChange={(e) =>
+                checked={config.optimize?.keywords ?? true}
+                onChange={(e) => {
+                  const currentOptimize: { clarity: boolean; structure: boolean; keywords: boolean; length?: 'short' | 'medium' | 'long' } = 
+                    config.optimize || { clarity: true, structure: true, keywords: true }
                   setConfig({
                     ...config,
-                    optimize: { ...config.optimize, keywords: e.target.checked },
+                    optimize: { 
+                      ...currentOptimize,
+                      keywords: e.target.checked 
+                    },
                   })
-                }
+                }}
               />
               키워드 보호
             </label>
@@ -267,11 +282,17 @@ function EngineeringPromptGenerator() {
         <label>추가 제약 / Tone</label>
         <textarea
           rows={3}
-          value={config.optimize?.tone || ''}
+          value={(config.optimize as any)?.tone || ''}
           onChange={(e) =>
             setConfig({
               ...config,
-              optimize: { ...config.optimize, tone: e.target.value },
+              optimize: { 
+                clarity: config.optimize?.clarity ?? true,
+                structure: config.optimize?.structure ?? true,
+                keywords: config.optimize?.keywords ?? true,
+                ...config.optimize,
+                ...({ tone: e.target.value } as any)
+              },
             })
           }
           placeholder="예: 논리적, 차분한 어조로 답변하도록 요청"

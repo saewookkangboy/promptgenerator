@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { getAllLatestGuides } from '../utils/prompt-guide-storage'
 import { triggerManualCollection, getCollectionStatus as getScheduleStatus } from '../utils/prompt-guide-scheduler'
 import { GuideUpdateResult, ModelName } from '../types/prompt-guide.types'
+import { saveGuideCollectionHistory, getGuideCollectionHistories, updateGuideCollectionHistory, GuideCollectionHistory } from '../utils/storage'
 import './GuideManager.css'
 
 function GuideManager() {
@@ -9,16 +10,26 @@ function GuideManager() {
   const [scheduleStatus, setScheduleStatus] = useState(getScheduleStatus())
   const [isCollecting, setIsCollecting] = useState(false)
   const [collectionResults, setCollectionResults] = useState<GuideUpdateResult[]>([])
+  const [collectionHistories, setCollectionHistories] = useState<GuideCollectionHistory[]>([])
+  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     loadData()
-    const interval = setInterval(loadData, 60000) // 1분마다 새로고침
+    loadHistories()
+    const interval = setInterval(() => {
+      loadData()
+      loadHistories()
+    }, 60000) // 1분마다 새로고침
     return () => clearInterval(interval)
   }, [])
 
   const loadData = () => {
     setLatestGuides(getAllLatestGuides())
     setScheduleStatus(getScheduleStatus())
+  }
+
+  const loadHistories = () => {
+    setCollectionHistories(getGuideCollectionHistories())
   }
 
   const handleManualCollection = async () => {
@@ -29,6 +40,21 @@ function GuideManager() {
       const results = await triggerManualCollection()
       setCollectionResults(results)
       loadData()
+      
+      // 수집 이력 저장
+      results.forEach(result => {
+        saveGuideCollectionHistory({
+          success: result.success,
+          modelName: result.modelName,
+          guidesAdded: result.guidesAdded,
+          guidesUpdated: result.guidesUpdated,
+          errors: result.errors,
+          appliedToService: result.success && (result.guidesAdded > 0 || result.guidesUpdated > 0), // 성공하고 변경사항이 있으면 적용됨
+          collectionType: 'manual',
+        })
+      })
+      
+      loadHistories()
     } catch (error: any) {
       console.error('수집 실패:', error)
       // 에러 메시지를 결과에 추가
@@ -43,9 +69,26 @@ function GuideManager() {
         ],
       }
       setCollectionResults([errorResult])
+      
+      // 실패 이력도 저장
+      saveGuideCollectionHistory({
+        success: false,
+        modelName: 'all',
+        guidesAdded: 0,
+        guidesUpdated: 0,
+        errors: errorResult.errors,
+        appliedToService: false,
+        collectionType: 'manual',
+      })
+      loadHistories()
     } finally {
       setIsCollecting(false)
     }
+  }
+
+  const handleToggleApplied = (historyId: string, applied: boolean) => {
+    updateGuideCollectionHistory(historyId, { appliedToService: applied })
+    loadHistories()
   }
 
   const formatDate = (timestamp: number) => {
@@ -86,6 +129,12 @@ function GuideManager() {
         >
           {isCollecting ? '수집 중...' : '수동 수집 실행'}
         </button>
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className="history-button"
+        >
+          {showHistory ? '이력 숨기기' : '수집 이력 보기'}
+        </button>
       </div>
 
       {collectionResults.length > 0 && (
@@ -115,6 +164,58 @@ function GuideManager() {
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {showHistory && (
+        <div className="collection-history">
+          <h3>수집 이력 ({collectionHistories.length}건)</h3>
+          {collectionHistories.length === 0 ? (
+            <p className="no-history">수집 이력이 없습니다.</p>
+          ) : (
+            <div className="history-list">
+              {collectionHistories.map((history) => (
+                <div
+                  key={history.id}
+                  className={`history-item ${history.success ? 'success' : 'error'}`}
+                >
+                  <div className="history-header">
+                    <div className="history-info">
+                      <strong>{history.modelName}</strong>
+                      <span className={`history-status ${history.success ? 'success' : 'error'}`}>
+                        {history.success ? '성공' : '실패'}
+                      </span>
+                      <span className="history-type">
+                        {history.collectionType === 'manual' ? '수동' : '자동'}
+                      </span>
+                    </div>
+                    <div className="history-date">
+                      {formatDate(history.timestamp)}
+                    </div>
+                  </div>
+                  <div className="history-details">
+                    <span>추가: {history.guidesAdded}</span>
+                    <span>업데이트: {history.guidesUpdated}</span>
+                    <label className="applied-toggle">
+                      <input
+                        type="checkbox"
+                        checked={history.appliedToService}
+                        onChange={(e) => handleToggleApplied(history.id, e.target.checked)}
+                      />
+                      <span>서비스 적용됨</span>
+                    </label>
+                  </div>
+                  {history.errors && history.errors.length > 0 && (
+                    <div className="history-errors">
+                      {history.errors.map((error, i) => (
+                        <div key={i} className="error-message">{error}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

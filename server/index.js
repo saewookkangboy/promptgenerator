@@ -123,7 +123,17 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
-app.use(cors())
+// CORS 설정: 프로덕션에서는 프론트엔드 도메인만 허용
+const corsOptions = {
+  origin: process.env.FRONTEND_URL 
+    ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
+    : process.env.NODE_ENV === 'production'
+    ? false // 프로덕션에서는 FRONTEND_URL 필수
+    : true, // 개발 환경에서는 모든 도메인 허용
+  credentials: true,
+  optionsSuccessStatus: 200
+}
+app.use(cors(corsOptions))
 app.use(express.json())
 
 // Health check
