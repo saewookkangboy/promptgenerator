@@ -173,35 +173,41 @@ function PromptGenerator() {
     }
   }, [detailedOptions])
 
-  useEffect(() => {
-    let isMounted = true
+  const fetchGuides = useCallback(async () => {
+    setIsGuideLoading(true)
+    setGuideError(null)
     setGuideInsight(null)
-    guideAPI
-      .getPublicLatest({ category: getCategoryByModel(targetModel), limit: 20 })
-      .then((response) => {
-        if (!isMounted) return
-        const guide =
-          response.guides?.find((entry: PromptGuide) => entry.modelName === targetModel) ??
-          response.guides?.[0]
-        if (guide) {
-          const normalized = normalizeGuideInsight(guide)
-          setGuideInsight(normalized)
-          try {
-            upsertGuide(normalized)
-          } catch (error) {
-            console.warn('[PromptGenerator] 로컬 가이드 저장 실패:', error)
-          }
-        }
+    try {
+      const response = await guideAPI.getPublicLatest({
+        category: getCategoryByModel(targetModel),
+        limit: 10,
       })
-      .catch((error) => {
-        if (isMounted) {
-          console.warn('가이드 추천 정보를 불러오지 못했습니다:', error)
+      const normalizedList = (response.guides || []).map(normalizeGuideInsight)
+      setAvailableGuides(normalizedList)
+      const prioritized =
+        normalizedList.find((guide) => guide.modelName === targetModel) || normalizedList[0] || null
+      if (prioritized) {
+        setGuideInsight(prioritized)
+        try {
+          upsertGuide(prioritized)
+        } catch (error) {
+          console.warn('[PromptGenerator] 로컬 가이드 저장 실패:', error)
         }
-      })
-    return () => {
-      isMounted = false
+      } else {
+        setGuideError('선택한 모델에 사용할 수 있는 공개 가이드가 없습니다.')
+      }
+    } catch (error: any) {
+      console.warn('가이드 추천 정보를 불러오지 못했습니다:', error)
+      setGuideError(error.message || '가이드를 불러오는 중 오류가 발생했습니다.')
+      setAvailableGuides([])
+    } finally {
+      setIsGuideLoading(false)
     }
   }, [targetModel])
+
+  useEffect(() => {
+    fetchGuides()
+  }, [fetchGuides])
 
   const handleGenerate = useCallback(() => {
     // 입력 검증
