@@ -11,7 +11,7 @@ const { collectAllGuides } = require('./scraper/guideScraper')
 const { initializeScheduler } = require('./scheduler/guideScheduler')
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash-latest'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-1.5-flash'
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 const OPENAI_SUMMARIZE_MODEL = process.env.OPENAI_SUMMARIZE_MODEL || 'gpt-4o-mini'
 
