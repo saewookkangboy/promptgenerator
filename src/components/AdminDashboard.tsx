@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { clearAdminAuth } from '../utils/storage'
 import { removeToken } from '../utils/api'
 import VisitGraphModal from './VisitGraphModal'
-import GuideManager from './GuideManager'
 import TemplateManager from './TemplateManager'
 import { useAdminData, AdminPromptRecord } from '../hooks/useAdminData'
 import './AdminDashboard.css'
@@ -16,7 +15,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'text' | 'image' | 'video' | 'engineering'>('all')
   const [isGraphModalOpen, setIsGraphModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<AdminPromptRecord | null>(null)
-  const [activeSection, setActiveSection] = useState<'stats' | 'guides' | 'users' | 'prompts' | 'templates'>('stats')
+  const [activeSection, setActiveSection] = useState<'stats' | 'users' | 'prompts' | 'templates'>('stats')
   const [usersPage, setUsersPage] = useState(1)
   const [promptsPage, setPromptsPage] = useState(1)
   const {
@@ -163,24 +162,12 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                 프롬프트 관리
               </button>
               <button
-                className={`section-tab ${activeSection === 'guides' ? 'active' : ''}`}
-                onClick={() => setActiveSection('guides')}
-              >
-                가이드 관리
-              </button>
-              <button
                 className={`section-tab ${activeSection === 'templates' ? 'active' : ''}`}
                 onClick={() => setActiveSection('templates')}
               >
                 템플릿 관리
               </button>
             </div>
-
-            {activeSection === 'guides' && (
-              <div style={{ marginBottom: '32px' }}>
-                <GuideManager />
-              </div>
-            )}
 
             {activeSection === 'users' && (
               <div className="admin-section">

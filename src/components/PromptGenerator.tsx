@@ -156,9 +156,6 @@ function PromptGenerator() {
   const [, setQualityReport] = useState<QualityReport | null>(null)
   const [guideInsight, setGuideInsight] = useState<PromptGuide | null>(null)
   const [targetModel, setTargetModel] = useState<ModelName>('openai-gpt-4')
-  const [availableGuides, setAvailableGuides] = useState<PromptGuide[]>([])
-  const [isGuideLoading, setIsGuideLoading] = useState(false)
-  const [guideError, setGuideError] = useState<string | null>(null)
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {
@@ -177,8 +174,6 @@ function PromptGenerator() {
   }, [detailedOptions])
 
   const fetchGuides = useCallback(async () => {
-    setIsGuideLoading(true)
-    setGuideError(null)
     setGuideInsight(null)
     try {
       const response = await guideAPI.getPublicLatest({
@@ -186,7 +181,6 @@ function PromptGenerator() {
         limit: 10,
       })
       const normalizedList = (response.guides || []).map(normalizeGuideInsight)
-      setAvailableGuides(normalizedList)
       const prioritized =
         normalizedList.find((guide) => guide.modelName === targetModel) || normalizedList[0] || null
       if (prioritized) {
@@ -196,15 +190,9 @@ function PromptGenerator() {
         } catch (error) {
           console.warn('[PromptGenerator] 로컬 가이드 저장 실패:', error)
         }
-      } else {
-        setGuideError('선택한 모델에 사용할 수 있는 공개 가이드가 없습니다.')
       }
-    } catch (error: any) {
+    } catch (error) {
       console.warn('가이드 추천 정보를 불러오지 못했습니다:', error)
-      setGuideError(error.message || '가이드를 불러오는 중 오류가 발생했습니다.')
-      setAvailableGuides([])
-    } finally {
-      setIsGuideLoading(false)
     }
   }, [targetModel])
 
@@ -629,58 +617,6 @@ function PromptGenerator() {
     </div>
   )
 
-  const renderGuideSuggestions = () => {
-    const selectedModelInfo = MODEL_OPTIONS.find((model) => model.value === targetModel)
-    return (
-      <div className="guide-suggestions-panel">
-        <div className="guide-suggestions-header">
-          <div>
-            <p className="guide-insight-label">가이드 추천</p>
-            <h3>{selectedModelInfo?.label || targetModel}</h3>
-          </div>
-          <button
-            type="button"
-            className="guide-refresh-button"
-            onClick={fetchGuides}
-            disabled={isGuideLoading}
-          >
-            {isGuideLoading ? '불러오는 중...' : '가이드 새로고침'}
-          </button>
-        </div>
-        {guideError && <p className="guide-error-text">{guideError}</p>}
-        {!guideError && (
-          <>
-            {isGuideLoading && availableGuides.length === 0 ? (
-              <p className="guide-helper-text">선택한 모델의 가이드를 불러오는 중입니다.</p>
-            ) : availableGuides.length > 0 ? (
-              <div className="guide-chip-list">
-                {availableGuides.map((guide) => {
-                  const isActive = guideInsight?.id === guide.id
-                  return (
-                    <button
-                      key={guide.id}
-                      type="button"
-                      className={`guide-chip ${isActive ? 'active' : ''}`}
-                      onClick={() => setGuideInsight(guide)}
-                    >
-                      <span className="guide-chip-title">{guide.title}</span>
-                      <span className="guide-chip-meta">
-                        v{guide.version} ·{' '}
-                        {Math.round((guide.metadata?.confidence ?? guide.confidence ?? 0.5) * 100)}%
-                      </span>
-                    </button>
-                  )
-                })}
-              </div>
-            ) : (
-              <p className="guide-helper-text">선택한 모델에 사용할 수 있는 공개 가이드가 없습니다.</p>
-            )}
-          </>
-        )}
-      </div>
-    )
-  }
-
   const handleNextStep = () => {
     if (wizardStep === WIZARD_STEPS.length) return
     setWizardStep((prev) => prev + 1)
@@ -748,7 +684,6 @@ function PromptGenerator() {
                   <li>Gemini 번역과 요약으로 양언어 템플릿 제공</li>
                 </ul>
               </div>
-              {renderGuideSuggestions()}
             </div>
           )}
 
@@ -840,7 +775,6 @@ function PromptGenerator() {
         <div className="input-section">
           {renderContentTypeSelector()}
           {renderModelSelector()}
-          {renderGuideSuggestions()}
           {renderPromptTextarea()}
 
           <div className="detailed-options-section">
