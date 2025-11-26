@@ -237,7 +237,6 @@ app.post('/api/translate', async (req, res) => {
 
 // 백그라운드 작업 큐
 const { createJob, getJob, updateJob, updateJobProgress, completeJob, cancelJob, JOB_STATUS } = require('./utils/jobQueue')
-const { collectAllGuides } = require('./scraper/guideScraper')
 
 // 가이드 수집 작업 처리 (백그라운드)
 async function processCollectionJob(jobId, modelNames = null) {
