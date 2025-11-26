@@ -3,8 +3,8 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px;
-  gap: 16px;
+  padding: var(--spacing-3xl);
+  gap: var(--spacing-lg);
 }
 
 .spinner {
@@ -53,9 +53,29 @@
 }
 
 .loading-message {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: #666666;
   text-transform: none;
   letter-spacing: 0;
+  line-height: var(--line-height-normal);
+  text-align: center;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .loading-container {
+    padding: var(--spacing-2xl);
+    gap: var(--spacing-md);
+  }
+  
+  .loading-message {
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .loading-container {
+    padding: var(--spacing-xl);
+  }
 }
 

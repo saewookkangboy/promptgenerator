@@ -2,50 +2,90 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px;
+  padding: var(--spacing-lg);
   background: #fff5f5;
   border: 1px solid #fecaca;
   border-radius: 8px;
-  margin-bottom: 24px;
-  gap: 12px;
+  margin-bottom: var(--spacing-xl);
+  gap: var(--spacing-md);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  flex-wrap: wrap;
 }
 
 .error-content {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: var(--spacing-md);
   flex: 1;
+  min-width: 0;
 }
 
 .error-icon {
-  font-size: 1.2rem;
+  font-size: var(--font-size-lg);
   line-height: 1;
+  flex-shrink: 0;
 }
 
 .error-text {
-  font-size: 0.9rem;
+  font-size: var(--font-size-sm);
   color: #dc2626;
   text-transform: none;
   letter-spacing: 0;
   font-weight: 500;
+  line-height: var(--line-height-normal);
+  word-break: break-word;
 }
 
 .error-dismiss {
   background: transparent;
   border: none;
   color: #666666;
-  font-size: 1.5rem;
+  font-size: var(--font-size-xl);
   line-height: 1;
   cursor: pointer;
-  padding: 0;
-  width: 24px;
-  height: 24px;
+  padding: var(--spacing-xs);
+  width: var(--touch-target-min);
+  height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  min-height: var(--touch-target-min);
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
   border-radius: 4px;
+  flex-shrink: 0;
+}
+
+/* 모바일 반응형 */
+@media (max-width: 768px) {
+  .error-message {
+    padding: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
+    gap: var(--spacing-sm);
+  }
+  
+  .error-content {
+    gap: var(--spacing-sm);
+  }
+  
+  .error-text {
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .error-message {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .error-content {
+    width: 100%;
+  }
+  
+  .error-dismiss {
+    align-self: flex-end;
+  }
 }
 
 .error-dismiss:hover {
