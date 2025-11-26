@@ -44,6 +44,22 @@ const DEFAULT_TEMPLATE: PromptTemplate = {
 
 const tierOptions = ['FREE', 'BASIC', 'PROFESSIONAL', 'ENTERPRISE']
 const categoryOptions = ['text', 'image', 'video', 'engineering']
+const modelOptions = [
+  'openai-gpt-4',
+  'openai-gpt-3.5',
+  'claude-3',
+  'claude-3.5',
+  'gemini-pro',
+  'gemini-ultra',
+  'gemini-nano-banana-pro',
+  'midjourney',
+  'dalle-3',
+  'stable-diffusion',
+  'sora',
+  'veo-3',
+  'llama-3',
+  'llama-3.1',
+]
 
 interface FormState {
   name: string
@@ -308,9 +324,6 @@ function TemplateManager() {
       <div className="template-manager__list">
         <div className="template-manager__list-header">
           <h3>템플릿 목록</h3>
-          <button className="template-button" onClick={resetForm}>
-            + 새 템플릿
-          </button>
         </div>
         {loading ? (
           <div className="template-loading">템플릿을 불러오는 중...</div>
@@ -354,11 +367,16 @@ function TemplateManager() {
       <div className="template-manager__editor">
         <div className="template-manager__editor-header">
           <h3>{selectedTemplate ? `템플릿 편집: ${selectedTemplate.name}` : '새 템플릿 생성'}</h3>
-          {selectedTemplate && (
-            <button className="template-button warn" onClick={handleDelete}>
-              삭제
+          <div className="editor-actions">
+            <button className="template-button secondary" onClick={resetForm}>
+              + 새 템플릿
             </button>
-          )}
+            {selectedTemplate && (
+              <button className="template-button warn" onClick={handleDelete}>
+                삭제
+              </button>
+            )}
+          </div>
         </div>
 
         {selectedTemplate || form.name ? (
@@ -411,11 +429,17 @@ function TemplateManager() {
                   </div>
                   <div className="form-group">
                     <label>모델</label>
-                    <input
+                    <select
                       value={form.model}
                       onChange={(e) => handleInputChange('model', e.target.value)}
-                      placeholder="예: gpt-4, claude-3"
-                    />
+                    >
+                      <option value="">모델 선택</option>
+                      {modelOptions.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div className="form-group">
                     <label>티어 제한</label>
