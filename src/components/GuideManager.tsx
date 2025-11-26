@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
-import { getAllLatestGuides, syncGuideCollection } from '../utils/prompt-guide-storage'
+import { getAllLatestGuides, upsertGuide } from '../utils/prompt-guide-storage'
 import { getCollectionStatus as getScheduleStatus } from '../utils/prompt-guide-scheduler'
-import { GuideUpdateResult, ModelName, PromptGuide } from '../types/prompt-guide.types'
+import { GuideUpdateResult, ModelName } from '../types/prompt-guide.types'
 import { saveGuideCollectionHistory, getGuideCollectionHistories, updateGuideCollectionHistory, GuideCollectionHistory } from '../utils/storage'
 import { API_BASE_URL } from '../utils/api'
 import './GuideManager.css'
@@ -22,41 +22,6 @@ function GuideManager() {
   } | null>(null)
   const [, setRealtimeApplied] = useState<Set<ModelName>>(new Set())
 
-  const guideMapFromArray = useCallback((guides: PromptGuide[]): Map<ModelName, PromptGuide> => {
-    const map = new Map<ModelName, PromptGuide>()
-    guides.forEach((guide) => {
-      if (!guide?.modelName) return
-      const existing = map.get(guide.modelName)
-      if (!existing || (guide.lastUpdated || 0) > (existing.lastUpdated || 0)) {
-        map.set(guide.modelName, guide)
-      }
-    })
-    return map
-  }, [])
-
-  const loadData = useCallback(async () => {
-    try {
-      const collection = await syncGuideCollection()
-      if (collection?.guides?.length) {
-        setLatestGuides(guideMapFromArray(collection.guides))
-      } else {
-        setLatestGuides(getAllLatestGuides())
-      }
-    } catch (error) {
-      console.error('[GuideManager] 가이드 동기화 실패:', error)
-      setLatestGuides(getAllLatestGuides())
-    } finally {
-      setScheduleStatus(getScheduleStatus())
-    }
-  }, [guideMapFromArray])
-
-  const loadHistories = () => {
-    const histories = getGuideCollectionHistories()
-    // 최신 순으로 정렬 (timestamp 내림차순)
-    const sortedHistories = [...histories].sort((a, b) => b.timestamp - a.timestamp)
-    setCollectionHistories(sortedHistories)
-  }
-
   useEffect(() => {
     loadData()
     loadHistories()
@@ -65,7 +30,20 @@ function GuideManager() {
       loadHistories()
     }, 60000) // 1분마다 새로고침
     return () => clearInterval(interval)
-  }, [loadData])
+  }, [])
+
+  const loadData = () => {
+    setLatestGuides(getAllLatestGuides())
+    setScheduleStatus(getScheduleStatus())
+  }
+
+  const loadHistories = () => {
+    const histories = getGuideCollectionHistories()
+    // 최신 순으로 정렬 (timestamp 내림차순)
+    const sortedHistories = [...histories].sort((a, b) => b.timestamp - a.timestamp)
+    setCollectionHistories(sortedHistories)
+    setLatestGuides(getAllLatestGuides())
+  }
 
   const applyRealtimeGuides = useCallback((results: any[] | null | undefined) => {
     if (!Array.isArray(results) || results.length === 0) return
@@ -88,6 +66,14 @@ function GuideManager() {
 
     if (newGuides.length === 0) return
 
+    newGuides.forEach(({ guide }) => {
+      try {
+        upsertGuide(guide)
+      } catch (error) {
+        console.error('[GuideManager] 실시간 가이드 저장 실패:', error)
+      }
+    })
+
     setLatestGuides((prev) => {
       const updated = new Map(prev)
       newGuides.forEach(({ modelName, guide }) => {
@@ -97,20 +83,36 @@ function GuideManager() {
     })
   }, [])
 
-  const persistResults = async (resultsArray: any[]) => {
+  const persistResults = (resultsArray: any[]) => {
     if (!Array.isArray(resultsArray)) {
       return []
     }
 
-    const mapped: GuideUpdateResult[] = resultsArray.map((r: any) => ({
-      success: !!r?.success,
-      modelName: r?.modelName as ModelName,
-      guidesAdded: r?.guide ? 1 : 0,
-      guidesUpdated: 0,
-      errors: r?.error ? [r.error] : [],
-    }))
+    // 수집된 가이드 로컬 저장 + 결과 객체 변환
+    let guidesSaved = 0
+    const mapped: GuideUpdateResult[] = resultsArray.map((r: any) => {
+      if (r?.success && r?.guide) {
+        try {
+          upsertGuide(r.guide)
+          guidesSaved++
+          console.log(`[GuideManager] 가이드 저장됨: ${r.modelName}`)
+        } catch (error) {
+          console.error(`[GuideManager] 가이드 저장 실패 (${r.modelName}):`, error)
+        }
+      }
 
+      return {
+        success: !!r?.success,
+        modelName: r?.modelName as ModelName,
+        guidesAdded: r?.guide ? 1 : 0,
+        guidesUpdated: 0,
+        errors: r?.error ? [r.error] : [],
+      }
+    })
+
+    console.log(`[GuideManager] 총 ${guidesSaved}개 가이드 저장 완료`)
     setCollectionResults(mapped)
+    loadData()
 
     mapped.forEach((result) => {
       saveGuideCollectionHistory({
@@ -125,20 +127,10 @@ function GuideManager() {
     })
 
     loadHistories()
-
-    try {
-      const synced = await syncGuideCollection(true)
-      if (synced?.guides?.length) {
-        setLatestGuides(guideMapFromArray(synced.guides))
-      }
-    } catch (error) {
-      console.error('[GuideManager] 가이드 재동기화 실패:', error)
-    }
-
     return mapped
   }
 
-  const finalizeJob = async (status: string, jobResults: any) => {
+  const finalizeJob = (status: string, jobResults: any) => {
     try {
       if (status === 'completed' && jobResults) {
         let resultsArray: any[] = []
@@ -150,7 +142,7 @@ function GuideManager() {
         }
         console.log('[GuideManager] 결과 배열(정상 흐름):', Array.isArray(resultsArray) ? resultsArray.length : 0, '개')
         if (Array.isArray(resultsArray) && resultsArray.length > 0) {
-          await persistResults(resultsArray)
+          persistResults(resultsArray)
         } else {
           // 결과가 비어있으면 실패로 기록
           const fallback: GuideUpdateResult = {
@@ -253,7 +245,7 @@ function GuideManager() {
             })
             stopPolling()
             applyRealtimeGuides(job.results?.results ?? job.results)
-            await finalizeJob(job.status, job.results)
+            finalizeJob(job.status, job.results)
           }
         } catch (pollErr) {
           console.warn('[GuideManager] 폴링 실패:', pollErr)
@@ -266,7 +258,7 @@ function GuideManager() {
         throw new Error(`진행 상황 스트림 연결 실패: ${sseError.message}`)
       }
       
-      eventSource.onmessage = async (event) => {
+      eventSource.onmessage = (event) => {
         try {
           const progress = JSON.parse(event.data)
           console.log('[GuideManager] 진행 상황 업데이트:', {
@@ -307,7 +299,7 @@ function GuideManager() {
             eventSource?.close()
             stopPolling()
             applyRealtimeGuides(progress.results?.results ?? progress.results)
-            await finalizeJob(progress.status, progress.results)
+            finalizeJob(progress.status, progress.results)
           }
         } catch (parseError) {
           console.error('진행 상황 파싱 오류:', parseError)
@@ -323,7 +315,7 @@ function GuideManager() {
         console.log('[GuideManager] 작업 상태 직접 확인:', jobId)
         fetch(jobStatusUrl)
           .then(res => res.json())
-          .then(async jobData => {
+          .then(jobData => {
             console.log('[GuideManager] 작업 상태 응답:', jobData)
             if (jobData.job) {
               const job = jobData.job
@@ -334,7 +326,7 @@ function GuideManager() {
                   results: job.results,
                 })
                 applyRealtimeGuides(job.results?.results ?? job.results)
-                await finalizeJob(job.status, job.results)
+                finalizeJob(job.status, job.results)
               }
             }
           })

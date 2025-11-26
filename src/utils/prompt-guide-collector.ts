@@ -1,7 +1,7 @@
 // 프롬프트 가이드 수집 모듈
 
 import { PromptGuide, GuideUpdateResult, ModelName } from '../types/prompt-guide.types'
-import { syncGuideCollection } from './prompt-guide-storage'
+import { upsertGuides as saveGuides, getLatestGuide } from './prompt-guide-storage'
 
 // 서버 API를 통한 가이드 수집
 const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
@@ -25,7 +25,6 @@ export async function collectGuideFromServer(
     const data = await response.json()
     
     if (data.success && data.result && data.result.guide) {
-      await syncGuideCollection(true).catch(() => null)
       return data.result.guide
     }
     
@@ -50,7 +49,7 @@ export function addManualGuide(guide: Omit<PromptGuide, 'id' | 'metadata'>): Pro
     },
   }
   
-  upsertGuides([fullGuide])
+  saveGuides([fullGuide])
   return fullGuide
 }
 
@@ -112,13 +111,23 @@ export async function collectAllGuides(): Promise<GuideUpdateResult[]> {
       }
       
       if (serverResult.success && serverResult.guide) {
-        result.guidesAdded = 1
+        const existing = getLatestGuide(serverResult.modelName as ModelName)
+        const guide: PromptGuide = {
+          ...serverResult.guide,
+          id: `${serverResult.modelName}-${serverResult.guide.version}-${Date.now()}`,
+        }
+        
+        saveGuides([guide])
+        
+        if (existing) {
+          result.guidesUpdated = 1
+        } else {
+          result.guidesAdded = 1
+        }
       }
       
       results.push(result)
     }
-
-    await syncGuideCollection(true).catch(() => null)
     
     return results
   } catch (error: any) {
@@ -181,4 +190,3 @@ export function createDefaultGuide(
     ...customData,
   }
 }
-

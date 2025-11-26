@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import { ContentType, DetailedOptions } from '../types'
 import { ToneStyle } from '../types/prompt.types'
 import { generatePrompts } from '../utils/promptGenerator'
@@ -14,7 +14,6 @@ import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
 import './PromptGenerator.css'
 import './StructuredPromptCard.css'
-import { syncGuideCollection } from '../utils/prompt-guide-storage'
 
 const CONTENT_TYPES: { value: ContentType; label: string }[] = [
   { value: 'blog', label: '블로그 콘텐츠' },
@@ -111,12 +110,6 @@ function PromptGenerator() {
   const [wizardStep, setWizardStep] = useState(1)
   // 품질 평가 패널 제거로 인한 상태 비활성화
   const [, setQualityReport] = useState<QualityReport | null>(null)
-
-  useEffect(() => {
-    syncGuideCollection().catch((error) => {
-      console.warn('[PromptGenerator] 가이드 동기화 실패:', error)
-    })
-  }, [])
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {
