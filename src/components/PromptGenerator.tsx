@@ -7,7 +7,7 @@ import { savePromptRecord } from '../utils/storage'
 import { promptAPI, guideAPI } from '../utils/api'
 import { upsertGuide } from '../utils/prompt-guide-storage'
 import { showNotification } from '../utils/notifications'
-import { PromptGuide } from '../types/prompt-guide.types'
+import { PromptGuide, ModelName } from '../types/prompt-guide.types'
 import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 import { evaluateQuality, QualityReport } from '../utils/qualityRules'
 import ResultCard from './ResultCard'
@@ -92,6 +92,27 @@ const WIZARD_STEPS = [
   { id: 4, label: '구조화 프리뷰' },
 ]
 
+const MODEL_OPTIONS: Array<{ value: ModelName; label: string; category: 'llm' | 'image' | 'video' }> =
+  [
+    { value: 'openai-gpt-4', label: 'OpenAI GPT-4', category: 'llm' },
+    { value: 'openai-gpt-3.5', label: 'OpenAI GPT-3.5', category: 'llm' },
+    { value: 'claude-3.5', label: 'Claude 3.5', category: 'llm' },
+    { value: 'claude-3', label: 'Claude 3', category: 'llm' },
+    { value: 'gemini-pro', label: 'Gemini Pro', category: 'llm' },
+    { value: 'gemini-ultra', label: 'Gemini Ultra', category: 'llm' },
+    { value: 'llama-3.1', label: 'Llama 3.1', category: 'llm' },
+    { value: 'llama-3', label: 'Llama 3', category: 'llm' },
+    { value: 'midjourney', label: 'Midjourney', category: 'image' },
+    { value: 'dalle-3', label: 'DALL·E 3', category: 'image' },
+    { value: 'stable-diffusion', label: 'Stable Diffusion', category: 'image' },
+    { value: 'veo-3', label: 'Google Veo 3', category: 'video' },
+    { value: 'sora', label: 'OpenAI Sora', category: 'video' },
+  ]
+
+const getCategoryByModel = (modelName: ModelName): 'llm' | 'image' | 'video' => {
+  return MODEL_OPTIONS.find((option) => option.value === modelName)?.category || 'llm'
+}
+
 const normalizeGuideInsight = (guide: any): PromptGuide => ({
   id: guide.id,
   modelName: guide.modelName,
@@ -134,6 +155,7 @@ function PromptGenerator() {
   // 품질 평가 패널 제거로 인한 상태 비활성화
   const [, setQualityReport] = useState<QualityReport | null>(null)
   const [guideInsight, setGuideInsight] = useState<PromptGuide | null>(null)
+  const [targetModel, setTargetModel] = useState<ModelName>('openai-gpt-4')
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {
@@ -152,10 +174,15 @@ function PromptGenerator() {
   }, [detailedOptions])
 
   useEffect(() => {
+    let isMounted = true
+    setGuideInsight(null)
     guideAPI
-      .getPublicLatest({ category: 'llm', limit: 1 })
+      .getPublicLatest({ category: getCategoryByModel(targetModel), limit: 20 })
       .then((response) => {
-        const guide = response.guides?.[0]
+        if (!isMounted) return
+        const guide =
+          response.guides?.find((entry: PromptGuide) => entry.modelName === targetModel) ??
+          response.guides?.[0]
         if (guide) {
           const normalized = normalizeGuideInsight(guide)
           setGuideInsight(normalized)
@@ -167,9 +194,14 @@ function PromptGenerator() {
         }
       })
       .catch((error) => {
-        console.warn('가이드 추천 정보를 불러오지 못했습니다:', error)
+        if (isMounted) {
+          console.warn('가이드 추천 정보를 불러오지 못했습니다:', error)
+        }
       })
-  }, [])
+    return () => {
+      isMounted = false
+    }
+  }, [targetModel])
 
   const handleGenerate = useCallback(() => {
     // 입력 검증
@@ -272,6 +304,8 @@ function PromptGenerator() {
             conversational: detailedOptions.conversational,
             toneStyles: detailedOptions.toneStyles,
             goal: detailedOptions.goal,
+            targetModel,
+            appliedGuideId: enrichedResults.appliedGuide?.guideId,
           },
         })
 
@@ -290,6 +324,8 @@ function PromptGenerator() {
               conversational: detailedOptions.conversational,
               toneStyles: detailedOptions.toneStyles,
               goal: detailedOptions.goal,
+              targetModel,
+              appliedGuideId: enrichedResults.appliedGuide?.guideId,
               contextPrompt: generated.contextPrompt,
               hashtags: generated.hashtags,
             },
@@ -375,6 +411,25 @@ function PromptGenerator() {
       </select>
     </div>
   )
+
+const renderModelSelector = () => (
+  <div className="form-group">
+    <label htmlFor="model-select">타겟 모델 선택</label>
+    <select
+      id="model-select"
+      value={targetModel}
+      onChange={(e) => setTargetModel(e.target.value as ModelName)}
+      className="content-type-select"
+    >
+      {MODEL_OPTIONS.map((model) => (
+        <option key={model.value} value={model.value}>
+          {model.label} · {model.category.toUpperCase()}
+        </option>
+      ))}
+    </select>
+    <p className="helper-text">선택한 모델의 최신 가이드라인이 프롬프트에 자동 반영됩니다.</p>
+  </div>
+)
 
   const renderPromptTextarea = () => (
     <div className="form-group">
@@ -621,6 +676,7 @@ function PromptGenerator() {
               </p>
               <div className="wizard-dual-grid">
                 {renderContentTypeSelector()}
+                {renderModelSelector()}
                 {renderGoalSelector()}
               </div>
               <div className="wizard-panel__summary">
@@ -720,6 +776,7 @@ function PromptGenerator() {
       ) : (
         <div className="input-section">
           {renderContentTypeSelector()}
+          {renderModelSelector()}
           {renderPromptTextarea()}
 
           <div className="detailed-options-section">
