@@ -90,6 +90,12 @@ function GuideManager() {
       eventSource.onmessage = (event) => {
         try {
           const progress = JSON.parse(event.data)
+          console.log('[GuideManager] 진행 상황 업데이트:', {
+            status: progress.status,
+            hasResults: !!progress.results,
+            resultsType: progress.results ? typeof progress.results : 'none',
+            resultsKeys: progress.results ? Object.keys(progress.results) : [],
+          })
           
           if (progress.error) {
             eventSource?.close()
@@ -112,11 +118,19 @@ function GuideManager() {
           
           // 작업 완료 확인
           if (progress.status === 'completed' || progress.status === 'failed') {
+            console.log('[GuideManager] 작업 완료:', {
+              status: progress.status,
+              hasResults: !!progress.results,
+              results: progress.results,
+            })
             eventSource?.close()
             
             if (progress.status === 'completed' && progress.results) {
               // 결과 변환
-              const results: GuideUpdateResult[] = progress.results.results.map((r: any) => ({
+              const resultsArray = progress.results.results || []
+              console.log('[GuideManager] 결과 배열:', resultsArray.length, '개')
+              
+              const results: GuideUpdateResult[] = resultsArray.map((r: any) => ({
                 success: r.success,
                 modelName: r.modelName as ModelName,
                 guidesAdded: r.guide ? 1 : 0,
@@ -124,6 +138,7 @@ function GuideManager() {
                 errors: r.error ? [r.error] : [],
               }))
               
+              console.log('[GuideManager] 변환된 결과:', results.length, '개')
               setCollectionResults(results)
               loadData()
               
@@ -173,18 +188,27 @@ function GuideManager() {
       }
       
       eventSource.onerror = (error) => {
-        console.error('EventSource 오류:', error)
+        console.error('[GuideManager] EventSource 오류:', error)
         eventSource?.close()
         
         // 연결 오류인 경우 작업 상태를 직접 확인
+        console.log('[GuideManager] 작업 상태 직접 확인:', jobId)
         fetch(`${API_BASE_URL}/api/guides/jobs/${jobId}`)
           .then(res => res.json())
           .then(jobData => {
+            console.log('[GuideManager] 작업 상태 응답:', jobData)
             if (jobData.job) {
               const job = jobData.job
               if (job.status === 'completed' || job.status === 'failed') {
+                console.log('[GuideManager] 작업 완료 상태 확인:', {
+                  status: job.status,
+                  hasResults: !!job.results,
+                  results: job.results,
+                })
                 if (job.status === 'completed' && job.results) {
-                  const results: GuideUpdateResult[] = job.results.results.map((r: any) => ({
+                  const resultsArray = job.results.results || []
+                  console.log('[GuideManager] 결과 배열 (fallback):', resultsArray.length, '개')
+                  const results: GuideUpdateResult[] = resultsArray.map((r: any) => ({
                     success: r.success,
                     modelName: r.modelName as ModelName,
                     guidesAdded: r.guide ? 1 : 0,
@@ -193,6 +217,19 @@ function GuideManager() {
                   }))
                   setCollectionResults(results)
                   loadData()
+                  
+                  // 수집 이력 저장
+                  results.forEach(result => {
+                    saveGuideCollectionHistory({
+                      success: result.success,
+                      modelName: result.modelName,
+                      guidesAdded: result.guidesAdded,
+                      guidesUpdated: result.guidesUpdated,
+                      errors: result.errors,
+                      appliedToService: result.success && (result.guidesAdded > 0 || result.guidesUpdated > 0),
+                      collectionType: 'manual',
+                    })
+                  })
                   loadHistories()
                 } else if (job.status === 'failed') {
                   const errorResult: GuideUpdateResult = {
@@ -203,6 +240,15 @@ function GuideManager() {
                     errors: [job.error || '수집 중 오류가 발생했습니다'],
                   }
                   setCollectionResults([errorResult])
+                  saveGuideCollectionHistory({
+                    success: false,
+                    modelName: 'all',
+                    guidesAdded: 0,
+                    guidesUpdated: 0,
+                    errors: errorResult.errors,
+                    appliedToService: false,
+                    collectionType: 'manual',
+                  })
                   loadHistories()
                 }
                 setIsCollecting(false)
@@ -211,7 +257,8 @@ function GuideManager() {
               }
             }
           })
-          .catch(() => {
+          .catch((err) => {
+            console.error('[GuideManager] 작업 상태 확인 실패:', err)
             setIsCollecting(false)
             setCurrentJobId(null)
             setCollectionProgress(null)

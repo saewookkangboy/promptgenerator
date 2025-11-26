@@ -328,16 +328,26 @@ async function processCollectionJob(jobId, modelNames = null) {
     const failCount = results.filter(r => !r.success).length
     
     console.log(`[작업 ${jobId}] 수집 완료: 성공 ${successCount}개, 실패 ${failCount}개`)
+    console.log(`[작업 ${jobId}] 결과 상세:`, JSON.stringify(results.map(r => ({
+      modelName: r.modelName,
+      success: r.success,
+      hasGuide: !!r.guide,
+      error: r.error
+    })), null, 2))
     
     // 작업 완료
-    completeJob(jobId, {
+    const jobResults = {
       results,
       summary: {
         total: results.length,
         success: successCount,
         failed: failCount,
       },
-    })
+    }
+    
+    console.log(`[작업 ${jobId}] 작업 완료 처리 시작...`)
+    const completedJob = completeJob(jobId, jobResults)
+    console.log(`[작업 ${jobId}] 작업 완료 처리 완료. 상태: ${completedJob?.status}, 결과 있음: ${!!completedJob?.results}`)
   } catch (error) {
     console.error(`[작업 ${jobId}] 수집 중 오류:`, error)
     completeJob(jobId, null, error.message)
@@ -449,10 +459,16 @@ app.get('/api/guides/jobs/:jobId/progress', (req, res) => {
         currentJob.status === JOB_STATUS.FAILED ||
         currentJob.status === JOB_STATUS.CANCELLED) {
       // 최종 결과 포함하여 전송
-      res.write(`data: ${JSON.stringify({
+      const finalProgress = {
         ...progress,
         results: currentJob.results,
-      })}\n\n`)
+      }
+      console.log(`[SSE ${jobId}] 최종 결과 전송:`, JSON.stringify({
+        status: finalProgress.status,
+        hasResults: !!finalProgress.results,
+        resultsCount: finalProgress.results?.results?.length || 0,
+      }))
+      res.write(`data: ${JSON.stringify(finalProgress)}\n\n`)
       res.end()
       return
     }
