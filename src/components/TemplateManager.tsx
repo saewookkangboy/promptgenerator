@@ -459,7 +459,7 @@ function TemplateManager() {
                     />
                     {jsonError && <p className="error-text">{jsonError}</p>}
                     <p className="helper-text">
-                      변수를 사용하려면 {'{{'}{'{'}}변수명{'}'}{'}'} 형식을 사용하세요.
+                      변수를 사용하려면 {'{{'}변수명{'}}'} 형식을 사용하세요.
                     </p>
                   </div>
 
