@@ -8,6 +8,7 @@ import { promptAPI, guideAPI } from '../utils/api'
 import { upsertGuide } from '../utils/prompt-guide-storage'
 import { showNotification } from '../utils/notifications'
 import { PromptGuide, ModelName } from '../types/prompt-guide.types'
+import { MODEL_OPTIONS, getCategoryByModel } from '../config/model-options'
 import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 import { evaluateQuality, QualityReport } from '../utils/qualityRules'
 import ResultCard from './ResultCard'
@@ -92,27 +93,6 @@ const WIZARD_STEPS = [
   { id: 4, label: '구조화 프리뷰' },
 ]
 
-const MODEL_OPTIONS: Array<{ value: ModelName; label: string; category: 'llm' | 'image' | 'video' }> =
-  [
-    { value: 'openai-gpt-4', label: 'OpenAI GPT-4', category: 'llm' },
-    { value: 'openai-gpt-3.5', label: 'OpenAI GPT-3.5', category: 'llm' },
-    { value: 'claude-3.5', label: 'Claude 3.5', category: 'llm' },
-    { value: 'claude-3', label: 'Claude 3', category: 'llm' },
-    { value: 'gemini-pro', label: 'Gemini Pro', category: 'llm' },
-    { value: 'gemini-ultra', label: 'Gemini Ultra', category: 'llm' },
-    { value: 'llama-3.1', label: 'Llama 3.1', category: 'llm' },
-    { value: 'llama-3', label: 'Llama 3', category: 'llm' },
-    { value: 'midjourney', label: 'Midjourney', category: 'image' },
-    { value: 'dalle-3', label: 'DALL·E 3', category: 'image' },
-    { value: 'stable-diffusion', label: 'Stable Diffusion', category: 'image' },
-    { value: 'veo-3', label: 'Google Veo 3', category: 'video' },
-    { value: 'sora', label: 'OpenAI Sora', category: 'video' },
-  ]
-
-const getCategoryByModel = (modelName: ModelName): 'llm' | 'image' | 'video' => {
-  return MODEL_OPTIONS.find((option) => option.value === modelName)?.category || 'llm'
-}
-
 const normalizeGuideInsight = (guide: any): PromptGuide => ({
   id: guide.id,
   modelName: guide.modelName,
@@ -133,6 +113,8 @@ const normalizeGuideInsight = (guide: any): PromptGuide => ({
     tips: guide.tips || [],
   },
 })
+
+const FALLBACK_MODEL = (MODEL_OPTIONS[0]?.value || 'gpt-4.1') as ModelName
 
 function PromptGenerator() {
   const [userPrompt, setUserPrompt] = useState('')
@@ -156,7 +138,7 @@ function PromptGenerator() {
   const [, setQualityReport] = useState<QualityReport | null>(null)
   const [guideInsight, setGuideInsight] = useState<PromptGuide | null>(null)
   // 모델 선택 UI는 Admin 템플릿 관리로 이동했으므로 기본값만 유지
-  const [targetModel] = useState<ModelName>('openai-gpt-4')
+  const [targetModel] = useState<ModelName>(FALLBACK_MODEL)
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {

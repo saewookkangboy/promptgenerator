@@ -3,20 +3,17 @@
 export type ModelCategory = 'llm' | 'image' | 'video'
 
 export type ModelName =
-  | 'openai-gpt-4'
-  | 'openai-gpt-3.5'
-  | 'claude-3'
-  | 'claude-3.5'
-  | 'gemini-pro'
-  | 'gemini-ultra'
-  | 'gemini-nano-banana-pro'
+  | 'gpt-4.1'
+  | 'gpt-4o'
+  | 'claude-3.5-sonnet'
+  | 'claude-3.5-haiku'
+  | 'gemini-2.0-flash'
+  | 'llama-3.1'
   | 'midjourney'
   | 'dalle-3'
   | 'stable-diffusion'
   | 'sora'
   | 'veo-3'
-  | 'llama-3'
-  | 'llama-3.1'
 
 export interface PromptGuide {
   id: string

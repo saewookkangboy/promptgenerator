@@ -230,8 +230,8 @@
 
 .footer-github-link {
   margin-left: auto;
-  color: #e5e5e5;
-  border-color: #efefef;
+  color: #b3b3b3;
+  border-color: #e0e0e0;
   background: #fafafa;
 }
 
@@ -397,9 +397,9 @@
   stroke: currentColor;
 }
 .footer-github-link:hover {
-  background: #f2f2f2;
-  color: #ffffff;
-  border-color: #f2f2f2;
+  background: #e0e0e0;
+  color: #4a4a4a;
+  border-color: #4a4a4a;
 }
 
 @media (max-width: 480px) {
