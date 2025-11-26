@@ -57,6 +57,11 @@ interface FormState {
   changeSummary: string
 }
 
+interface VariableValue {
+  key: string
+  value: string
+}
+
 const emptyForm: FormState = {
   name: '',
   description: '',
@@ -69,6 +74,47 @@ const emptyForm: FormState = {
   changeSummary: '',
 }
 
+// 템플릿에서 변수 추출 ({{variable}} 형태)
+function extractVariables(template: PromptTemplate): string[] {
+  const variables = new Set<string>()
+  const regex = /\{\{(\w+)\}\}/g
+  
+  const checkText = (text: string) => {
+    let match
+    while ((match = regex.exec(text)) !== null) {
+      variables.add(match[1])
+    }
+  }
+  
+  if (template.title) checkText(template.title)
+  if (template.description) checkText(template.description)
+  template.sections.forEach(section => {
+    if (section.content) checkText(section.content)
+    if (section.helperText) checkText(section.helperText)
+  })
+  
+  return Array.from(variables)
+}
+
+// 변수를 실제 값으로 치환
+function replaceVariables(template: PromptTemplate, variables: Record<string, string>): PromptTemplate {
+  const replace = (text: string): string => {
+    return text.replace(/\{\{(\w+)\}\}/g, (match, key) => {
+      return variables[key] || match
+    })
+  }
+  
+  return {
+    title: replace(template.title),
+    description: template.description ? replace(template.description) : undefined,
+    sections: template.sections.map(section => ({
+      ...section,
+      content: replace(section.content),
+      helperText: section.helperText ? replace(section.helperText) : undefined,
+    })),
+  }
+}
+
 function TemplateManager() {
   const [templates, setTemplates] = useState<TemplatePreset[]>([])
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 })
@@ -77,6 +123,9 @@ function TemplateManager() {
   const [form, setForm] = useState<FormState>(emptyForm)
   const [jsonError, setJsonError] = useState<string | null>(null)
   const [isSaving, setIsSaving] = useState(false)
+  const [activeTab, setActiveTab] = useState<'edit' | 'preview' | 'simulate'>('edit')
+  const [variableValues, setVariableValues] = useState<VariableValue[]>([])
+  const [simulatedTemplate, setSimulatedTemplate] = useState<PromptTemplate | null>(null)
 
   const loadTemplates = async (page = 1) => {
     setLoading(true)
@@ -99,6 +148,42 @@ function TemplateManager() {
     loadTemplates()
   }, [])
 
+  const parsedTemplate = useMemo(() => {
+    try {
+      return JSON.parse(form.templateJson) as PromptTemplate
+    } catch {
+      return null
+    }
+  }, [form.templateJson])
+
+  // 변수 추출 및 변수 값 초기화
+  useEffect(() => {
+    if (parsedTemplate) {
+      const variables = extractVariables(parsedTemplate)
+      setVariableValues(
+        variables.map(key => ({
+          key,
+          value: variableValues.find(v => v.key === key)?.value || '',
+        }))
+      )
+    }
+  }, [parsedTemplate])
+
+  // 시뮬레이션 템플릿 업데이트
+  useEffect(() => {
+    if (parsedTemplate && variableValues.length > 0) {
+      const variablesMap = variableValues.reduce((acc, v) => {
+        acc[v.key] = v.value
+        return acc
+      }, {} as Record<string, string>)
+      
+      const simulated = replaceVariables(parsedTemplate, variablesMap)
+      setSimulatedTemplate(simulated)
+    } else {
+      setSimulatedTemplate(parsedTemplate)
+    }
+  }, [parsedTemplate, variableValues])
+
   const resetForm = () => {
     setSelectedTemplate(null)
     setForm({
@@ -106,6 +191,9 @@ function TemplateManager() {
       templateJson: JSON.stringify(DEFAULT_TEMPLATE, null, 2),
     })
     setJsonError(null)
+    setVariableValues([])
+    setSimulatedTemplate(null)
+    setActiveTab('edit')
   }
 
   const handleSelectTemplate = (template: TemplatePreset) => {
@@ -122,18 +210,21 @@ function TemplateManager() {
       changeSummary: '',
     })
     setJsonError(null)
+    setActiveTab('edit')
   }
-
-  const parsedTemplate = useMemo(() => {
-    try {
-      return JSON.parse(form.templateJson) as PromptTemplate
-    } catch {
-      return null
-    }
-  }, [form.templateJson])
 
   const handleInputChange = (field: keyof FormState, value: any) => {
     setForm((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleVariableChange = (key: string, value: string) => {
+    setVariableValues(prev => {
+      const existing = prev.find(v => v.key === key)
+      if (existing) {
+        return prev.map(v => v.key === key ? { ...v, value } : v)
+      }
+      return [...prev, { key, value }]
+    })
   }
 
   const handleSave = async () => {
@@ -206,58 +297,52 @@ function TemplateManager() {
     }
   }
 
+  const variables = parsedTemplate ? extractVariables(parsedTemplate) : []
+
   return (
     <div className="template-manager">
       <div className="template-manager__list">
         <div className="template-manager__list-header">
-          <h3>템플릿 프리셋</h3>
+          <h3>템플릿 목록</h3>
           <button className="template-button" onClick={resetForm}>
             + 새 템플릿
           </button>
         </div>
         {loading ? (
-          <p className="helper-text">템플릿을 불러오는 중...</p>
+          <div className="template-loading">템플릿을 불러오는 중...</div>
         ) : templates.length === 0 ? (
-          <p className="helper-text">등록된 템플릿이 없습니다.</p>
+          <div className="template-empty">등록된 템플릿이 없습니다.</div>
         ) : (
-          <table className="template-table">
-            <thead>
-              <tr>
-                <th>이름</th>
-                <th>카테고리</th>
-                <th>버전</th>
-                <th>공개</th>
-                <th>업데이트</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {templates.map((template) => (
-                <tr key={template.id}>
-                  <td>{template.name}</td>
-                  <td>
-                    <span className={`category-badge category-${template.category}`}>
-                      {template.category.toUpperCase()}
-                    </span>
-                  </td>
-                  <td>v{template.version}</td>
-                  <td>{template.isPublic ? '공개' : '비공개'}</td>
-                  <td>{new Date(template.updatedAt).toLocaleString('ko-KR')}</td>
-                  <td>
-                    <button className="template-button secondary" onClick={() => handleSelectTemplate(template)}>
-                      편집
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div className="template-list-container">
+            {templates.map((template) => (
+              <div
+                key={template.id}
+                className={`template-list-item ${selectedTemplate?.id === template.id ? 'active' : ''}`}
+                onClick={() => handleSelectTemplate(template)}
+              >
+                <div className="template-list-item__header">
+                  <h4>{template.name}</h4>
+                  <span className={`category-badge category-${template.category}`}>
+                    {template.category.toUpperCase()}
+                  </span>
+                </div>
+                <div className="template-list-item__meta">
+                  <span>v{template.version}</span>
+                  <span>{template.isPublic ? '공개' : '비공개'}</span>
+                  <span>{new Date(template.updatedAt).toLocaleDateString('ko-KR')}</span>
+                </div>
+                {template.description && (
+                  <p className="template-list-item__description">{template.description}</p>
+                )}
+              </div>
+            ))}
+          </div>
         )}
       </div>
 
       <div className="template-manager__editor">
         <div className="template-manager__editor-header">
-          <h3>{selectedTemplate ? `템플릿 편집 : ${selectedTemplate.name}` : '새 템플릿 생성'}</h3>
+          <h3>{selectedTemplate ? `템플릿 편집: ${selectedTemplate.name}` : '새 템플릿 생성'}</h3>
           {selectedTemplate && (
             <button className="template-button warn" onClick={handleDelete}>
               삭제
@@ -265,130 +350,244 @@ function TemplateManager() {
           )}
         </div>
 
-        <div className="template-form-grid">
-          <div className="form-group">
-            <label>이름</label>
-            <input value={form.name} onChange={(e) => handleInputChange('name', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>카테고리</label>
-            <select value={form.category} onChange={(e) => handleInputChange('category', e.target.value)}>
-              {categoryOptions.map((c) => (
-                <option key={c} value={c}>
-                  {c.toUpperCase()}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="form-group">
-            <label>모델</label>
-            <input value={form.model} onChange={(e) => handleInputChange('model', e.target.value)} />
-          </div>
-          <div className="form-group">
-            <label>티어 제한</label>
-            <select value={form.tierRequired} onChange={(e) => handleInputChange('tierRequired', e.target.value)}>
-              {tierOptions.map((tier) => (
-                <option key={tier} value={tier}>
-                  {tier}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
+        {selectedTemplate || form.name ? (
+          <>
+            <div className="template-tabs">
+              <button
+                className={`template-tab ${activeTab === 'edit' ? 'active' : ''}`}
+                onClick={() => setActiveTab('edit')}
+              >
+                편집
+              </button>
+              <button
+                className={`template-tab ${activeTab === 'preview' ? 'active' : ''}`}
+                onClick={() => setActiveTab('preview')}
+                disabled={!parsedTemplate}
+              >
+                미리보기
+              </button>
+              {variables.length > 0 && (
+                <button
+                  className={`template-tab ${activeTab === 'simulate' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('simulate')}
+                  disabled={!parsedTemplate}
+                >
+                  시뮬레이션
+                </button>
+              )}
+            </div>
 
-        <div className="template-form-grid">
-          <div className="form-group">
-            <label>설명</label>
-            <textarea
-              rows={3}
-              value={form.description}
-              onChange={(e) => handleInputChange('description', e.target.value)}
-            />
-          </div>
-          <div className="form-group checkbox-row">
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={form.isPublic}
-                onChange={(e) => handleInputChange('isPublic', e.target.checked)}
-              />
-              공개 템플릿
-            </label>
-            <label className="checkbox-label">
-              <input
-                type="checkbox"
-                checked={form.isPremium}
-                onChange={(e) => handleInputChange('isPremium', e.target.checked)}
-              />
-              프리미엄 전용
-            </label>
-          </div>
-        </div>
+            {activeTab === 'edit' && (
+              <div className="template-edit-content">
+                <div className="template-form-grid">
+                  <div className="form-group">
+                    <label>이름 *</label>
+                    <input
+                      value={form.name}
+                      onChange={(e) => handleInputChange('name', e.target.value)}
+                      placeholder="템플릿 이름"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>카테고리 *</label>
+                    <select value={form.category} onChange={(e) => handleInputChange('category', e.target.value)}>
+                      {categoryOptions.map((c) => (
+                        <option key={c} value={c}>
+                          {c.toUpperCase()}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>모델</label>
+                    <input
+                      value={form.model}
+                      onChange={(e) => handleInputChange('model', e.target.value)}
+                      placeholder="예: gpt-4, claude-3"
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>티어 제한</label>
+                    <select value={form.tierRequired} onChange={(e) => handleInputChange('tierRequired', e.target.value)}>
+                      {tierOptions.map((tier) => (
+                        <option key={tier} value={tier}>
+                          {tier}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
 
-        <div className="template-editor-columns">
-          <div className="form-group">
-            <label>템플릿 JSON</label>
-            <textarea
-              className={`template-json-textarea ${jsonError ? 'error' : ''}`}
-              rows={16}
-              value={form.templateJson}
-              onChange={(e) => handleInputChange('templateJson', e.target.value)}
-            />
-            {jsonError && <p className="error-text">{jsonError}</p>}
-            <p className="helper-text">프리뷰는 자동으로 갱신됩니다.</p>
-          </div>
+                <div className="form-group">
+                  <label>설명</label>
+                  <textarea
+                    rows={3}
+                    value={form.description}
+                    onChange={(e) => handleInputChange('description', e.target.value)}
+                    placeholder="템플릿에 대한 설명을 입력하세요"
+                  />
+                </div>
 
-          <div className="template-preview-column">
-            <label>프리뷰</label>
-            {parsedTemplate ? (
-              <StructuredPromptCard title={parsedTemplate.title || '템플릿 프리뷰'} template={parsedTemplate} />
-            ) : (
-              <div className="template-preview-placeholder">유효한 JSON을 입력하면 프리뷰가 표시됩니다.</div>
-            )}
+                <div className="form-group checkbox-row">
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={form.isPublic}
+                      onChange={(e) => handleInputChange('isPublic', e.target.checked)}
+                    />
+                    공개 템플릿
+                  </label>
+                  <label className="checkbox-label">
+                    <input
+                      type="checkbox"
+                      checked={form.isPremium}
+                      onChange={(e) => handleInputChange('isPremium', e.target.checked)}
+                    />
+                    프리미엄 전용
+                  </label>
+                </div>
 
-            {selectedTemplate && selectedTemplate.history.length > 0 && (
-              <div className="template-history-panel">
-                <h4>버전 히스토리</h4>
-                <ul>
-                  {selectedTemplate.history.map((entry) => (
-                    <li key={entry.version}>
-                      <div>
-                        <strong>v{entry.version}</strong> ·{' '}
-                        {new Date(entry.updatedAt).toLocaleString('ko-KR')}
+                <div className="template-editor-columns">
+                  <div className="form-group">
+                    <label>템플릿 JSON *</label>
+                    <textarea
+                      className={`template-json-textarea ${jsonError ? 'error' : ''}`}
+                      rows={20}
+                      value={form.templateJson}
+                      onChange={(e) => handleInputChange('templateJson', e.target.value)}
+                      placeholder={JSON.stringify(DEFAULT_TEMPLATE, null, 2)}
+                    />
+                    {jsonError && <p className="error-text">{jsonError}</p>}
+                    <p className="helper-text">
+                      변수를 사용하려면 {'{{'}{'{'}}변수명{'}'}{'}'} 형식을 사용하세요.
+                    </p>
+                  </div>
+
+                  <div className="template-preview-column">
+                    <label>실시간 미리보기</label>
+                    {parsedTemplate ? (
+                      <StructuredPromptCard
+                        title={parsedTemplate.title || '템플릿 미리보기'}
+                        template={parsedTemplate}
+                      />
+                    ) : (
+                      <div className="template-preview-placeholder">
+                        유효한 JSON을 입력하면 미리보기가 표시됩니다.
                       </div>
-                      {entry.changeSummary && <p className="helper-text">{entry.changeSummary}</p>}
-                      <button className="template-button secondary" onClick={() => handleRollback(entry.version)}>
-                        롤백
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label>변경 요약 (선택)</label>
+                  <input
+                    value={form.changeSummary}
+                    onChange={(e) => handleInputChange('changeSummary', e.target.value)}
+                    placeholder="예: CTA 개선, 톤 수정"
+                  />
+                </div>
+
+                {selectedTemplate && selectedTemplate.history.length > 0 && (
+                  <div className="template-history-section">
+                    <h4>버전 히스토리</h4>
+                    <div className="template-history-list">
+                      {selectedTemplate.history.map((entry) => (
+                        <div key={entry.version} className="template-history-item">
+                          <div className="template-history-item__header">
+                            <strong>v{entry.version}</strong>
+                            <span>{new Date(entry.updatedAt).toLocaleString('ko-KR')}</span>
+                          </div>
+                          {entry.changeSummary && (
+                            <p className="template-history-item__summary">{entry.changeSummary}</p>
+                          )}
+                          <button
+                            className="template-button secondary small"
+                            onClick={() => handleRollback(entry.version)}
+                          >
+                            이 버전으로 롤백
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="template-form-actions">
+                  <button className="template-button secondary" onClick={resetForm} disabled={isSaving}>
+                    초기화
+                  </button>
+                  <button
+                    className="template-button"
+                    onClick={handleSave}
+                    disabled={isSaving || !parsedTemplate || !form.name}
+                  >
+                    {isSaving ? '저장 중...' : selectedTemplate ? '템플릿 업데이트' : '템플릿 생성'}
+                  </button>
+                </div>
               </div>
             )}
+
+            {activeTab === 'preview' && parsedTemplate && (
+              <div className="template-preview-content">
+                <div className="template-preview-header">
+                  <h4>템플릿 미리보기</h4>
+                  <p className="helper-text">템플릿이 실제로 어떻게 표시되는지 확인하세요.</p>
+                </div>
+                <StructuredPromptCard
+                  title={parsedTemplate.title || '템플릿 미리보기'}
+                  template={parsedTemplate}
+                />
+              </div>
+            )}
+
+            {activeTab === 'simulate' && parsedTemplate && variables.length > 0 && (
+              <div className="template-simulate-content">
+                <div className="template-simulate-header">
+                  <h4>템플릿 시뮬레이션</h4>
+                  <p className="helper-text">
+                    변수 값을 입력하여 실제 사용 시 템플릿이 어떻게 변환되는지 확인하세요.
+                  </p>
+                </div>
+                <div className="template-variables-section">
+                  <h5>변수 입력</h5>
+                  <div className="template-variables-list">
+                    {variables.map((variable) => (
+                      <div key={variable} className="template-variable-item">
+                        <label>{variable}</label>
+                        <input
+                          type="text"
+                          value={variableValues.find(v => v.key === variable)?.value || ''}
+                          onChange={(e) => handleVariableChange(variable, e.target.value)}
+                          placeholder={`{{${variable}}} 값을 입력하세요`}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div className="template-simulate-preview">
+                  <h5>시뮬레이션 결과</h5>
+                  {simulatedTemplate ? (
+                    <StructuredPromptCard
+                      title={simulatedTemplate.title || '시뮬레이션 결과'}
+                      template={simulatedTemplate}
+                    />
+                  ) : (
+                    <div className="template-preview-placeholder">
+                      변수 값을 입력하면 시뮬레이션 결과가 표시됩니다.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="template-empty-state">
+            <p>왼쪽에서 템플릿을 선택하거나 새 템플릿을 생성하세요.</p>
           </div>
-        </div>
-
-        <div className="form-group">
-          <label>변경 요약 (선택)</label>
-          <input
-            value={form.changeSummary}
-            onChange={(e) => handleInputChange('changeSummary', e.target.value)}
-            placeholder="예: CTA 개선, 톤 수정"
-          />
-        </div>
-
-        <div className="template-form-actions">
-          <button className="template-button secondary" onClick={resetForm} disabled={isSaving}>
-            초기화
-          </button>
-          <button className="template-button" onClick={handleSave} disabled={isSaving || !parsedTemplate || !form.name}>
-            {isSaving ? '저장 중...' : selectedTemplate ? '템플릿 업데이트' : '템플릿 생성'}
-          </button>
-        </div>
+        )}
       </div>
     </div>
   )
 }
 
 export default TemplateManager
-
