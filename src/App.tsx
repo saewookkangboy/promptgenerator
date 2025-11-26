@@ -13,14 +13,8 @@ type TabType = 'text' | 'image' | 'video' | 'engineering'
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('text')
-  // localStorage에서 admin 모드 상태 복원
-  const [isAdmin, setIsAdmin] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('admin_mode')
-      return saved === 'true'
-    }
-    return false
-  })
+  // 서비스 시작 시 항상 일반 모드로 시작 (Admin 모드는 명시적으로 진입)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
 
   useEffect(() => {
@@ -50,20 +44,16 @@ function App() {
     }
   }, [])
 
-  // isAdmin 상태 변경 시 localStorage에 저장 및 인증 상태 확인
+  // isAdmin 상태 변경 시 인증 상태 확인
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (isAdmin) {
-        localStorage.setItem('admin_mode', 'true')
-        // Admin 모드가 활성화되면 인증 상태도 확인
-        const adminAuth = getAdminAuth()
-        console.log('[Admin] 모드 활성화, 인증 상태:', adminAuth)
-        setIsAdminAuthenticated(adminAuth)
-      } else {
-        localStorage.removeItem('admin_mode')
-        console.log('[Admin] 모드 비활성화')
-        setIsAdminAuthenticated(false)
-      }
+    if (isAdmin) {
+      // Admin 모드가 활성화되면 인증 상태 확인
+      const adminAuth = getAdminAuth()
+      console.log('[Admin] 모드 활성화, 인증 상태:', adminAuth)
+      setIsAdminAuthenticated(adminAuth)
+    } else {
+      console.log('[Admin] 모드 비활성화')
+      setIsAdminAuthenticated(false)
     }
   }, [isAdmin])
 
@@ -74,36 +64,18 @@ function App() {
 
   const handleAdminLogout = () => {
     setIsAdminAuthenticated(false)
+    setIsAdmin(false) // 로그아웃 시 메인 페이지로 돌아감
   }
 
-  // Admin 모드 토글
-  const toggleAdminMode = (e?: React.MouseEvent) => {
-    e?.preventDefault()
-    e?.stopPropagation()
-    
-    try {
-      const newAdminState = !isAdmin
-      console.log('[Admin] 토글:', { 현재: isAdmin, 새상태: newAdminState })
-      setIsAdmin(newAdminState)
-      // 상태 변경은 useEffect에서 처리됨
-    } catch (error) {
-      // Chrome 확장 프로그램 오류 무시
-      if (error instanceof Error && error.message.includes('firebase')) {
-        console.warn('[Admin] Firebase 관련 오류 무시:', error.message)
-        // 오류가 발생해도 상태 변경은 계속 진행
-        setIsAdmin(!isAdmin)
-      } else {
-        throw error
-      }
-    }
-  }
-
-  // Admin 모드
+  // Admin 모드 - 별도 페이지로 이동
   if (isAdmin) {
     if (!isAdminAuthenticated) {
       return (
         <div className="app">
-          <AdminLogin onLogin={handleAdminLogin} />
+          <AdminLogin 
+            onLogin={handleAdminLogin}
+            onBack={() => setIsAdmin(false)}
+          />
         </div>
       )
     }
@@ -127,9 +99,12 @@ function App() {
           </div>
           <div className="header-actions">
             <button
-              onClick={toggleAdminMode}
+              onClick={(e) => {
+                e.preventDefault()
+                setIsAdmin(true)
+              }}
               className="admin-toggle-button"
-              title="Admin 모드"
+              title="관리자 페이지로 이동"
             >
               Admin
             </button>

@@ -4,9 +4,10 @@ import './AdminLogin.css'
 
 interface AdminLoginProps {
   onLogin: () => void
+  onBack?: () => void
 }
 
-function AdminLogin({ onLogin }: AdminLoginProps) {
+function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -32,7 +33,27 @@ function AdminLogin({ onLogin }: AdminLoginProps) {
   return (
     <div className="admin-login-container">
       <div className="admin-login-card">
-        <h2>Admin 로그인</h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+          <h2>Admin 로그인</h2>
+          {onBack && (
+            <button
+              onClick={onBack}
+              className="admin-back-button"
+              type="button"
+              style={{
+                padding: '8px 16px',
+                background: '#ffffff',
+                border: '1px solid #e5e5e5',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                color: '#000000'
+              }}
+            >
+              메인으로
+            </button>
+          )}
+        </div>
         <p className="admin-login-subtitle">관리자 전용 페이지입니다</p>
         
         <form onSubmit={handleSubmit} className="admin-login-form">
