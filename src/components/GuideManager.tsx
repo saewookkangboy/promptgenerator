@@ -42,6 +42,7 @@ function GuideManager() {
     // 최신 순으로 정렬 (timestamp 내림차순)
     const sortedHistories = [...histories].sort((a, b) => b.timestamp - a.timestamp)
     setCollectionHistories(sortedHistories)
+    setLatestGuides(getAllLatestGuides())
   }
 
   const applyRealtimeGuides = useCallback((results: any[] | null | undefined) => {

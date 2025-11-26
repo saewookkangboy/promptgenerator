@@ -2,6 +2,21 @@
 
 const axios = require('axios')
 const cheerio = require('cheerio')
+let fetchFn = null
+async function getFetch() {
+  if (typeof globalThis.fetch === 'function') {
+    return globalThis.fetch.bind(globalThis)
+  }
+  if (!fetchFn) {
+    try {
+      const mod = await import('node-fetch')
+      fetchFn = mod.default
+    } catch (error) {
+      throw new Error('node-fetch 모듈을 불러올 수 없습니다. Node 18+ 환경에서 실행하거나 node-fetch를 설치하세요.')
+    }
+  }
+  return fetchFn
+}
 
 // 수집 소스 정의 (2024-2025 최신 URL - 재탐색 결과)
 const COLLECTION_SOURCES = {
@@ -70,6 +85,14 @@ const COLLECTION_SOURCES = {
     'https://github.com/meta-llama/llama3',
   ],
 }
+
+const SEARCH_QUERIES = [
+  'prompt guide',
+  'gemini prompt guide',
+  'openai prompt guide',
+  'prompt engineering best practices',
+]
+const GOOGLE_CSE_ENDPOINT = 'https://www.googleapis.com/customsearch/v1'
 
 // User-Agent 설정 (봇 차단 방지)
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
@@ -349,12 +372,81 @@ async function scrapeGuideWithRetry(url, modelName, maxRetries = 3) {
 }
 
 // 특정 모델의 가이드 수집 (재시도 로직 포함)
+let hasSearchConfigWarning = false
+
+async function fetchSearchResults(query, limit = 5) {
+  const apiKey = process.env.GOOGLE_CSE_KEY || process.env.GOOGLE_SEARCH_API_KEY
+  const cx = process.env.GOOGLE_CSE_ID || process.env.GOOGLE_SEARCH_ENGINE_ID
+
+  if (!apiKey || !cx) {
+    if (!hasSearchConfigWarning) {
+      console.warn(
+        '[GuideScraper] Google Custom Search API 자격 증명이 설정되어 있지 않습니다. 환경변수 GOOGLE_CSE_KEY / GOOGLE_CSE_ID 를 설정하면 검색 기반 가이드 수집이 활성화됩니다.'
+      )
+      hasSearchConfigWarning = true
+    }
+    return []
+  }
+
+  try {
+    const fetch = await getFetch()
+    const params = new URLSearchParams({
+      key: apiKey,
+      cx,
+      q: query,
+      num: String(Math.min(Math.max(limit, 1), 10)),
+      lr: 'lang_en',
+      safe: 'off',
+    })
+
+    const response = await fetch(`${GOOGLE_CSE_ENDPOINT}?${params.toString()}`)
+    if (!response.ok) {
+      throw new Error(`Google CSE 응답 오류 (${response.status})`)
+    }
+
+    const data = await response.json()
+    const links = (data.items || [])
+      .map((item) => item.link)
+      .filter((link) => typeof link === 'string' && link.startsWith('http'))
+    return links.slice(0, limit)
+  } catch (error) {
+    console.warn(`[GuideScraper] Google 검색 실패 (${query}):`, error.message)
+    return []
+  }
+}
+
+async function buildSourcesForModel(modelName) {
+  const staticSources = COLLECTION_SOURCES[modelName] || []
+  const queries = [
+    ...SEARCH_QUERIES.map((q) => `${modelName} ${q}`),
+    ...SEARCH_QUERIES, // 일반 가이드 키워드
+  ]
+  const searchResults = new Set()
+
+  for (const query of queries) {
+    const links = await fetchSearchResults(query, 5)
+    links.forEach((link) => searchResults.add(link))
+  }
+
+  const merged = [...staticSources, ...searchResults]
+  const seen = new Set()
+
+  return merged.filter((url) => {
+    if (!url || typeof url !== 'string') return false
+    const normalized = url.trim()
+    if (!normalized) return false
+    if (seen.has(normalized)) return false
+    seen.add(normalized)
+    return true
+  })
+}
+
 async function collectGuideForModel(modelName) {
-  const sources = COLLECTION_SOURCES[modelName] || []
+  const sources = await buildSourcesForModel(modelName)
   if (sources.length === 0) {
     return {
       success: false,
-      error: `모델 ${modelName}에 대한 수집 소스가 없습니다`,
+      error: `모델 ${modelName}에 대한 수집 소스를 찾을 수 없습니다`,
     }
   }
   
