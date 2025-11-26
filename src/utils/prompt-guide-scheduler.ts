@@ -1,6 +1,7 @@
 // 프롬프트 가이드 자동 수집 스케줄러 (클라이언트 사이드)
 
 import { GuideUpdateResult } from '../types/prompt-guide.types'
+import { API_BASE_URL } from './api'
 import { getNextCollectionSchedule } from './prompt-guide-storage'
 
 // 스케줄러 초기화 (클라이언트 사이드 - 서버 상태만 확인)
@@ -21,7 +22,6 @@ export function initializeScheduler(): void {
 // 서버 상태 확인
 async function checkServerStatus(): Promise<void> {
   try {
-    const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
     const response = await fetch(`${API_BASE_URL}/api/guides/status`)
     
     if (response.ok) {
