@@ -12,7 +12,7 @@ function GuideManager() {
   const [collectionResults, setCollectionResults] = useState<GuideUpdateResult[]>([])
   const [collectionHistories, setCollectionHistories] = useState<GuideCollectionHistory[]>([])
   const [showHistory, setShowHistory] = useState(false)
-  const [currentJobId, setCurrentJobId] = useState<string | null>(null)
+  const [, setCurrentJobId] = useState<string | null>(null) // 작업 취소 기능을 위해 추후 사용 예정
   const [collectionProgress, setCollectionProgress] = useState<{
     total: number
     completed: number
