@@ -13,7 +13,14 @@ type TabType = 'text' | 'image' | 'video' | 'engineering'
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('text')
-  const [isAdmin, setIsAdmin] = useState(false)
+  // localStorage에서 admin 모드 상태 복원
+  const [isAdmin, setIsAdmin] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('admin_mode')
+      return saved === 'true'
+    }
+    return false
+  })
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
 
   useEffect(() => {
@@ -27,6 +34,17 @@ function App() {
     initializeScheduler()
   }, [])
 
+  // isAdmin 상태 변경 시 localStorage에 저장
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (isAdmin) {
+        localStorage.setItem('admin_mode', 'true')
+      } else {
+        localStorage.removeItem('admin_mode')
+      }
+    }
+  }, [isAdmin])
+
   const handleAdminLogin = () => {
     setIsAdminAuthenticated(true)
   }
@@ -37,9 +55,15 @@ function App() {
 
   // Admin 모드 토글
   const toggleAdminMode = () => {
-    setIsAdmin(!isAdmin)
-    if (!isAdmin) {
+    const newAdminState = !isAdmin
+    setIsAdmin(newAdminState)
+    if (newAdminState) {
       setIsAdminAuthenticated(getAdminAuth())
+    } else {
+      // Admin 모드 종료 시 localStorage에서 제거
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('admin_mode')
+      }
     }
   }
 
