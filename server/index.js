@@ -130,7 +130,31 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
-// CORS 설정: 프로덕션에서는 프론트엔드 도메인만 허용
+// CORS 설정: 허용된 도메인 목록
+const getAllowedOrigins = () => {
+  const origins = []
+  
+  // FRONTEND_URL 환경 변수에서 도메인 추가
+  if (process.env.FRONTEND_URL) {
+    const urls = process.env.FRONTEND_URL.split(',').map(url => url.trim())
+    origins.push(...urls)
+  }
+  
+  // 기본 허용 도메인
+  const defaultOrigins = [
+    'https://www.allrounder.im',
+    'https://allrounder.im',
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'http://localhost:5174',
+  ]
+  origins.push(...defaultOrigins)
+  
+  // Vercel 도메인 패턴 허용 (*.vercel.app)
+  // 실제 origin을 확인하여 동적으로 허용
+  return origins
+}
+
 const corsOptions = {
   origin: function (origin, callback) {
     // Health check나 서버 간 통신은 허용
@@ -138,21 +162,28 @@ const corsOptions = {
       return callback(null, true)
     }
     
-    // FRONTEND_URL이 설정되어 있으면 해당 도메인만 허용
-    if (process.env.FRONTEND_URL) {
-      const allowedOrigins = process.env.FRONTEND_URL.split(',').map(url => url.trim())
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true)
-      }
+    const allowedOrigins = getAllowedOrigins()
+    
+    // 정확히 일치하는 도메인 확인
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true)
     }
     
-    // 개발 환경이거나 FRONTEND_URL이 없으면 모든 도메인 허용
-    if (process.env.NODE_ENV !== 'production' || !process.env.FRONTEND_URL) {
+    // Vercel 도메인 패턴 확인 (*.vercel.app)
+    if (origin.includes('.vercel.app')) {
+      console.log(`[CORS] Vercel 도메인 허용: ${origin}`)
+      return callback(null, true)
+    }
+    
+    // 개발 환경에서는 모든 도메인 허용
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[CORS] 개발 환경 - 모든 도메인 허용: ${origin}`)
       return callback(null, true)
     }
     
     // 프로덕션에서 허용되지 않은 도메인
     console.warn(`[CORS] 차단된 origin: ${origin}`)
+    console.log(`[CORS] 허용된 도메인 목록:`, allowedOrigins)
     callback(new Error('CORS 정책에 의해 차단되었습니다'))
   },
   credentials: true,
