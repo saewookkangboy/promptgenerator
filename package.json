@@ -24,6 +24,7 @@
     "pre-deploy": "node scripts/pre-deploy-check.js"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.24.1",
     "@prisma/client": "^5.19.1",
     "@vercel/speed-insights": "^1.2.0",
     "axios": "^1.13.2",
