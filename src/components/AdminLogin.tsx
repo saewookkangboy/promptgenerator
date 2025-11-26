@@ -23,39 +23,47 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
       // Admin 이메일 형식으로 변환 (username이 이메일이 아니면 @troe.kr 추가)
       const email = username.includes('@') ? username : `${username}@troe.kr`
       
+      // API URL 확인 및 로그
+      const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
+      console.log('[Admin Login] API URL:', API_BASE_URL)
+      console.log('[Admin Login] Email:', email)
+      
       // 서버에 로그인 시도
       const result = await authAPI.login(email, password)
       
       if (result.token) {
         // JWT 토큰이 성공적으로 받아졌으면 Admin 인증 완료
+        console.log('[Admin Login] 로그인 성공, 토큰 받음')
         setAdminAuth(true)
         onLogin()
       } else {
         setError('로그인에 실패했습니다. 토큰을 받을 수 없습니다.')
       }
     } catch (err: any) {
-      console.error('Admin 로그인 오류:', err)
+      console.error('[Admin Login] 오류 상세:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack,
+        error: err
+      })
       
       // 네트워크 오류 또는 서버 오류 처리
-      if (err.message?.includes('서버에 연결할 수 없습니다')) {
-        // 서버 연결 실패 시 로컬 인증으로 폴백 (개발 환경만)
+      if (err.message?.includes('서버에 연결할 수 없습니다') || 
+          err.message?.includes('fetch') ||
+          err.name === 'TypeError') {
+        // 서버 연결 실패
         const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
-        if (API_BASE_URL.includes('localhost') && username === 'park' && password === '3107') {
-          console.warn('서버 연결 실패, 로컬 인증으로 폴백 (개발 환경)')
-          setAdminAuth(true)
-          onLogin()
-        } else {
-          setError('서버에 연결할 수 없습니다. Railway 서버가 실행 중인지 확인해주세요.')
-        }
+        const errorMsg = `서버에 연결할 수 없습니다.\n\n서버 URL: ${API_BASE_URL}\n\n확인 사항:\n1. Railway 서버가 실행 중인지 확인\n2. Vercel 환경 변수에 VITE_API_BASE_URL이 설정되어 있는지 확인\n3. 브라우저 콘솔에서 네트워크 오류 확인`
+        setError(errorMsg)
+      } else if (err.message?.includes('401') || err.message?.includes('이메일 또는 비밀번호')) {
+        // 인증 실패
+        setError('이메일 또는 비밀번호가 올바르지 않습니다.')
+      } else if (err.message?.includes('403') || err.message?.includes('Admin 권한')) {
+        // Admin 권한 없음
+        setError('Admin 권한이 없습니다. Admin 이메일로 로그인해주세요.')
       } else {
-        // 인증 실패 - 더 자세한 오류 메시지
-        const errorMessage = err.message || '아이디 또는 비밀번호가 올바르지 않습니다.'
-        setError(errorMessage)
-        
-        // 403 오류인 경우 Admin 권한 안내
-        if (errorMessage.includes('403') || errorMessage.includes('Admin 권한')) {
-          setError('Admin 권한이 없습니다. Admin 이메일로 로그인해주세요. (예: park@troe.kr)')
-        }
+        // 기타 오류
+        setError(err.message || '로그인 중 오류가 발생했습니다.')
       }
     } finally {
       setIsLoading(false)

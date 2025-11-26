@@ -132,11 +132,29 @@ const PORT = process.env.PORT || 3001
 // Middleware
 // CORS 설정: 프로덕션에서는 프론트엔드 도메인만 허용
 const corsOptions = {
-  origin: process.env.FRONTEND_URL 
-    ? process.env.FRONTEND_URL.split(',').map(url => url.trim())
-    : process.env.NODE_ENV === 'production'
-    ? false // 프로덕션에서는 FRONTEND_URL 필수
-    : true, // 개발 환경에서는 모든 도메인 허용
+  origin: function (origin, callback) {
+    // Health check나 서버 간 통신은 허용
+    if (!origin) {
+      return callback(null, true)
+    }
+    
+    // FRONTEND_URL이 설정되어 있으면 해당 도메인만 허용
+    if (process.env.FRONTEND_URL) {
+      const allowedOrigins = process.env.FRONTEND_URL.split(',').map(url => url.trim())
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true)
+      }
+    }
+    
+    // 개발 환경이거나 FRONTEND_URL이 없으면 모든 도메인 허용
+    if (process.env.NODE_ENV !== 'production' || !process.env.FRONTEND_URL) {
+      return callback(null, true)
+    }
+    
+    // 프로덕션에서 허용되지 않은 도메인
+    console.warn(`[CORS] 차단된 origin: ${origin}`)
+    callback(new Error('CORS 정책에 의해 차단되었습니다'))
+  },
   credentials: true,
   optionsSuccessStatus: 200
 }

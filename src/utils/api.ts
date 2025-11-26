@@ -48,10 +48,15 @@ async function apiRequest<T>(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    const url = `${API_BASE_URL}${endpoint}`
+    console.log(`[API Request] ${options.method || 'GET'} ${url}`)
+    
+    const response = await fetch(url, {
       ...options,
       headers,
     })
+
+    console.log(`[API Response] ${response.status} ${response.statusText}`)
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ error: '알 수 없는 오류가 발생했습니다' }))
@@ -72,9 +77,11 @@ async function apiRequest<T>(
     return response.json()
   } catch (error: any) {
     // 네트워크 오류 처리
-    if (error.name === 'TypeError' && error.message.includes('fetch')) {
+    if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+      console.error('[API Error] 네트워크 오류:', error)
       throw new Error('서버에 연결할 수 없습니다. API 서버가 실행 중인지 확인해주세요.')
     }
+    console.error('[API Error] 기타 오류:', error)
     throw error
   }
 }
