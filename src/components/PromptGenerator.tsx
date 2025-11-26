@@ -108,7 +108,8 @@ function PromptGenerator() {
   const [hashtagsCopied, setHashtagsCopied] = useState(false)
   const [useWizardMode, setUseWizardMode] = useState(true)
   const [wizardStep, setWizardStep] = useState(1)
-  const [qualityReport, setQualityReport] = useState<QualityReport | null>(null)
+  // 품질 평가 패널 제거로 인한 상태 비활성화
+  const [, setQualityReport] = useState<QualityReport | null>(null)
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {
@@ -727,4 +728,3 @@ function PromptGenerator() {
 }
 
 export default PromptGenerator
-

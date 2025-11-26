@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getAllLatestGuides, upsertGuide } from '../utils/prompt-guide-storage'
 import { getCollectionStatus as getScheduleStatus } from '../utils/prompt-guide-scheduler'
 import { GuideUpdateResult, ModelName } from '../types/prompt-guide.types'
@@ -20,6 +20,7 @@ function GuideManager() {
     current: string | null
     percentage: number
   } | null>(null)
+  const [, setRealtimeApplied] = useState<Set<ModelName>>(new Set())
 
   useEffect(() => {
     loadData()
@@ -42,6 +43,44 @@ function GuideManager() {
     const sortedHistories = [...histories].sort((a, b) => b.timestamp - a.timestamp)
     setCollectionHistories(sortedHistories)
   }
+
+  const applyRealtimeGuides = useCallback((results: any[] | null | undefined) => {
+    if (!Array.isArray(results) || results.length === 0) return
+
+    const newGuides: Array<{ modelName: ModelName; guide: any }> = []
+
+    setRealtimeApplied((prev) => {
+      const next = new Set(prev)
+      results.forEach((result) => {
+        if (result?.success && result?.guide && result?.modelName) {
+          const modelName = result.modelName as ModelName
+          if (!next.has(modelName)) {
+            next.add(modelName)
+            newGuides.push({ modelName, guide: result.guide })
+          }
+        }
+      })
+      return next
+    })
+
+    if (newGuides.length === 0) return
+
+    newGuides.forEach(({ guide }) => {
+      try {
+        upsertGuide(guide)
+      } catch (error) {
+        console.error('[GuideManager] 실시간 가이드 저장 실패:', error)
+      }
+    })
+
+    setLatestGuides((prev) => {
+      const updated = new Map(prev)
+      newGuides.forEach(({ modelName, guide }) => {
+        updated.set(modelName, guide)
+      })
+      return updated
+    })
+  }, [])
 
   const persistResults = (resultsArray: any[]) => {
     if (!Array.isArray(resultsArray)) {
@@ -138,6 +177,7 @@ function GuideManager() {
       setIsCollecting(false)
       setCurrentJobId(null)
       setCollectionProgress(null)
+      setRealtimeApplied(new Set())
     }
   }
 
@@ -145,6 +185,7 @@ function GuideManager() {
     setIsCollecting(true)
     setCollectionResults([])
     setCollectionProgress(null)
+    setRealtimeApplied(new Set())
     let pollTimer: ReturnType<typeof setInterval> | null = null
     
     try {
@@ -202,6 +243,7 @@ function GuideManager() {
               hasResults: !!job.results,
             })
             stopPolling()
+            applyRealtimeGuides(job.results?.results ?? job.results)
             finalizeJob(job.status, job.results)
           }
         } catch (pollErr) {
@@ -242,6 +284,8 @@ function GuideManager() {
               current: progress.progress.current,
               percentage,
             })
+
+            applyRealtimeGuides(progress.progress.results)
           }
           
           // 작업 완료 확인
@@ -253,6 +297,7 @@ function GuideManager() {
             })
             eventSource?.close()
             stopPolling()
+            applyRealtimeGuides(progress.results?.results ?? progress.results)
             finalizeJob(progress.status, progress.results)
           }
         } catch (parseError) {
@@ -279,6 +324,7 @@ function GuideManager() {
                   hasResults: !!job.results,
                   results: job.results,
                 })
+                applyRealtimeGuides(job.results?.results ?? job.results)
                 finalizeJob(job.status, job.results)
               }
             }
@@ -325,6 +371,7 @@ function GuideManager() {
       setIsCollecting(false)
       setCurrentJobId(null)
       setCollectionProgress(null)
+      setRealtimeApplied(new Set())
     }
   }
 
