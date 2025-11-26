@@ -28,19 +28,31 @@ function App() {
     incrementVisitCount()
     
     // Admin 인증 상태 확인
-    setIsAdminAuthenticated(getAdminAuth())
+    const adminAuth = getAdminAuth()
+    setIsAdminAuthenticated(adminAuth)
     
     // 프롬프트 가이드 스케줄러 초기화
     initializeScheduler()
   }, [])
+  
+  // isAdmin이 변경될 때마다 인증 상태도 확인
+  useEffect(() => {
+    if (isAdmin) {
+      const adminAuth = getAdminAuth()
+      setIsAdminAuthenticated(adminAuth)
+    }
+  }, [isAdmin])
 
-  // isAdmin 상태 변경 시 localStorage에 저장
+  // isAdmin 상태 변경 시 localStorage에 저장 및 인증 상태 확인
   useEffect(() => {
     if (typeof window !== 'undefined') {
       if (isAdmin) {
         localStorage.setItem('admin_mode', 'true')
+        // Admin 모드가 활성화되면 인증 상태도 확인
+        setIsAdminAuthenticated(getAdminAuth())
       } else {
         localStorage.removeItem('admin_mode')
+        setIsAdminAuthenticated(false)
       }
     }
   }, [isAdmin])
@@ -57,14 +69,7 @@ function App() {
   const toggleAdminMode = () => {
     const newAdminState = !isAdmin
     setIsAdmin(newAdminState)
-    if (newAdminState) {
-      setIsAdminAuthenticated(getAdminAuth())
-    } else {
-      // Admin 모드 종료 시 localStorage에서 제거
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('admin_mode')
-      }
-    }
+    // 상태 변경은 useEffect에서 처리됨
   }
 
   // Admin 모드
