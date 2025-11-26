@@ -1,11 +1,13 @@
-import { useState, useCallback, useMemo } from 'react'
+import { useState, useCallback, useMemo, useEffect } from 'react'
 import { ContentType, DetailedOptions } from '../types'
 import { ToneStyle } from '../types/prompt.types'
 import { generatePrompts } from '../utils/promptGenerator'
 import { validatePrompt } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
-import { promptAPI } from '../utils/api'
+import { promptAPI, guideAPI } from '../utils/api'
+import { upsertGuide } from '../utils/prompt-guide-storage'
 import { showNotification } from '../utils/notifications'
+import { PromptGuide } from '../types/prompt-guide.types'
 import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 import { evaluateQuality, QualityReport } from '../utils/qualityRules'
 import ResultCard from './ResultCard'
@@ -90,6 +92,27 @@ const WIZARD_STEPS = [
   { id: 4, label: '구조화 프리뷰' },
 ]
 
+const normalizeGuideInsight = (guide: any): PromptGuide => ({
+  id: guide.id,
+  modelName: guide.modelName,
+  category: (guide.category || 'llm').toLowerCase() as any,
+  version: guide.version ?? '1.0.0',
+  title: guide.title || `${guide.modelName} 프롬프트 가이드`,
+  description: guide.summary || guide.title || '',
+  summary: guide.summary,
+  lastUpdated: Date.now(),
+  source: '',
+  metadata: {
+    collectedAt: Date.now(),
+    collectedBy: 'api',
+    confidence: guide.confidence ?? 0.5,
+  },
+  content: {
+    bestPractices: guide.bestPractices || [],
+    tips: guide.tips || [],
+  },
+})
+
 function PromptGenerator() {
   const [userPrompt, setUserPrompt] = useState('')
   const [contentType, setContentType] = useState<ContentType>('blog')
@@ -110,6 +133,7 @@ function PromptGenerator() {
   const [wizardStep, setWizardStep] = useState(1)
   // 품질 평가 패널 제거로 인한 상태 비활성화
   const [, setQualityReport] = useState<QualityReport | null>(null)
+  const [guideInsight, setGuideInsight] = useState<PromptGuide | null>(null)
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {
@@ -127,6 +151,26 @@ function PromptGenerator() {
     }
   }, [detailedOptions])
 
+  useEffect(() => {
+    guideAPI
+      .getPublicLatest({ category: 'llm', limit: 1 })
+      .then((response) => {
+        const guide = response.guides?.[0]
+        if (guide) {
+          const normalized = normalizeGuideInsight(guide)
+          setGuideInsight(normalized)
+          try {
+            upsertGuide(normalized)
+          } catch (error) {
+            console.warn('[PromptGenerator] 로컬 가이드 저장 실패:', error)
+          }
+        }
+      })
+      .catch((error) => {
+        console.warn('가이드 추천 정보를 불러오지 못했습니다:', error)
+      })
+  }, [])
+
   const handleGenerate = useCallback(() => {
     // 입력 검증
     const validation = validatePrompt(userPrompt)
@@ -143,7 +187,19 @@ function PromptGenerator() {
       try {
         const options = buildGenerationOptions()
 
-        const generated = generatePrompts(userPrompt, contentType, options)
+        const appliedGuideContext = guideInsight
+          ? {
+              guideId: guideInsight.id,
+              modelName: guideInsight.modelName,
+              title: guideInsight.title,
+              summary: guideInsight.summary,
+              bestPractices: guideInsight.content?.bestPractices,
+              tips: guideInsight.content?.tips,
+              confidence: guideInsight.metadata?.confidence ?? guideInsight.metadata?.confidence ?? 0.5,
+            }
+          : undefined
+
+        const generated = generatePrompts(userPrompt, contentType, options, appliedGuideContext)
 
         let enrichedResults = generated
         try {
@@ -250,7 +306,7 @@ function PromptGenerator() {
         setIsGenerating(false)
       }
     }, 300)
-  }, [userPrompt, contentType, detailedOptions, buildGenerationOptions])
+  }, [userPrompt, contentType, detailedOptions, buildGenerationOptions, guideInsight])
 
   const handleDismissError = useCallback(() => {
     setError(null)
@@ -263,12 +319,27 @@ function PromptGenerator() {
   const previewResult = useMemo(() => {
     if (!isFormValid) return null
     try {
-      return generatePrompts(userPrompt, contentType, buildGenerationOptions())
+      return generatePrompts(
+        userPrompt,
+        contentType,
+        buildGenerationOptions(),
+        guideInsight
+          ? {
+              guideId: guideInsight.id,
+              modelName: guideInsight.modelName,
+              title: guideInsight.title,
+              summary: guideInsight.summary,
+              bestPractices: guideInsight.content?.bestPractices,
+              tips: guideInsight.content?.tips,
+              confidence: guideInsight.metadata?.confidence ?? guideInsight.metadata?.confidence ?? 0.5,
+            }
+          : undefined,
+      )
     } catch (err) {
       console.warn('Preview generation failed', err)
       return null
     }
-  }, [isFormValid, userPrompt, contentType, buildGenerationOptions])
+  }, [isFormValid, userPrompt, contentType, buildGenerationOptions, guideInsight])
 
   const guidelineChips = GUIDELINE_CHIPS[contentType] || []
   const tokenUsage = userPrompt.trim().length
@@ -678,6 +749,30 @@ function PromptGenerator() {
 
       {results && !isGenerating && (
         <div className="results-section">
+          {results.appliedGuide && (
+            <div className="guide-insight-card">
+              <div className="guide-insight-header">
+                <div>
+                  <p className="guide-insight-label">모델 가이드 반영됨</p>
+                  <h3>{results.appliedGuide.title || results.appliedGuide.modelName}</h3>
+                </div>
+                <span className="guide-insight-confidence">
+                  신뢰도 {Math.round((results.appliedGuide.confidence ?? 0.5) * 100)}%
+                </span>
+              </div>
+              {results.appliedGuide.bestPractices?.length ? (
+                <ul className="guide-insight-list">
+                  {results.appliedGuide.bestPractices.slice(0, 3).map((item, index) => (
+                    <li key={index}>{item}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="guide-insight-summary">
+                  {results.appliedGuide.summary || '최신 가이드라인이 적용되었습니다.'}
+                </p>
+              )}
+            </div>
+          )}
           {results.metaTemplate && (
             <StructuredPromptCard
               title="표준 메타 프롬프트 템플릿"

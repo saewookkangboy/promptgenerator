@@ -1014,3 +1014,55 @@
   }
 }
 
+.guide-insight-card {
+  background: #f5f8ff;
+  border: 1px solid #d1e3ff;
+  border-radius: 12px;
+  padding: var(--spacing-xl);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  margin-bottom: var(--spacing-xl);
+}
+
+.guide-insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: var(--spacing-md);
+}
+
+.guide-insight-label {
+  font-size: var(--font-size-xs);
+  color: #4c6ef5;
+  margin: 0;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+
+.guide-insight-header h3 {
+  margin: 4px 0 0;
+  font-size: var(--font-size-lg);
+  color: #0f172a;
+}
+
+.guide-insight-confidence {
+  font-size: var(--font-size-sm);
+  color: #1d4ed8;
+  font-weight: 600;
+}
+
+.guide-insight-list {
+  padding-left: 20px;
+  margin: 0;
+  color: #1f2937;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
+.guide-insight-summary {
+  margin: 0;
+  color: #1f2937;
+  font-size: var(--font-size-sm);
+  line-height: 1.6;
+}
+
