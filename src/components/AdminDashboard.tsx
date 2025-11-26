@@ -293,20 +293,41 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
               <div className="admin-section">
                 <div className="admin-section-header">
                   <h2>사용자 관리</h2>
-                  {serverConnected === false && (
-                    <div style={{ 
-                      marginTop: '12px', 
-                      padding: '12px', 
-                      background: '#fff3cd', 
-                      border: '1px solid #ffc107',
-                      borderRadius: '4px',
-                      color: '#856404'
-                    }}>
-                      ⚠️ 서버에 연결할 수 없습니다. 로컬 모드로 작동 중입니다.
-                    </div>
-                  )}
                 </div>
-                {serverConnected === true && serverStats && (
+                {loading && serverConnected === null && (
+                  <div style={{ 
+                    padding: '24px', 
+                    textAlign: 'center',
+                    color: '#666666'
+                  }}>
+                    서버 연결 확인 중...
+                  </div>
+                )}
+                {!loading && serverConnected === false && (
+                  <div style={{ 
+                    padding: '24px', 
+                    textAlign: 'center',
+                    background: '#fff3cd',
+                    border: '1px solid #ffc107',
+                    borderRadius: '8px',
+                    marginBottom: '24px'
+                  }}>
+                    <p style={{ margin: '0 0 12px 0', color: '#856404', fontWeight: '500' }}>
+                      ⚠️ 서버에 연결할 수 없습니다.
+                    </p>
+                    <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#856404' }}>
+                      Railway 서버가 실행 중인지 확인해주세요.
+                    </p>
+                    <button
+                      onClick={checkServerConnection}
+                      className="template-button"
+                      style={{ marginTop: '8px' }}
+                    >
+                      연결 재시도
+                    </button>
+                  </div>
+                )}
+                {!loading && serverConnected === true && serverStats && (
                   <div className="admin-stats-grid" style={{ marginBottom: '24px' }}>
                     <div className="stat-card">
                       <div className="stat-label">총 사용자</div>
@@ -318,7 +339,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                     </div>
                   </div>
                 )}
-                {serverConnected === true ? (
+                {!loading && serverConnected === true ? (
                   <>
                     <div className="admin-table-container">
                       <table className="admin-table">
@@ -417,20 +438,41 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
               <div className="admin-section">
                 <div className="admin-section-header">
                   <h2>프롬프트 관리</h2>
-                  {serverConnected === false && (
-                    <div style={{ 
-                      marginTop: '12px', 
-                      padding: '12px', 
-                      background: '#fff3cd', 
-                      border: '1px solid #ffc107',
-                      borderRadius: '4px',
-                      color: '#856404'
-                    }}>
-                      ⚠️ 서버에 연결할 수 없습니다. 로컬 모드로 작동 중입니다.
-                    </div>
-                  )}
                 </div>
-                {serverConnected === true && serverStats && (
+                {loading && serverConnected === null && (
+                  <div style={{ 
+                    padding: '24px', 
+                    textAlign: 'center',
+                    color: '#666666'
+                  }}>
+                    서버 연결 확인 중...
+                  </div>
+                )}
+                {!loading && serverConnected === false && (
+                  <div style={{ 
+                    padding: '24px', 
+                    textAlign: 'center',
+                    background: '#fff3cd',
+                    border: '1px solid #ffc107',
+                    borderRadius: '8px',
+                    marginBottom: '24px'
+                  }}>
+                    <p style={{ margin: '0 0 12px 0', color: '#856404', fontWeight: '500' }}>
+                      ⚠️ 서버에 연결할 수 없습니다.
+                    </p>
+                    <p style={{ margin: '0 0 16px 0', fontSize: '0.9rem', color: '#856404' }}>
+                      Railway 서버가 실행 중인지 확인해주세요.
+                    </p>
+                    <button
+                      onClick={checkServerConnection}
+                      className="template-button"
+                      style={{ marginTop: '8px' }}
+                    >
+                      연결 재시도
+                    </button>
+                  </div>
+                )}
+                {!loading && serverConnected === true && serverStats && (
                   <div className="admin-stats-grid" style={{ marginBottom: '24px' }}>
                     <div className="stat-card">
                       <div className="stat-label">총 프롬프트</div>
@@ -438,7 +480,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                     </div>
                   </div>
                 )}
-                {serverConnected === true ? (
+                {!loading && serverConnected === true ? (
                   <>
                     <div className="admin-table-container">
                       <table className="admin-table">
