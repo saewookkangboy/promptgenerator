@@ -156,6 +156,9 @@ function PromptGenerator() {
   const [, setQualityReport] = useState<QualityReport | null>(null)
   const [guideInsight, setGuideInsight] = useState<PromptGuide | null>(null)
   const [targetModel, setTargetModel] = useState<ModelName>('openai-gpt-4')
+  const [availableGuides, setAvailableGuides] = useState<PromptGuide[]>([])
+  const [isGuideLoading, setIsGuideLoading] = useState(false)
+  const [guideError, setGuideError] = useState<string | null>(null)
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {
@@ -418,24 +421,24 @@ function PromptGenerator() {
     </div>
   )
 
-const renderModelSelector = () => (
-  <div className="form-group">
-    <label htmlFor="model-select">타겟 모델 선택</label>
-    <select
-      id="model-select"
-      value={targetModel}
-      onChange={(e) => setTargetModel(e.target.value as ModelName)}
-      className="content-type-select"
-    >
-      {MODEL_OPTIONS.map((model) => (
-        <option key={model.value} value={model.value}>
-          {model.label} · {model.category.toUpperCase()}
-        </option>
-      ))}
-    </select>
-    <p className="helper-text">선택한 모델의 최신 가이드라인이 프롬프트에 자동 반영됩니다.</p>
-  </div>
-)
+  const renderModelSelector = () => (
+    <div className="form-group">
+      <label htmlFor="model-select">타겟 모델 선택</label>
+      <select
+        id="model-select"
+        value={targetModel}
+        onChange={(e) => setTargetModel(e.target.value as ModelName)}
+        className="content-type-select"
+      >
+        {MODEL_OPTIONS.map((model) => (
+          <option key={model.value} value={model.value}>
+            {model.label} · {model.category.toUpperCase()}
+          </option>
+        ))}
+      </select>
+      <p className="helper-text">선택한 모델의 최신 가이드라인이 프롬프트에 자동 반영됩니다.</p>
+    </div>
+  )
 
   const renderPromptTextarea = () => (
     <div className="form-group">
@@ -481,6 +484,7 @@ const renderModelSelector = () => (
     <div className="detailed-options">
       <div className="options-grid">
         {renderGoalSelector()}
+        {renderModelSelector()}
         <div className="form-group">
           <label htmlFor="age">나이</label>
           <select
@@ -625,6 +629,58 @@ const renderModelSelector = () => (
     </div>
   )
 
+  const renderGuideSuggestions = () => {
+    const selectedModelInfo = MODEL_OPTIONS.find((model) => model.value === targetModel)
+    return (
+      <div className="guide-suggestions-panel">
+        <div className="guide-suggestions-header">
+          <div>
+            <p className="guide-insight-label">가이드 추천</p>
+            <h3>{selectedModelInfo?.label || targetModel}</h3>
+          </div>
+          <button
+            type="button"
+            className="guide-refresh-button"
+            onClick={fetchGuides}
+            disabled={isGuideLoading}
+          >
+            {isGuideLoading ? '불러오는 중...' : '가이드 새로고침'}
+          </button>
+        </div>
+        {guideError && <p className="guide-error-text">{guideError}</p>}
+        {!guideError && (
+          <>
+            {isGuideLoading && availableGuides.length === 0 ? (
+              <p className="guide-helper-text">선택한 모델의 가이드를 불러오는 중입니다.</p>
+            ) : availableGuides.length > 0 ? (
+              <div className="guide-chip-list">
+                {availableGuides.map((guide) => {
+                  const isActive = guideInsight?.id === guide.id
+                  return (
+                    <button
+                      key={guide.id}
+                      type="button"
+                      className={`guide-chip ${isActive ? 'active' : ''}`}
+                      onClick={() => setGuideInsight(guide)}
+                    >
+                      <span className="guide-chip-title">{guide.title}</span>
+                      <span className="guide-chip-meta">
+                        v{guide.version} ·{' '}
+                        {Math.round((guide.metadata?.confidence ?? guide.confidence ?? 0.5) * 100)}%
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="guide-helper-text">선택한 모델에 사용할 수 있는 공개 가이드가 없습니다.</p>
+            )}
+          </>
+        )}
+      </div>
+    )
+  }
+
   const handleNextStep = () => {
     if (wizardStep === WIZARD_STEPS.length) return
     setWizardStep((prev) => prev + 1)
@@ -692,6 +748,7 @@ const renderModelSelector = () => (
                   <li>Gemini 번역과 요약으로 양언어 템플릿 제공</li>
                 </ul>
               </div>
+              {renderGuideSuggestions()}
             </div>
           )}
 
@@ -783,6 +840,7 @@ const renderModelSelector = () => (
         <div className="input-section">
           {renderContentTypeSelector()}
           {renderModelSelector()}
+          {renderGuideSuggestions()}
           {renderPromptTextarea()}
 
           <div className="detailed-options-section">
