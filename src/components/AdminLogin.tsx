@@ -55,15 +55,20 @@ function AdminLogin({ onLogin, onBack }: AdminLoginProps) {
         const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
         const errorMsg = `서버에 연결할 수 없습니다.\n\n서버 URL: ${API_BASE_URL}\n\n확인 사항:\n1. Railway 서버가 실행 중인지 확인\n2. Vercel 환경 변수에 VITE_API_BASE_URL이 설정되어 있는지 확인\n3. 브라우저 콘솔에서 네트워크 오류 확인`
         setError(errorMsg)
-      } else if (err.message?.includes('401') || err.message?.includes('이메일 또는 비밀번호')) {
-        // 인증 실패
+      } else if (err.message?.includes('401') || 
+                 err.message?.includes('인증이 만료') ||
+                 err.message?.includes('이메일 또는 비밀번호') ||
+                 err.message?.includes('올바르지 않습니다')) {
+        // 인증 실패 (401 오류 또는 잘못된 자격증명)
         setError('이메일 또는 비밀번호가 올바르지 않습니다.')
       } else if (err.message?.includes('403') || err.message?.includes('Admin 권한')) {
         // Admin 권한 없음
         setError('Admin 권한이 없습니다. Admin 이메일로 로그인해주세요.')
       } else {
-        // 기타 오류
-        setError(err.message || '로그인 중 오류가 발생했습니다.')
+        // 기타 오류 - 리다이렉트 방지를 위해 에러만 표시
+        const errorMsg = err.message || '로그인 중 오류가 발생했습니다.'
+        setError(errorMsg)
+        console.error('[Admin Login] 처리되지 않은 오류:', err)
       }
     } finally {
       setIsLoading(false)

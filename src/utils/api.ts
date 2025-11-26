@@ -6,8 +6,14 @@ const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://l
 function isAdminMode(): boolean {
   if (typeof window === 'undefined') return false
   try {
+    // admin_auth가 설정되어 있거나, admin_mode가 설정되어 있으면 Admin 모드
     const adminAuth = localStorage.getItem('admin_auth')
-    return adminAuth === 'true'
+    const adminMode = localStorage.getItem('admin_mode')
+    // 또는 현재 URL이 Admin 관련 페이지인지 확인
+    const isAdminPage = window.location.pathname.includes('/admin') || 
+                        window.location.hash.includes('admin')
+    
+    return adminAuth === 'true' || adminMode === 'true' || isAdminPage
   } catch {
     return false
   }
@@ -64,10 +70,17 @@ async function apiRequest<T>(
       // 401 Unauthorized - 토큰 만료 또는 무효
       if (response.status === 401) {
         removeToken()
-        // Admin 모드에서는 리다이렉트하지 않음 (서버 연결 실패 시에도 Admin 페이지 유지)
-        if (!isAdminMode()) {
+        // Admin 모드이거나 로그인 페이지에서는 리다이렉트하지 않음
+        const isAdmin = isAdminMode()
+        const isLoginPage = window.location.pathname.includes('/login') || 
+                           window.location.pathname === '/' ||
+                           document.querySelector('.admin-login-container') !== null
+        
+        if (!isAdmin && !isLoginPage) {
+          // 일반 사용자이고 로그인 페이지가 아니면 리다이렉트
           window.location.href = '/login'
         }
+        // Admin 모드이거나 로그인 페이지에서는 에러만 throw (리다이렉트 안 함)
         throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.')
       }
 

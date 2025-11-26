@@ -69,12 +69,27 @@ function App() {
 
   // Admin 모드 - 별도 페이지로 이동
   if (isAdmin) {
+    // Admin 로그인 페이지에서는 admin_mode를 localStorage에 설정하여 리다이렉트 방지
+    useEffect(() => {
+      if (isAdmin && !isAdminAuthenticated) {
+        // Admin 로그인 페이지임을 표시 (리다이렉트 방지)
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('admin_mode', 'true')
+        }
+      }
+    }, [isAdmin, isAdminAuthenticated])
+    
     if (!isAdminAuthenticated) {
       return (
         <div className="app">
           <AdminLogin 
             onLogin={handleAdminLogin}
-            onBack={() => setIsAdmin(false)}
+            onBack={() => {
+              setIsAdmin(false)
+              if (typeof window !== 'undefined') {
+                localStorage.removeItem('admin_mode')
+              }
+            }}
           />
         </div>
       )
@@ -83,7 +98,12 @@ function App() {
       <div className="app">
         <AdminDashboard 
           onLogout={handleAdminLogout}
-          onBackToMain={() => setIsAdmin(false)}
+          onBackToMain={() => {
+            setIsAdmin(false)
+            if (typeof window !== 'undefined') {
+              localStorage.removeItem('admin_mode')
+            }
+          }}
         />
       </div>
     )
