@@ -2,6 +2,17 @@
 
 const API_BASE_URL = (import.meta.env?.VITE_API_BASE_URL as string) || 'http://localhost:3001'
 
+// Admin 모드 확인 (순환 참조 방지를 위해 직접 확인)
+function isAdminMode(): boolean {
+  if (typeof window === 'undefined') return false
+  try {
+    const adminAuth = localStorage.getItem('admin_auth')
+    return adminAuth === 'true'
+  } catch {
+    return false
+  }
+}
+
 // 토큰 저장/조회
 export function getToken(): string | null {
   return localStorage.getItem('auth_token')
@@ -48,7 +59,10 @@ async function apiRequest<T>(
       // 401 Unauthorized - 토큰 만료 또는 무효
       if (response.status === 401) {
         removeToken()
-        window.location.href = '/login'
+        // Admin 모드에서는 리다이렉트하지 않음 (서버 연결 실패 시에도 Admin 페이지 유지)
+        if (!isAdminMode()) {
+          window.location.href = '/login'
+        }
         throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.')
       }
 
