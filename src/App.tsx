@@ -34,14 +34,6 @@ function App() {
     // 프롬프트 가이드 스케줄러 초기화
     initializeScheduler()
   }, [])
-  
-  // isAdmin이 변경될 때마다 인증 상태도 확인
-  useEffect(() => {
-    if (isAdmin) {
-      const adminAuth = getAdminAuth()
-      setIsAdminAuthenticated(adminAuth)
-    }
-  }, [isAdmin])
 
   // isAdmin 상태 변경 시 localStorage에 저장 및 인증 상태 확인
   useEffect(() => {
