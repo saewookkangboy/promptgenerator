@@ -16,6 +16,14 @@ import './PromptGenerator.css'
 
 type EngineeringMethod = 'cot' | 'few-shot' | 'role-based' | 'zero-shot' | 'optimize'
 
+const ENGINEERING_METHODS: { value: EngineeringMethod; label: string; description: string }[] = [
+  { value: 'zero-shot', label: 'ZERO-SHOT', description: '예시 없이 바로 프롬프트 실행' },
+  { value: 'cot', label: 'COT', description: '단계별 사고 과정을 통해 답변 유도' },
+  { value: 'few-shot', label: 'FEW-SHOT', description: '몇 가지 예시를 제공하여 패턴 학습' },
+  { value: 'role-based', label: 'ROLE-BASED', description: '특정 역할을 부여하여 전문성 활용' },
+  { value: 'optimize', label: 'OPTIMIZE', description: '프롬프트를 최적화하여 품질 향상' },
+]
+
 const ENGINEERING_WIZARD_STEPS = [
   { id: 1, label: '방법 & 역할' },
   { id: 2, label: '입력 & 예시' },
@@ -77,14 +85,15 @@ function EngineeringPromptGenerator() {
       <div className="wizard-panel__header">
         <h4>엔지니어링 방법 선택</h4>
       </div>
-      <div className="wizard-toggle" style={{ gap: '8px', justifyContent: 'flex-start' }}>
-        {(['zero-shot', 'cot', 'few-shot', 'role-based', 'optimize'] as EngineeringMethod[]).map((option) => (
+      <div className="engineering-methods-container">
+        {ENGINEERING_METHODS.map((methodOption) => (
           <button
-            key={option}
-            className={`wizard-toggle-button ${method === option ? 'active' : ''}`}
-            onClick={() => setMethod(option)}
+            key={methodOption.value}
+            className={`engineering-method-button ${method === methodOption.value ? 'active' : ''}`}
+            onClick={() => setMethod(methodOption.value)}
           >
-            {option.toUpperCase()}
+            <span className="engineering-method-label">{methodOption.label}</span>
+            <span className="engineering-method-description">{methodOption.description}</span>
           </button>
         ))}
       </div>

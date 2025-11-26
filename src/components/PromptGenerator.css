@@ -22,7 +22,7 @@
 
 .form-group label {
   display: block;
-  margin-bottom: var(--spacing-sm);
+  margin-bottom: var(--spacing-md);
   font-weight: 500;
   color: #000000;
   font-size: var(--font-size-sm);
@@ -35,23 +35,23 @@
 /* 모바일에서 폼 그룹 최적화 */
 @media (max-width: 768px) {
   .form-group {
-    margin-bottom: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
   }
   
   .form-group label {
     font-size: var(--font-size-sm);
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
   }
 }
 
 @media (max-width: 480px) {
   .form-group {
-    margin-bottom: var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
   }
   
   .form-group label {
     font-size: var(--font-size-xs);
-    margin-bottom: var(--spacing-xs);
+    margin-bottom: var(--spacing-sm);
   }
 }
 
@@ -273,6 +273,94 @@
   border-color: #000;
   background: #000;
   color: #fff;
+}
+
+/* 엔지니어링 방법 선택 컨테이너 */
+.engineering-methods-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.engineering-method-button {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: var(--spacing-md) var(--spacing-lg);
+  border: 1px solid #d0d0d0;
+  background: #fff;
+  color: #000;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+  transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  line-height: var(--line-height-normal);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  text-align: left;
+  width: 100%;
+}
+
+.engineering-method-button:hover {
+  border-color: #000;
+  background: #fafafa;
+}
+
+.engineering-method-button.active {
+  border-color: #000;
+  background: #000;
+  color: #fff;
+}
+
+.engineering-method-label {
+  font-weight: 600;
+  font-size: var(--font-size-base);
+  margin-bottom: var(--spacing-xs);
+  display: block;
+}
+
+.engineering-method-description {
+  font-size: var(--font-size-xs);
+  color: #666;
+  line-height: var(--line-height-normal);
+  display: block;
+}
+
+.engineering-method-button.active .engineering-method-description {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* 모바일에서 엔지니어링 방법 선택 최적화 */
+@media (max-width: 768px) {
+  .engineering-methods-container {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-sm);
+  }
+  
+  .engineering-method-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+  
+  .engineering-method-label {
+    font-size: var(--font-size-sm);
+  }
+  
+  .engineering-method-description {
+    font-size: var(--font-size-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  .engineering-methods-container {
+    gap: var(--spacing-xs);
+  }
+  
+  .engineering-method-button {
+    padding: var(--spacing-sm) var(--spacing-md);
+    min-height: 60px;
+  }
 }
 
 .wizard-section {
