@@ -539,19 +539,128 @@ app.get('/api/guides/status', (req, res) => {
 // 프리미엄 기능 API 라우트
 try {
   // TypeScript로 컴파일된 JavaScript 파일 사용
-  const promptsRouter = require('./routes/routes/prompts')
-  const authRouter = require('./routes/routes/auth')
-  const usersRouter = require('./routes/routes/users')
-  const adminRouter = require('./routes/routes/admin')
+  // 먼저 routes/routes 경로를 시도하고, 없으면 routes 경로 사용
+  let promptsRouter, authRouter, usersRouter, adminRouter
   
-  app.use('/api/auth', authRouter.default || authRouter)
-  app.use('/api/users', usersRouter.default || usersRouter)
-  app.use('/api/prompts', promptsRouter.default || promptsRouter)
-  app.use('/api/admin', adminRouter.default || adminRouter)
+  try {
+    promptsRouter = require('./routes/routes/prompts')
+    authRouter = require('./routes/routes/auth')
+    usersRouter = require('./routes/routes/users')
+    adminRouter = require('./routes/routes/admin')
+  } catch (e) {
+    // routes/routes 경로에 없으면 routes 경로에서 로드
+    promptsRouter = require('./routes/prompts')
+    authRouter = require('./routes/auth')
+    usersRouter = require('./routes/users')
+    adminRouter = require('./routes/admin')
+  }
+  
+  // 라우터가 제대로 로드되었는지 확인
+  if (!adminRouter && !adminRouter?.default) {
+    throw new Error('Admin 라우터를 로드할 수 없습니다')
+  }
+  
+  const finalAdminRouter = adminRouter.default || adminRouter
+  const finalAuthRouter = authRouter.default || authRouter
+  const finalUsersRouter = usersRouter.default || usersRouter
+  const finalPromptsRouter = promptsRouter.default || promptsRouter
+  
+  // 라우터 등록 전에 라우트 확인
+  if (finalAdminRouter && finalAdminRouter.stack) {
+    const adminRoutes = finalAdminRouter.stack
+      .filter((layer) => layer.route)
+      .map((layer) => ({
+        path: layer.route.path,
+        methods: Object.keys(layer.route.methods),
+      }))
+    console.log('📋 Admin 라우터에 등록된 라우트:', adminRoutes.length, '개')
+    if (adminRoutes.length > 0) {
+      const routeExamples = adminRoutes.slice(0, 10).map((r) => {
+        const method = Array.isArray(r.methods) ? r.methods[0] : Object.keys(r.methods)[0]
+        return `${method.toUpperCase()} ${r.path}`
+      }).join(', ')
+      console.log('   예시:', routeExamples)
+    } else {
+      console.warn('⚠️  Admin 라우터에 등록된 라우트가 없습니다!')
+    }
+    
+    // 템플릿 라우트가 있는지 확인
+    const hasTemplatesRoute = adminRoutes.some((r) => r.path === '/templates')
+    if (hasTemplatesRoute) {
+      console.log('✅ 템플릿 라우트 확인됨: /templates')
+    } else {
+      console.error('❌ 템플릿 라우트가 없습니다!')
+      console.log('   등록된 라우트:', adminRoutes.map((r) => r.path).join(', '))
+    }
+  } else {
+    console.error('❌ Admin 라우터를 찾을 수 없거나 stack이 없습니다!')
+  }
+  
+  app.use('/api/auth', finalAuthRouter)
+  app.use('/api/users', finalUsersRouter)
+  app.use('/api/prompts', finalPromptsRouter)
+  app.use('/api/admin', finalAdminRouter)
+  
+  // 라우트 등록 확인용 엔드포인트 (개발/프로덕션 모두)
+  app.get('/api/debug/admin-routes', (req, res) => {
+    const routes = []
+    if (finalAdminRouter && finalAdminRouter.stack) {
+      finalAdminRouter.stack.forEach((layer) => {
+        if (layer.route) {
+          routes.push({
+            path: layer.route.path,
+            methods: Object.keys(layer.route.methods),
+          })
+        } else if (layer.name === 'router') {
+          // 중첩된 라우터
+          if (layer.regexp) {
+            routes.push({
+              path: '/api/admin/* (nested router)',
+              type: 'router',
+            })
+          }
+        }
+      })
+    }
+    res.json({ 
+      success: true,
+      routerLoaded: !!finalAdminRouter,
+      routesCount: routes.length,
+      routes: routes.slice(0, 20), // 최대 20개만 표시
+    })
+  })
+  
+  // 라우트 등록 확인용 디버그 엔드포인트 (개발 환경만)
+  if (process.env.NODE_ENV === 'development') {
+    app.get('/api/debug/routes', (req, res) => {
+      const routes = []
+      app._router.stack.forEach((middleware) => {
+        if (middleware.route) {
+          routes.push({
+            path: middleware.route.path,
+            methods: Object.keys(middleware.route.methods),
+          })
+        } else if (middleware.name === 'router') {
+          if (middleware.regexp.source.includes('admin')) {
+            routes.push({
+              path: '/api/admin/*',
+              type: 'router',
+            })
+          }
+        }
+      })
+      res.json({ routes })
+    })
+  }
   
   console.log('✅ 프리미엄 기능 API 라우트 로드됨')
+  console.log('   - /api/auth')
+  console.log('   - /api/users')
+  console.log('   - /api/prompts')
+  console.log('   - /api/admin (stats, users, prompts, templates, audit-logs)')
 } catch (error) {
-  console.warn('⚠️  프리미엄 기능 API 라우트 로드 실패 (데이터베이스 미설정 가능):', error.message)
+  console.error('❌ 프리미엄 기능 API 라우트 로드 실패:', error.message)
+  console.error('   스택:', error.stack)
   if (process.env.NODE_ENV === 'development') {
     console.error('상세 오류:', error)
   }

@@ -78,7 +78,7 @@ function serializeTemplate(template) {
 // 전체 통계 조회
 router.get('/stats', async (req, res) => {
     try {
-        const [totalUsers, activeUsers, totalPrompts, totalWorkspaces, tierDistribution, recentUsers,] = await Promise.all([
+        const [totalUsers, activeUsers, totalPrompts, totalWorkspaces, tierDistribution, recentUsers, categoryStats,] = await Promise.all([
             prisma_1.prisma.user.count(),
             prisma_1.prisma.user.count({
                 where: {
@@ -106,7 +106,29 @@ router.get('/stats', async (req, res) => {
                     createdAt: true,
                 },
             }),
+            // 카테고리별 프롬프트 통계
+            prisma_1.prisma.prompt.groupBy({
+                by: ['category'],
+                where: { deletedAt: null },
+                _count: {
+                    id: true,
+                },
+            }),
         ]);
+        // 카테고리별 통계 변환
+        const categoryCounts = {
+            text: 0,
+            image: 0,
+            video: 0,
+            engineering: 0,
+            total: totalPrompts,
+        };
+        categoryStats.forEach((stat) => {
+            const category = stat.category.toLowerCase();
+            if (category === 'text' || category === 'image' || category === 'video' || category === 'engineering') {
+                categoryCounts[category] = stat._count.id;
+            }
+        });
         await logAdminAction(req.user.id, 'VIEW_STATS', null, null, {}, req);
         res.json({
             overview: {
@@ -120,6 +142,9 @@ router.get('/stats', async (req, res) => {
                 count: t._count.id,
             })),
             recentUsers,
+            // 프론트엔드 호환성을 위한 통계
+            stats: categoryCounts,
+            visitCount: totalUsers, // 사용자 수를 방문 카운트로 사용 (실제 방문 카운트는 별도 구현 필요)
         });
     }
     catch (error) {

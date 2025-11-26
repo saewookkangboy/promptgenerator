@@ -8,14 +8,21 @@ async function main() {
   console.log('🌱 데이터베이스 시드 시작...')
 
   // Admin 사용자 생성
-  const adminPassword = await bcrypt.hash(process.env.ADMIN_PASSWORD || 'admin123', 10)
+  const adminEmail = process.env.ADMIN_EMAIL || 'chunghyo@troe.kr'
+  const adminPassword = process.env.ADMIN_PASSWORD || 'pch912712Q!'
+  const adminPasswordHash = await bcrypt.hash(adminPassword, 10)
   
   const admin = await prisma.user.upsert({
-    where: { email: process.env.ADMIN_EMAIL || 'admin@example.com' },
-    update: {},
+    where: { email: adminEmail },
+    update: {
+      passwordHash: adminPasswordHash,
+      tier: 'ENTERPRISE',
+      subscriptionStatus: 'ACTIVE',
+      subscriptionStartedAt: new Date(),
+    },
     create: {
-      email: process.env.ADMIN_EMAIL || 'admin@example.com',
-      passwordHash: adminPassword,
+      email: adminEmail,
+      passwordHash: adminPasswordHash,
       name: 'Admin User',
       tier: 'ENTERPRISE',
       subscriptionStatus: 'ACTIVE',
