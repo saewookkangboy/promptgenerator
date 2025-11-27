@@ -1,6 +1,6 @@
 User-agent: *
 Allow: /
-Sitemap: https://promptmaker.app/sitemap.xml
+Sitemap: https://allrounder.im/sitemap.xml
 
 # Disallow admin-only routes
 Disallow: /admin

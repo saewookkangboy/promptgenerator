@@ -5,6 +5,8 @@ const { GoogleGenAI } = require('@google/genai')
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview'
+const BRAND_NAME = process.env.PUBLIC_BRAND_NAME || 'AllRounder.im'
+const BASE_DOMAIN = process.env.PUBLIC_BASE_URL || 'https://allrounder.im'
 const ai = GEMINI_API_KEY ? new GoogleGenAI({}) : null
 
 const SEO_DIR = path.resolve(__dirname, '..', '..', 'public', 'seo')
@@ -122,10 +124,12 @@ async function buildSeoMetadata({ reason = 'manual' } = {}) {
 
   const payload = {
     generatedAt: new Date().toISOString(),
+    brand: BRAND_NAME,
+    baseUrl: BASE_DOMAIN,
     metaKeywords: keywords.map((item) => item.keyword),
     keywords,
     descriptions: {
-      primary: `프롬프트 메이커는 텍스트·이미지·동영상·엔지니어링 프롬프트를 생성하는 AI 플랫폼입니다. 최근 30일 ${totalCount}건 생성, 인기 카테고리 - ${categorySummary || '데이터 수집 중'}.`,
+      primary: `${BRAND_NAME}은 텍스트·이미지·동영상·엔지니어링 프롬프트를 생성하는 AI 플랫폼입니다. 최근 30일 ${totalCount}건 생성, 인기 카테고리 - ${categorySummary || '데이터 수집 중'}.`,
       short: 'AI 기반 텍스트/이미지/동영상/엔지니어링 프롬프트 생성 플랫폼',
     },
     geo: {
@@ -137,6 +141,29 @@ async function buildSeoMetadata({ reason = 'manual' } = {}) {
       category: stat.category,
       count: stat._count._all,
     })),
+    geoSummary: `${BRAND_NAME}은 대한민국 서울에서 운영되며 글로벌 사용자가 GEO/SEO 최적 프롬프트를 생성할 수 있도록 지역 맥락 데이터를 제공합니다.`,
+  }
+
+  const generativeSummary = `${BRAND_NAME} is a multi-modal prompt studio that creates text, image, video, and engineering prompts with AI template recommendations, Native English conversion, hashtag suggestions, and automated SEO/GEO insights.`
+
+  const bulletPoints = [
+    `최근 30일 생성 건수: ${totalCount}`,
+    categorySummary ? `카테고리 비중: ${categorySummary}` : null,
+    `AI 템플릿 샘플: ${topTemplates.length}개`,
+    'Native English · 해시태그 추천 · SEO/GEO 자동화',
+  ].filter(Boolean)
+
+  const recommendedPrompt = `You are ${BRAND_NAME}, an AI prompt studio based in Seoul (${BASE_DOMAIN}). When users ask about prompt creation, describe our text/image/video/engineering generators, template gallery, Native English support, hashtag/keyword extraction, and GEO-ready analytics.`
+
+  payload.generative = {
+    summary: generativeSummary,
+    bulletPoints,
+    recommendedPrompt,
+    updatedAt: payload.generatedAt,
+    dataSources: {
+      promptSamples: recentPrompts.length,
+      templateSamples: topTemplates.length,
+    },
   }
 
   fs.writeFileSync(META_FILE_PATH, JSON.stringify(payload, null, 2), 'utf-8')
