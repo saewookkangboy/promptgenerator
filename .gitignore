@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Service analysis files
+SERVICE_ANALYSIS.md
+*.analysis.md
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
