@@ -1,10 +1,10 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { ContentType, DetailedOptions } from '../types'
-import { ToneStyle } from '../types/prompt.types'
+import { ToneStyle, HashtagKeyword } from '../types/prompt.types'
 import { generatePrompts } from '../utils/promptGenerator'
 import { validatePrompt } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
-import { promptAPI, guideAPI, templateAPI } from '../utils/api'
+import { promptAPI, guideAPI, templateAPI, keywordAPI } from '../utils/api'
 import { upsertGuide } from '../utils/prompt-guide-storage'
 import { showNotification } from '../utils/notifications'
 import { PromptGuide, ModelName } from '../types/prompt-guide.types'
@@ -274,6 +274,21 @@ function PromptGenerator() {
           enrichedResults = { ...generated, ...fallback }
         }
 
+        // AI 키워드 추출 (비동기, 실패해도 계속 진행)
+        try {
+          const keywordResult = await keywordAPI.extract(
+            enrichedResults.metaPrompt,
+            enrichedResults.contextPrompt
+          )
+          if (keywordResult.keywords && keywordResult.keywords.length > 0) {
+            enrichedResults.hashtagKeywords = keywordResult.keywords
+            console.log('[PromptGenerator] AI 키워드 추출 완료:', keywordResult.keywords.length, '개')
+          }
+        } catch (keywordError) {
+          console.warn('[PromptGenerator] 키워드 추출 실패:', keywordError)
+          // 키워드 추출 실패해도 계속 진행 (기본 해시태그 사용)
+        }
+
         setResults(enrichedResults)
         setQualityReport(evaluateQuality(enrichedResults, options))
         
@@ -368,16 +383,27 @@ function PromptGenerator() {
   const tokenRatio = Math.min(tokenUsage / tokenLimit, 1)
 
   const handleCopyHashtags = useCallback(async () => {
-    if (!results?.hashtags?.length) return
+    let hashtagsText = ''
+    
+    if (results?.hashtagKeywords && results.hashtagKeywords.length > 0) {
+      // AI 추출 키워드 사용
+      hashtagsText = results.hashtagKeywords.map(k => `#${k.keyword}`).join(' ')
+    } else if (results?.hashtags?.length) {
+      // 기본 해시태그 사용
+      hashtagsText = results.hashtags.join(' ')
+    }
+    
+    if (!hashtagsText) return
+    
     try {
-      await navigator.clipboard.writeText(results.hashtags.join(' '))
+      await navigator.clipboard.writeText(hashtagsText)
       setHashtagsCopied(true)
       setTimeout(() => setHashtagsCopied(false), 2000)
     } catch (copyError) {
       console.error('Failed to copy hashtags', copyError)
       showNotification('해시태그 복사에 실패했습니다. 클립보드 권한을 확인해주세요.', 'error')
     }
-  }, [results?.hashtags])
+  }, [results?.hashtags, results?.hashtagKeywords])
 
   // 템플릿 선택 핸들러는 전역 이벤트로만 처리 (탭에서 선택)
 
@@ -928,11 +954,25 @@ function PromptGenerator() {
           <div className="hashtags-card">
             <h3>해시태그</h3>
             <div className="hashtags-container">
-              {results.hashtags.map((tag, index) => (
-                <span key={index} className="hashtag">
-                  {tag}
-                </span>
-              ))}
+              {results.hashtagKeywords && results.hashtagKeywords.length > 0 ? (
+                // AI 추출 키워드 표시 (중요도별 색상)
+                results.hashtagKeywords.map((keyword, index) => (
+                  <span
+                    key={index}
+                    className={`hashtag hashtag-${keyword.importance}`}
+                    title={`${keyword.keyword} (${keyword.pos}, 중요도: ${keyword.importance})`}
+                  >
+                    #{keyword.keyword}
+                  </span>
+                ))
+              ) : (
+                // 기본 해시태그 (레거시 호환성)
+                results.hashtags.map((tag, index) => (
+                  <span key={index} className="hashtag hashtag-low">
+                    {tag}
+                  </span>
+                ))
+              )}
             </div>
             <button
               onClick={handleCopyHashtags}

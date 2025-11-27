@@ -752,6 +752,26 @@ try {
   }
   
   // Analytics 이벤트 라우트
+  // 키워드 추출 API
+  app.post('/api/keywords/extract', async (req, res) => {
+    try {
+      const { metaPrompt, contextPrompt } = req.body
+      
+      if (!metaPrompt || !contextPrompt) {
+        res.status(400).json({ error: 'metaPrompt와 contextPrompt가 필요합니다' })
+        return
+      }
+
+      const { extractKeywordsFromPrompts } = require('./services/keywordExtractor')
+      const keywords = await extractKeywordsFromPrompts(metaPrompt, contextPrompt)
+      
+      res.json({ keywords })
+    } catch (error) {
+      console.error('키워드 추출 오류:', error)
+      res.status(500).json({ error: '키워드 추출에 실패했습니다' })
+    }
+  })
+
   app.post('/api/analytics/template-used', async (req, res) => {
     try {
       const { templateId, variables, qualityScore } = req.body

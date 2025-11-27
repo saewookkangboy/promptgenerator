@@ -36,10 +36,17 @@ export interface PromptTemplate {
   sections: PromptTemplateSection[]
 }
 
+export interface HashtagKeyword {
+  keyword: string
+  importance: 'high' | 'medium' | 'low' // 중요도: high(적색), medium(파란색), low(검정색)
+  pos: string // 품사: 명사, 동사, 형용사 등
+}
+
 export interface PromptResult {
   metaPrompt: string
   contextPrompt: string
-  hashtags: string[]
+  hashtags: string[] // 레거시 호환성 (기본 해시태그)
+  hashtagKeywords?: HashtagKeyword[] // AI 추출 키워드 (새로운 방식)
   fullPrompt?: string
   metaTemplate?: PromptTemplate
   contextTemplate?: PromptTemplate

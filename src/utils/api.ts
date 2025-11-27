@@ -420,6 +420,19 @@ export const templateAPI = {
   },
 }
 
+// 키워드 추출 API
+export const keywordAPI = {
+  extract: async (metaPrompt: string, contextPrompt: string) => {
+    return apiRequest<{ keywords: Array<{ keyword: string; importance: 'high' | 'medium' | 'low'; pos: string }> }>(
+      '/api/keywords/extract',
+      {
+        method: 'POST',
+        body: JSON.stringify({ metaPrompt, contextPrompt }),
+      }
+    )
+  },
+}
+
 // Admin API
 export const adminAPI = {
   getStats: async () => {

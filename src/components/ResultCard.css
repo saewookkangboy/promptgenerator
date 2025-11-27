@@ -253,6 +253,28 @@
   max-width: 100%;
 }
 
+/* 중요도별 해시태그 색상 */
+.hashtag-high {
+  background: #fee;
+  color: #c33;
+  border-color: #fcc;
+  font-weight: 600;
+}
+
+.hashtag-medium {
+  background: #e3f2fd;
+  color: #1976d2;
+  border-color: #bbdefb;
+  font-weight: 500;
+}
+
+.hashtag-low {
+  background: #f5f5f5;
+  color: #000000;
+  border-color: #e5e5e5;
+  font-weight: 400;
+}
+
 /* 모바일에서 해시태그 최적화 */
 @media (max-width: 768px) {
   .hashtags-container {
@@ -280,9 +302,26 @@
 }
 
 .hashtag:hover {
-  background: #000000;
-  color: #ffffff;
-  border-color: #000000;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.hashtag-high:hover {
+  background: #fcc;
+  color: #a00;
+  border-color: #f99;
+}
+
+.hashtag-medium:hover {
+  background: #bbdefb;
+  color: #1565c0;
+  border-color: #90caf9;
+}
+
+.hashtag-low:hover {
+  background: #e0e0e0;
+  color: #000000;
+  border-color: #bdbdbd;
 }
 
 .hashtags-card .copy-button {
