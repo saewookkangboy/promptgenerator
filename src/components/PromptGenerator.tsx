@@ -382,17 +382,32 @@ function PromptGenerator() {
   // 템플릿 선택 핸들러는 전역 이벤트로만 처리 (탭에서 선택)
 
   const handleTemplateApply = useCallback(async (variables: Record<string, string>) => {
-    if (!selectedTemplate) return
+    if (!selectedTemplate) {
+      console.error('[PromptGenerator] 템플릿이 선택되지 않았습니다')
+      return
+    }
+
+    console.log('[PromptGenerator] 템플릿 적용 시작:', {
+      templateId: selectedTemplate.id,
+      templateName: selectedTemplate.name,
+      variables: Object.keys(variables)
+    })
 
     try {
       // 템플릿 적용
       const result = await templateAPI.apply(selectedTemplate.id, variables)
       
+      console.log('[PromptGenerator] 템플릿 적용 성공:', {
+        promptLength: result.prompt?.length || 0,
+        promptPreview: result.prompt?.substring(0, 100)
+      })
+      
       // 사용자 프롬프트에 자동 채우기
-      setUserPrompt(result.prompt)
+      setUserPrompt(result.prompt || '')
       
       // 고급 모드로 전환
       setUseWizardMode(false)
+      console.log('[PromptGenerator] 고급 모드로 전환됨')
       
       // 변수 입력 폼 닫기
       setShowVariableForm(false)
@@ -402,22 +417,30 @@ function PromptGenerator() {
       try {
         await templateAPI.recordUsage(selectedTemplate.id, { variables })
       } catch (err) {
-        console.warn('템플릿 사용 기록 실패:', err)
+        console.warn('[PromptGenerator] 템플릿 사용 기록 실패:', err)
       }
 
       showNotification('템플릿이 적용되었습니다. 프롬프트를 확인하고 필요시 수정한 후 생성 버튼을 눌러주세요.', 'success')
       
-      // 프롬프트 입력 필드로 스크롤
+      // 프롬프트 입력 필드로 스크롤 (고급 모드로 전환된 후)
       setTimeout(() => {
         const promptInput = document.getElementById('user-prompt')
         if (promptInput) {
+          console.log('[PromptGenerator] 프롬프트 입력 필드로 스크롤')
           promptInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
           promptInput.focus()
+        } else {
+          console.warn('[PromptGenerator] user-prompt 필드를 찾을 수 없습니다')
         }
-      }, 300)
+      }, 500)
     } catch (error: any) {
-      console.error('템플릿 적용 실패:', error)
-      showNotification('템플릿 적용에 실패했습니다.', 'error')
+      console.error('[PromptGenerator] 템플릿 적용 실패:', error)
+      console.error('[PromptGenerator] 에러 상세:', {
+        message: error?.message,
+        stack: error?.stack,
+        response: error?.response
+      })
+      showNotification(error?.message || '템플릿 적용에 실패했습니다.', 'error')
     }
   }, [selectedTemplate])
 
@@ -426,10 +449,19 @@ function PromptGenerator() {
     const handleTemplateSelected = (event: CustomEvent) => {
       const { template, category, targetTab } = event.detail
       
+      console.log('[PromptGenerator] 템플릿 선택 이벤트 수신:', {
+        templateName: template?.name,
+        category,
+        targetTab
+      })
+      
       // 텍스트 카테고리 템플릿만 처리 (현재 컴포넌트는 텍스트용)
       if (targetTab === 'text' && category === 'text') {
+        console.log('[PromptGenerator] 템플릿 적용 시작 - 변수 입력 폼 표시')
         setSelectedTemplate(template)
         setShowVariableForm(true)
+      } else {
+        console.log('[PromptGenerator] 템플릿 무시됨 (다른 카테고리):', { targetTab, category })
       }
     }
 

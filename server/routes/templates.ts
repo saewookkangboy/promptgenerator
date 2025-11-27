@@ -121,10 +121,13 @@ router.get('/:id', async (req, res: Response) => {
   }
 })
 
-// 템플릿 적용 (변수 치환)
-router.post('/:id/apply', authenticateToken, async (req: AuthRequest, res: Response) => {
+// 템플릿 적용 (변수 치환) - 공개 템플릿은 인증 불필요
+router.post('/:id/apply', async (req, res: Response) => {
   try {
     const { variables } = req.body
+    
+    console.log('[Templates API] 템플릿 적용 요청:', { id: req.params.id, variables: Object.keys(variables || {}) })
+    
     const template = await prisma.template.findFirst({
       where: {
         id: req.params.id,
@@ -133,18 +136,33 @@ router.post('/:id/apply', authenticateToken, async (req: AuthRequest, res: Respo
     })
 
     if (!template) {
+      console.error('[Templates API] 템플릿을 찾을 수 없음:', req.params.id)
       res.status(404).json({ error: '템플릿을 찾을 수 없습니다' })
       return
     }
 
-    // 티어 확인
+    // 프리미엄 템플릿인 경우 인증 확인
     if (template.isPremium && template.tierRequired !== 'FREE') {
-      const user = await prisma.user.findUnique({
-        where: { id: req.user!.id },
-      })
+      // 인증 토큰 확인
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      if (!token) {
+        res.status(401).json({ error: '프리미엄 템플릿은 로그인이 필요합니다' })
+        return
+      }
       
-      if (!user || user.tier === 'FREE') {
-        res.status(403).json({ error: '프리미엄 템플릿은 구독이 필요합니다' })
+      try {
+        const jwt = require('jsonwebtoken')
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
+        const user = await prisma.user.findUnique({
+          where: { id: decoded.id },
+        })
+      
+        if (!user || user.tier === 'FREE') {
+          res.status(403).json({ error: '프리미엄 템플릿은 구독이 필요합니다' })
+          return
+        }
+      } catch (jwtError) {
+        res.status(401).json({ error: '인증 토큰이 유효하지 않습니다' })
         return
       }
     }
@@ -162,12 +180,14 @@ router.post('/:id/apply', authenticateToken, async (req: AuthRequest, res: Respo
 
     templateContent.sections.forEach((section: any) => {
       let sectionContent = section.content
-      Object.entries(variables).forEach(([key, value]) => {
+      Object.entries(variables || {}).forEach(([key, value]) => {
         const regex = new RegExp(`\\{\\{${key}\\}\\}`, 'g')
         sectionContent = sectionContent.replace(regex, value as string)
       })
       prompt += `\n\n## ${section.title}\n${sectionContent}`
     })
+
+    console.log('[Templates API] 템플릿 적용 성공:', { templateId: template.id, promptLength: prompt.length })
 
     // 사용 통계 업데이트
     await prisma.template.update({
@@ -177,18 +197,33 @@ router.post('/:id/apply', authenticateToken, async (req: AuthRequest, res: Respo
       },
     })
 
-    // Analytics 이벤트 기록
-    await prisma.analytics.create({
-      data: {
-        userId: req.user!.id,
-        eventType: 'TEMPLATE_USED',
-        eventData: {
-          templateId: template.id,
-          templateName: template.name,
-          variables,
-        },
-      },
-    })
+    // Analytics 이벤트 기록 (인증된 사용자인 경우만)
+    try {
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      if (token) {
+        const jwt = require('jsonwebtoken')
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
+          await prisma.analytics.create({
+            data: {
+              userId: decoded.id,
+              eventType: 'TEMPLATE_USED',
+              eventData: {
+                templateId: template.id,
+                templateName: template.name,
+                variables,
+              },
+            },
+          })
+        } catch (jwtError) {
+          // 인증 실패해도 템플릿 적용은 계속 진행
+          console.warn('[Templates API] Analytics 기록 실패 (인증 오류):', jwtError)
+        }
+      }
+    } catch (analyticsError) {
+      // Analytics 기록 실패해도 템플릿 적용은 계속 진행
+      console.warn('[Templates API] Analytics 기록 실패:', analyticsError)
+    }
 
     res.json({ prompt })
   } catch (error: any) {
