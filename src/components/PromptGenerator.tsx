@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo, useEffect } from 'react'
 import { ContentType, DetailedOptions } from '../types'
-import { ToneStyle, HashtagKeyword } from '../types/prompt.types'
+import { ToneStyle } from '../types/prompt.types'
 import { generatePrompts } from '../utils/promptGenerator'
 import { validatePrompt } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
