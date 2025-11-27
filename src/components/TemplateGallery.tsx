@@ -19,12 +19,12 @@ interface Template {
 }
 
 interface TemplateGalleryProps {
-  onSelect?: (template: Template) => void // 선택적 (레거시 호환성)
+  onSelect?: (template: Template) => void // 선택적 (레거시 호환성, 현재 사용하지 않음)
   onClose?: () => void
   showCloseButton?: boolean
 }
 
-export default function TemplateGallery({ onSelect, onClose, showCloseButton = false }: TemplateGalleryProps) {
+export default function TemplateGallery({ onSelect: _onSelect, onClose, showCloseButton = false }: TemplateGalleryProps) {
   const [templates, setTemplates] = useState<Template[]>([])
   const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
