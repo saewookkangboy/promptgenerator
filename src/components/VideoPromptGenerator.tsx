@@ -1,6 +1,8 @@
 // 동영상 프롬프트 생성 UI 컴포넌트
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { templateAPI } from '../utils/api'
+import TemplateVariableForm from './TemplateVariableForm'
 import { VideoPromptOptions, VideoModel, VideoScene, CameraSettings, MotionSettings, VideoStyle, VideoTechnicalSettings } from '../types/video.types'
 import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
@@ -169,6 +171,10 @@ function VideoPromptGenerator() {
   const [wizardStep, setWizardStep] = useState(1)
   const wizardSteps = VIDEO_WIZARD_STEPS
   const wizardStepCount = wizardSteps.length
+  
+  // 템플릿 관련 상태
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+  const [showVariableForm, setShowVariableForm] = useState(false)
 
   const canProceedToNext = () => {
     if (wizardStep === 1) {
@@ -199,6 +205,80 @@ function VideoPromptGenerator() {
     setUseWizardMode(mode)
     setWizardStep(1)
   }
+
+  // 템플릿 적용 핸들러
+  const handleTemplateApply = useCallback(async (variables: Record<string, string>) => {
+    if (!selectedTemplate) return
+
+    try {
+      // 템플릿 적용
+      const result = await templateAPI.apply(selectedTemplate.id, variables)
+      
+      // 첫 번째 장면의 description에 자동 채우기
+      if (scenes.length > 0) {
+        const updatedScenes = [...scenes]
+        updatedScenes[0] = {
+          ...updatedScenes[0],
+          description: result.prompt
+        }
+        setScenes(updatedScenes)
+      } else {
+        // 장면이 없으면 새로 생성
+        setScenes([{
+          id: '1',
+          order: 1,
+          description: result.prompt,
+          duration: 5,
+          camera: {
+            movement: 'static',
+            shotType: 'medium',
+            angle: 'eye-level',
+          },
+          motion: {
+            speed: 'normal',
+            type: 'smooth',
+          },
+        }])
+      }
+      
+      // 고급 모드로 전환
+      setUseWizardMode(false)
+      
+      // 변수 입력 폼 닫기
+      setShowVariableForm(false)
+      setSelectedTemplate(null)
+      
+      // Analytics 기록
+      try {
+        await templateAPI.recordUsage(selectedTemplate.id, { variables })
+      } catch (err) {
+        console.warn('템플릿 사용 기록 실패:', err)
+      }
+
+      showNotification('템플릿이 적용되었습니다. 장면을 확인하고 필요시 수정한 후 생성 버튼을 눌러주세요.', 'success')
+    } catch (error: any) {
+      console.error('템플릿 적용 실패:', error)
+      showNotification('템플릿 적용에 실패했습니다.', 'error')
+    }
+  }, [selectedTemplate, scenes])
+
+  // 전역 이벤트로 템플릿 선택 처리 (탭에서 선택한 경우)
+  useEffect(() => {
+    const handleTemplateSelected = (event: CustomEvent) => {
+      const { template, category, targetTab } = event.detail
+      
+      // 비디오 카테고리 템플릿만 처리
+      if (targetTab === 'video' && category === 'video') {
+        setSelectedTemplate(template)
+        setShowVariableForm(true)
+      }
+    }
+
+    window.addEventListener('template-selected', handleTemplateSelected as EventListener)
+    return () => {
+      window.removeEventListener('template-selected', handleTemplateSelected as EventListener)
+    }
+  }, [])
 
   const renderWizardOverview = () => (
     <div className="wizard-panel">
@@ -656,6 +736,16 @@ function VideoPromptGenerator() {
 
   return (
     <div className="prompt-generator">
+      {showVariableForm && selectedTemplate && (
+        <TemplateVariableForm
+          template={selectedTemplate}
+          onSubmit={handleTemplateApply}
+          onCancel={() => {
+            setShowVariableForm(false)
+            setSelectedTemplate(null)
+          }}
+        />
+      )}
       <div className="wizard-toggle">
         <div style={{ display: 'flex', gap: '8px' }}>
           <button

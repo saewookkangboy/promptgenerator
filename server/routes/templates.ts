@@ -29,6 +29,13 @@ router.get('/public', async (req, res: Response) => {
 
     const skip = (parseInt(page as string) - 1) * parseInt(limit as string)
 
+    // 전체 템플릿 수 확인 (디버깅용)
+    const allTemplatesCount = await prisma.template.count({})
+    const publicTemplatesCount = await prisma.template.count({ where: { isPublic: true } })
+    console.log('[Templates API] 전체 템플릿 수:', allTemplatesCount)
+    console.log('[Templates API] 공개 템플릿 수:', publicTemplatesCount)
+    console.log('[Templates API] 쿼리 조건:', JSON.stringify(where, null, 2))
+
     const [templates, total] = await Promise.all([
       prisma.template.findMany({
         where,
@@ -58,6 +65,14 @@ router.get('/public', async (req, res: Response) => {
     ])
 
     console.log('[Templates API] 조회된 템플릿 수:', templates.length, '/ 총:', total)
+    if (templates.length > 0) {
+      console.log('[Templates API] 첫 번째 템플릿 샘플:', {
+        id: templates[0].id,
+        name: templates[0].name,
+        category: templates[0].category,
+        isPublic: '확인됨 (where 조건)'
+      })
+    }
 
     // Top 5 표시를 위한 플래그 추가
     const templatesWithFlags = templates.map(t => ({

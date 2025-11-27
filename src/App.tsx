@@ -197,10 +197,25 @@ function App() {
         {activeTab === 'templates' && (
           <TemplateGalleryWrapper 
             onTemplateSelect={(template) => {
-              // 템플릿 선택 시 텍스트 탭으로 이동하고 템플릿 적용
-              setActiveTab('text')
-              // PromptGenerator에 템플릿 전달은 전역 상태나 이벤트로 처리
-              window.dispatchEvent(new CustomEvent('template-selected', { detail: template }))
+              // 템플릿 카테고리에 맞는 탭으로 이동
+              const categoryToTab: Record<string, TabType> = {
+                'text': 'text',
+                'image': 'image',
+                'video': 'video',
+                'engineering': 'engineering',
+              }
+              
+              const targetTab = categoryToTab[template.category] || 'text'
+              setActiveTab(targetTab)
+              
+              // 해당 Generator에 템플릿 전달
+              window.dispatchEvent(new CustomEvent('template-selected', { 
+                detail: {
+                  template,
+                  category: template.category,
+                  targetTab
+                }
+              }))
             }} 
           />
         )}

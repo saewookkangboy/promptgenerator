@@ -29,6 +29,7 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     loadTemplates()
@@ -41,20 +42,39 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
   const loadTemplates = async () => {
     try {
       console.log('[TemplateGallery] 템플릿 로드 시작...')
+      console.log('[TemplateGallery] API_BASE_URL:', (window as any).API_BASE_URL || '확인 필요')
+      
       const data = await templateAPI.getPublic({
         page: 1,
         limit: 100
       })
-      console.log('[TemplateGallery] 템플릿 데이터 수신:', data)
       
-      if (!data || !data.templates) {
-        console.warn('[TemplateGallery] 템플릿 데이터가 없습니다:', data)
+      console.log('[TemplateGallery] 템플릿 데이터 수신:', data)
+      console.log('[TemplateGallery] 템플릿 배열:', data?.templates)
+      console.log('[TemplateGallery] 템플릿 개수:', data?.templates?.length || 0)
+      
+      if (!data) {
+        console.error('[TemplateGallery] 데이터가 null 또는 undefined입니다')
+        setTemplates([])
+        setLoading(false)
+        return
+      }
+      
+      if (!data.templates) {
+        console.warn('[TemplateGallery] templates 속성이 없습니다. 전체 데이터:', data)
         setTemplates([])
         setLoading(false)
         return
       }
 
-      const templatesWithContent = (data.templates || []).map((t: any) => {
+      if (!Array.isArray(data.templates)) {
+        console.error('[TemplateGallery] templates가 배열이 아닙니다:', typeof data.templates, data.templates)
+        setTemplates([])
+        setLoading(false)
+        return
+      }
+
+      const templatesWithContent = data.templates.map((t: any) => {
         try {
           return {
             ...t,
@@ -70,13 +90,20 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
       
       console.log('[TemplateGallery] 처리된 템플릿 수:', templatesWithContent.length)
       setTemplates(templatesWithContent)
+      setError(null)
     } catch (error: any) {
       console.error('[TemplateGallery] 템플릿 로드 실패:', error)
-      console.error('[TemplateGallery] 에러 상세:', {
-        message: error.message,
-        stack: error.stack,
-        response: error.response
-      })
+      console.error('[TemplateGallery] 에러 타입:', typeof error)
+      console.error('[TemplateGallery] 에러 메시지:', error?.message)
+      console.error('[TemplateGallery] 에러 스택:', error?.stack)
+      
+      // 네트워크 에러인 경우
+      if (error?.message?.includes('fetch') || error?.message?.includes('network') || error?.message?.includes('서버에 연결')) {
+        setError('서버에 연결할 수 없습니다. 서버가 실행 중인지 확인해주세요.')
+      } else {
+        setError(error?.message || '템플릿을 불러오는데 실패했습니다.')
+      }
+      
       setTemplates([])
     } finally {
       setLoading(false)
@@ -129,8 +156,8 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
     )
   }
 
-  // 에러 상태 표시
-  if (templates.length === 0 && !loading) {
+  // 에러 상태 표시 (에러가 있고 템플릿이 없을 때)
+  if (error && templates.length === 0 && !loading) {
     return (
       <div className="template-gallery">
         {showCloseButton && onClose && (
@@ -143,12 +170,30 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
           <p>원하는 템플릿을 선택하여 빠르게 프롬프트를 생성하세요</p>
         </div>
         <div className="template-gallery-empty" style={{ padding: '40px', textAlign: 'center' }}>
-          <p style={{ fontSize: '16px', marginBottom: '8px' }}>템플릿이 없습니다</p>
-          <p style={{ fontSize: '14px', color: '#666' }}>
-            템플릿을 생성하거나 데이터베이스를 확인해주세요.
+          <p style={{ fontSize: '16px', marginBottom: '8px', color: '#c33' }}>템플릿을 불러올 수 없습니다</p>
+          <p style={{ fontSize: '14px', color: '#666', marginBottom: '16px' }}>
+            {error}
           </p>
+          <button 
+            onClick={() => {
+              setError(null)
+              setLoading(true)
+              loadTemplates()
+            }}
+            style={{
+              padding: '8px 16px',
+              background: '#000',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              fontSize: '14px'
+            }}
+          >
+            다시 시도
+          </button>
           <p style={{ fontSize: '12px', color: '#999', marginTop: '16px' }}>
-            콘솔을 확인하여 자세한 오류 정보를 확인할 수 있습니다.
+            브라우저 콘솔(F12)에서 자세한 로그를 확인할 수 있습니다.
           </p>
         </div>
       </div>

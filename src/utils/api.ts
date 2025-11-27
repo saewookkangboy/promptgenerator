@@ -108,14 +108,22 @@ async function apiRequest<T>(
       throw new Error(error.error || `HTTP ${response.status}`)
     }
 
-    return response.json()
+    const jsonData = await response.json()
+    console.log(`[API Response] 응답 데이터:`, jsonData)
+    return jsonData
   } catch (error: any) {
     // 네트워크 오류 처리
     if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
       console.error('[API Error] 네트워크 오류:', error)
+      console.error('[API Error] 시도한 URL:', `${API_BASE_URL}${normalizedEndpoint}`)
       throw new Error(`서버에 연결할 수 없습니다. API 서버(${API_BASE_URL})가 실행 중인지 확인해주세요.`)
     }
     console.error('[API Error] 기타 오류:', error)
+    console.error('[API Error] 에러 상세:', {
+      name: error?.name,
+      message: error?.message,
+      stack: error?.stack
+    })
     throw error
   }
 }
@@ -330,9 +338,20 @@ export const templateAPI = {
         }
       })
     }
-    return apiRequest<{ templates: any[]; pagination: any }>(
-      `/api/templates/public?${queryParams.toString()}`
-    )
+    
+    const url = `/api/templates/public${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    console.log('[templateAPI] 요청 URL:', url)
+    console.log('[templateAPI] API_BASE_URL:', API_BASE_URL)
+    console.log('[templateAPI] 전체 URL:', `${API_BASE_URL}${url}`)
+    
+    try {
+      const result = await apiRequest<{ templates: any[]; pagination: any }>(url)
+      console.log('[templateAPI] 응답 성공:', result)
+      return result
+    } catch (error: any) {
+      console.error('[templateAPI] 요청 실패:', error)
+      throw error
+    }
   },
 
   get: async (id: string) => {

@@ -1,6 +1,8 @@
 // 이미지 프롬프트 생성 UI 컴포넌트
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { templateAPI } from '../utils/api'
+import TemplateVariableForm from './TemplateVariableForm'
 import { ImagePromptOptions, ImageModel, ImageStyle, Composition, Lighting, ColorPalette, TechnicalSettings } from '../types/image.types'
 import { PromptResult } from '../types/prompt.types'
 import { PromptGeneratorFactory } from '../generators/factory/PromptGeneratorFactory'
@@ -125,6 +127,10 @@ function ImagePromptGenerator() {
   const [modelSpecific, setModelSpecific] = useState<any>({})
   const [useWizardMode, setUseWizardMode] = useState(true)
   const [wizardStep, setWizardStep] = useState(1)
+  
+  // 템플릿 관련 상태
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+  const [showVariableForm, setShowVariableForm] = useState(false)
 
   const wizardSteps = IMAGE_WIZARD_STEPS
   const wizardStepCount = wizardSteps.length
@@ -155,6 +161,65 @@ function ImagePromptGenerator() {
     setUseWizardMode(mode)
     setWizardStep(1)
   }
+
+  // 템플릿 적용 핸들러
+  const handleTemplateApply = useCallback(async (variables: Record<string, string>) => {
+    if (!selectedTemplate) return
+
+    try {
+      // 템플릿 적용
+      const result = await templateAPI.apply(selectedTemplate.id, variables)
+      
+      // 주제 필드에 자동 채우기
+      setSubject(result.prompt)
+      
+      // 고급 모드로 전환
+      setUseWizardMode(false)
+      
+      // 변수 입력 폼 닫기
+      setShowVariableForm(false)
+      setSelectedTemplate(null)
+      
+      // Analytics 기록
+      try {
+        await templateAPI.recordUsage(selectedTemplate.id, { variables })
+      } catch (err) {
+        console.warn('템플릿 사용 기록 실패:', err)
+      }
+
+      showNotification('템플릿이 적용되었습니다. 주제를 확인하고 필요시 수정한 후 생성 버튼을 눌러주세요.', 'success')
+      
+      // 주제 입력 필드로 스크롤
+      setTimeout(() => {
+        const subjectInput = document.getElementById('subject')
+        if (subjectInput) {
+          subjectInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          subjectInput.focus()
+        }
+      }, 300)
+    } catch (error: any) {
+      console.error('템플릿 적용 실패:', error)
+      showNotification('템플릿 적용에 실패했습니다.', 'error')
+    }
+  }, [selectedTemplate])
+
+  // 전역 이벤트로 템플릿 선택 처리 (탭에서 선택한 경우)
+  useEffect(() => {
+    const handleTemplateSelected = (event: CustomEvent) => {
+      const { template, category, targetTab } = event.detail
+      
+      // 이미지 카테고리 템플릿만 처리
+      if (targetTab === 'image' && category === 'image') {
+        setSelectedTemplate(template)
+        setShowVariableForm(true)
+      }
+    }
+
+    window.addEventListener('template-selected', handleTemplateSelected as EventListener)
+    return () => {
+      window.removeEventListener('template-selected', handleTemplateSelected as EventListener)
+    }
+  }, [])
 
   const renderModelSelector = () => (
     <div className="form-group">
@@ -783,6 +848,16 @@ function ImagePromptGenerator() {
 
   return (
     <div className="prompt-generator">
+      {showVariableForm && selectedTemplate && (
+        <TemplateVariableForm
+          template={selectedTemplate}
+          onSubmit={handleTemplateApply}
+          onCancel={() => {
+            setShowVariableForm(false)
+            setSelectedTemplate(null)
+          }}
+        />
+      )}
       <div className="wizard-toggle">
         <div style={{ display: 'flex', gap: '8px' }}>
           <button

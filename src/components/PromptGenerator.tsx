@@ -390,6 +390,11 @@ function PromptGenerator() {
       
       // 사용자 프롬프트에 자동 채우기
       setUserPrompt(result.prompt)
+      
+      // 고급 모드로 전환
+      setUseWizardMode(false)
+      
+      // 변수 입력 폼 닫기
       setShowVariableForm(false)
       setSelectedTemplate(null)
       
@@ -400,7 +405,16 @@ function PromptGenerator() {
         console.warn('템플릿 사용 기록 실패:', err)
       }
 
-      showNotification('템플릿이 적용되었습니다. 프롬프트를 확인하고 생성 버튼을 눌러주세요.', 'success')
+      showNotification('템플릿이 적용되었습니다. 프롬프트를 확인하고 필요시 수정한 후 생성 버튼을 눌러주세요.', 'success')
+      
+      // 프롬프트 입력 필드로 스크롤
+      setTimeout(() => {
+        const promptInput = document.getElementById('user-prompt')
+        if (promptInput) {
+          promptInput.scrollIntoView({ behavior: 'smooth', block: 'center' })
+          promptInput.focus()
+        }
+      }, 300)
     } catch (error: any) {
       console.error('템플릿 적용 실패:', error)
       showNotification('템플릿 적용에 실패했습니다.', 'error')
@@ -410,9 +424,13 @@ function PromptGenerator() {
   // 전역 이벤트로 템플릿 선택 처리 (탭에서 선택한 경우)
   useEffect(() => {
     const handleTemplateSelected = (event: CustomEvent) => {
-      const template = event.detail
-      setSelectedTemplate(template)
-      setShowVariableForm(true)
+      const { template, category, targetTab } = event.detail
+      
+      // 텍스트 카테고리 템플릿만 처리 (현재 컴포넌트는 텍스트용)
+      if (targetTab === 'text' && category === 'text') {
+        setSelectedTemplate(template)
+        setShowVariableForm(true)
+      }
     }
 
     window.addEventListener('template-selected', handleTemplateSelected as EventListener)
