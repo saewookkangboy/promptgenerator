@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { templateAPI } from '../utils/api'
 import { PromptTemplate } from '../types/prompt.types'
+import TemplatePreviewModal from './TemplatePreviewModal'
 import './TemplateGallery.css'
 
 interface Template {
@@ -18,7 +19,7 @@ interface Template {
 }
 
 interface TemplateGalleryProps {
-  onSelect: (template: Template) => void
+  onSelect?: (template: Template) => void // 선택적 (레거시 호환성)
   onClose?: () => void
   showCloseButton?: boolean
 }
@@ -30,6 +31,7 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
   const [searchQuery, setSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
 
   useEffect(() => {
     loadTemplates()
@@ -264,10 +266,17 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
           <TemplateCard
             key={template.id}
             template={template}
-            onClick={() => onSelect(template)}
+            onClick={() => setSelectedTemplate(template)}
           />
         ))}
       </div>
+
+      {selectedTemplate && (
+        <TemplatePreviewModal
+          template={selectedTemplate}
+          onClose={() => setSelectedTemplate(null)}
+        />
+      )}
 
       {filteredTemplates.length === 0 && (
         <div className="template-gallery-empty">

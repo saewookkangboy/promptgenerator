@@ -752,23 +752,49 @@ try {
   }
   
   // Analytics 이벤트 라우트
-  app.post('/api/analytics/template-used', authenticateToken, async (req, res) => {
+  app.post('/api/analytics/template-used', async (req, res) => {
     try {
       const { templateId, variables, qualityScore } = req.body
       const { prisma } = require('./db/prisma')
       
-      await prisma.analytics.create({
-        data: {
-          userId: req.user.id,
-          eventType: 'TEMPLATE_USED',
-          eventData: {
-            templateId,
-            variables,
-            qualityScore,
-            timestamp: new Date().toISOString(),
+      // 템플릿 사용 카운트 증가
+      if (templateId) {
+        await prisma.template.update({
+          where: { id: templateId },
+          data: {
+            usageCount: { increment: 1 },
           },
-        },
-      })
+        })
+        console.log('[Analytics] 템플릿 사용 카운트 증가:', templateId)
+      }
+      
+      // 인증된 사용자인 경우 Analytics 이벤트 기록
+      const token = req.headers.authorization?.replace('Bearer ', '')
+      if (token) {
+        try {
+          const jwt = require('jsonwebtoken')
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
+          
+          await prisma.analytics.create({
+            data: {
+              userId: decoded.id,
+              eventType: 'TEMPLATE_USED',
+              eventData: {
+                templateId,
+                variables,
+                qualityScore,
+                timestamp: new Date().toISOString(),
+              },
+            },
+          })
+          console.log('[Analytics] 사용자 이벤트 기록 완료:', decoded.id)
+        } catch (jwtError) {
+          // 인증 실패해도 사용 카운트는 증가됨
+          console.warn('[Analytics] 인증 실패 (사용 카운트는 증가됨):', jwtError.message)
+        }
+      } else {
+        console.log('[Analytics] 비인증 사용자 - 사용 카운트만 증가')
+      }
       
       res.json({ success: true })
     } catch (error) {

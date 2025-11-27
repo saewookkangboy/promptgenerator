@@ -195,29 +195,7 @@ function App() {
         {activeTab === 'video' && <VideoPromptGenerator />}
         {activeTab === 'engineering' && <EngineeringPromptGenerator />}
         {activeTab === 'templates' && (
-          <TemplateGalleryWrapper 
-            onTemplateSelect={(template) => {
-              // 템플릿 카테고리에 맞는 탭으로 이동
-              const categoryToTab: Record<string, TabType> = {
-                'text': 'text',
-                'image': 'image',
-                'video': 'video',
-                'engineering': 'engineering',
-              }
-              
-              const targetTab = categoryToTab[template.category] || 'text'
-              setActiveTab(targetTab)
-              
-              // 해당 Generator에 템플릿 전달
-              window.dispatchEvent(new CustomEvent('template-selected', { 
-                detail: {
-                  template,
-                  category: template.category,
-                  targetTab
-                }
-              }))
-            }} 
-          />
+          <TemplateGalleryWrapper />
         )}
       </div>
 
@@ -255,10 +233,10 @@ function App() {
 }
 
 // 템플릿 갤러리 래퍼 컴포넌트
-function TemplateGalleryWrapper({ onTemplateSelect }: { onTemplateSelect: (template: any) => void }) {
+function TemplateGalleryWrapper() {
   return (
     <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
-      <TemplateGallery onSelect={onTemplateSelect} />
+      <TemplateGallery />
     </div>
   )
 }

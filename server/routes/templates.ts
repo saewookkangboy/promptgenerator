@@ -189,13 +189,8 @@ router.post('/:id/apply', async (req, res: Response) => {
 
     console.log('[Templates API] 템플릿 적용 성공:', { templateId: template.id, promptLength: prompt.length })
 
-    // 사용 통계 업데이트
-    await prisma.template.update({
-      where: { id: template.id },
-      data: {
-        usageCount: { increment: 1 },
-      },
-    })
+    // 사용 통계는 복사 시에만 업데이트 (recordUsage API에서 처리)
+    // 템플릿 적용 시에는 업데이트하지 않음
 
     // Analytics 이벤트 기록 (인증된 사용자인 경우만)
     try {
