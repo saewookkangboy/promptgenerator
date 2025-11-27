@@ -413,6 +413,20 @@ function PromptGenerator() {
     }
   }, [selectedTemplate])
 
+  // 전역 이벤트로 템플릿 선택 처리 (탭에서 선택한 경우)
+  useEffect(() => {
+    const handleTemplateSelected = (event: CustomEvent) => {
+      const template = event.detail
+      setSelectedTemplate(template)
+      setShowVariableForm(true)
+    }
+
+    window.addEventListener('template-selected', handleTemplateSelected as EventListener)
+    return () => {
+      window.removeEventListener('template-selected', handleTemplateSelected as EventListener)
+    }
+  }, [])
+
   const renderContentTypeSelector = () => (
     <div className="form-group">
       <label htmlFor="content-type">콘텐츠 유형 선택</label>

@@ -19,9 +19,10 @@ interface Template {
 interface TemplateGalleryProps {
   onSelect: (template: Template) => void
   onClose?: () => void
+  showCloseButton?: boolean
 }
 
-export default function TemplateGallery({ onSelect, onClose }: TemplateGalleryProps) {
+export default function TemplateGallery({ onSelect, onClose, showCloseButton = false }: TemplateGalleryProps) {
   const [templates, setTemplates] = useState<Template[]>([])
   const [filteredTemplates, setFilteredTemplates] = useState<Template[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
@@ -91,7 +92,7 @@ export default function TemplateGallery({ onSelect, onClose }: TemplateGalleryPr
 
   return (
     <div className="template-gallery">
-      {onClose && (
+      {showCloseButton && onClose && (
         <button className="template-gallery-close" onClick={onClose}>
           ✕
         </button>

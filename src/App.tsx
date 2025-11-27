@@ -3,13 +3,14 @@ import PromptGenerator from './components/PromptGenerator'
 import ImagePromptGenerator from './components/ImagePromptGenerator'
 import VideoPromptGenerator from './components/VideoPromptGenerator'
 import EngineeringPromptGenerator from './components/EngineeringPromptGenerator'
+import TemplateGallery from './components/TemplateGallery'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import './App.css'
 
-type TabType = 'text' | 'image' | 'video' | 'engineering'
+type TabType = 'text' | 'image' | 'video' | 'engineering' | 'templates'
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('text')
@@ -180,6 +181,12 @@ function App() {
         >
           프롬프트 엔지니어링
         </button>
+        <button
+          className={`tab-button ${activeTab === 'templates' ? 'active' : ''}`}
+          onClick={() => setActiveTab('templates')}
+        >
+          템플릿 갤러리
+        </button>
       </div>
 
       <div className="tab-content">
@@ -187,6 +194,16 @@ function App() {
         {activeTab === 'image' && <ImagePromptGenerator />}
         {activeTab === 'video' && <VideoPromptGenerator />}
         {activeTab === 'engineering' && <EngineeringPromptGenerator />}
+        {activeTab === 'templates' && (
+          <TemplateGalleryWrapper 
+            onTemplateSelect={(template) => {
+              // 템플릿 선택 시 텍스트 탭으로 이동하고 템플릿 적용
+              setActiveTab('text')
+              // PromptGenerator에 템플릿 전달은 전역 상태나 이벤트로 처리
+              window.dispatchEvent(new CustomEvent('template-selected', { detail: template }))
+            }} 
+          />
+        )}
       </div>
 
       <footer className="app-footer">
@@ -218,6 +235,15 @@ function App() {
           </a>
         </div>
       </footer>
+    </div>
+  )
+}
+
+// 템플릿 갤러리 래퍼 컴포넌트
+function TemplateGalleryWrapper({ onTemplateSelect }: { onTemplateSelect: (template: any) => void }) {
+  return (
+    <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 20px' }}>
+      <TemplateGallery onSelect={onTemplateSelect} />
     </div>
   )
 }
