@@ -377,24 +377,45 @@ function EngineeringPromptGenerator() {
   )
 
   const renderWizardSummary = () => (
-    <div className="wizard-panel">
-      <div className="wizard-preview-grid">
-        <div className="quality-panel">
-          <div className="quality-panel__header">
-            <div>
-              <p className="quality-panel__label">요약</p>
-              <div className="quality-panel__score" style={{ fontSize: '1rem', color: '#000' }}>
-                {method.toUpperCase()}
-              </div>
-            </div>
+    <div className="wizard-panel summary-panel">
+      <div className="summary-panel__header">
+        <div className="summary-panel__title-section">
+          <h3 className="summary-panel__title">요약</h3>
+          <div className="summary-panel__method-badge">
+            {method.toUpperCase()}
           </div>
-          <div className="quality-panel__section">
-            <h4>핵심 정보</h4>
-            <ul>
-              <li>기본 프롬프트 길이: {basePrompt.length}자</li>
-              <li>Few-shot 예시: {fewShotExamples.filter((e) => e.input && e.output).length}개</li>
-              <li>CoT 단계: {cotSteps.filter((s) => s.trim()).length}개</li>
-            </ul>
+        </div>
+        <p className="summary-panel__description">
+          프롬프트 엔지니어링 설정을 확인하고 생성할 수 있습니다.
+        </p>
+      </div>
+      
+      <div className="summary-panel__content">
+        <div className="summary-panel__section">
+          <h4 className="summary-panel__section-title">핵심 정보</h4>
+          <div className="summary-panel__info-grid">
+            <div className="summary-panel__info-item">
+              <span className="summary-panel__info-label">기본 프롬프트</span>
+              <span className="summary-panel__info-value">{basePrompt.length}자</span>
+            </div>
+            <div className="summary-panel__info-item">
+              <span className="summary-panel__info-label">Few-shot 예시</span>
+              <span className="summary-panel__info-value">
+                {fewShotExamples.filter((e) => e.input && e.output).length}개
+              </span>
+            </div>
+            <div className="summary-panel__info-item">
+              <span className="summary-panel__info-label">CoT 단계</span>
+              <span className="summary-panel__info-value">
+                {cotSteps.filter((s) => s.trim()).length}개
+              </span>
+            </div>
+            {method === 'role-based' && role && (
+              <div className="summary-panel__info-item">
+                <span className="summary-panel__info-label">역할</span>
+                <span className="summary-panel__info-value">{role}</span>
+              </div>
+            )}
           </div>
         </div>
       </div>
