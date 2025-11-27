@@ -325,7 +325,7 @@ export const templateAPI = {
     const queryParams = new URLSearchParams()
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
-        if (value !== undefined) {
+        if (value !== undefined && value !== null) {
           queryParams.append(key, String(value))
         }
       })

@@ -8,11 +8,12 @@ const router = (0, express_1.Router)();
 // 공개 템플릿 목록 조회 (인증 불필요)
 router.get('/public', async (req, res) => {
     try {
-        const { category, search, page = '1', limit = '20' } = req.query;
+        const { category, search, page = '1', limit = '100' } = req.query;
+        console.log('[Templates API] 공개 템플릿 조회 요청:', { category, search, page, limit });
         const where = {
             isPublic: true,
         };
-        if (category) {
+        if (category && category !== 'all') {
             where.category = category;
         }
         if (search) {
@@ -30,6 +31,7 @@ router.get('/public', async (req, res) => {
                 orderBy: [
                     { isPremium: 'desc' }, // 프리미엄 우선
                     { usageCount: 'desc' }, // 사용 횟수 순
+                    { createdAt: 'desc' }, // 최신순
                 ],
                 select: {
                     id: true,
@@ -48,6 +50,7 @@ router.get('/public', async (req, res) => {
             }),
             prisma_1.prisma.template.count({ where }),
         ]);
+        console.log('[Templates API] 조회된 템플릿 수:', templates.length, '/ 총:', total);
         // Top 5 표시를 위한 플래그 추가
         const templatesWithFlags = templates.map(t => ({
             ...t,
@@ -64,8 +67,12 @@ router.get('/public', async (req, res) => {
         });
     }
     catch (error) {
-        console.error('템플릿 목록 조회 오류:', error);
-        res.status(500).json({ error: '템플릿 목록을 가져오는데 실패했습니다' });
+        console.error('[Templates API] 템플릿 목록 조회 오류:', error);
+        console.error('[Templates API] 에러 스택:', error.stack);
+        res.status(500).json({
+            error: '템플릿 목록을 가져오는데 실패했습니다',
+            details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
 });
 // 템플릿 상세 조회

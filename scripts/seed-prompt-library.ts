@@ -196,13 +196,19 @@ function parseMarkdownFile(filePath: string): TemplateData[] {
 }
 
 // PromptTemplate 형식으로 변환
+interface PromptSection {
+  key: string
+  title: string
+  content: string
+}
+
 function convertToPromptTemplate(template: TemplateData) {
-  const sections = []
+  const sections: PromptSection[] = []
   
   // 프롬프트를 섹션으로 나눔
   const lines = template.prompt.split('\n').filter(line => line.trim())
   
-  let currentSection = {
+  const currentSection: PromptSection = {
     key: 'main',
     title: '프롬프트',
     content: template.prompt,
@@ -213,7 +219,7 @@ function convertToPromptTemplate(template: TemplateData) {
   return {
     title: template.name,
     description: template.description,
-    sections: sections.map(s => ({
+    sections: sections.map((s: PromptSection) => ({
       key: s.key,
       title: s.title,
       content: s.content,

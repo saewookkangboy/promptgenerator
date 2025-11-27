@@ -40,19 +40,44 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
 
   const loadTemplates = async () => {
     try {
+      console.log('[TemplateGallery] 템플릿 로드 시작...')
       const data = await templateAPI.getPublic({
         page: 1,
         limit: 100
       })
-      const templatesWithContent = (data.templates || []).map((t: any) => ({
-        ...t,
-        content: typeof t.content === 'string' ? JSON.parse(t.content) : t.content,
-        isTop5: t.name?.includes('[Top') || false,
-        isAI: t.name?.includes('[AI 추천]') || false,
-      }))
+      console.log('[TemplateGallery] 템플릿 데이터 수신:', data)
+      
+      if (!data || !data.templates) {
+        console.warn('[TemplateGallery] 템플릿 데이터가 없습니다:', data)
+        setTemplates([])
+        setLoading(false)
+        return
+      }
+
+      const templatesWithContent = (data.templates || []).map((t: any) => {
+        try {
+          return {
+            ...t,
+            content: typeof t.content === 'string' ? JSON.parse(t.content) : t.content,
+            isTop5: t.name?.includes('[Top') || false,
+            isAI: t.name?.includes('[AI 추천]') || false,
+          }
+        } catch (parseError) {
+          console.error('[TemplateGallery] 템플릿 파싱 오류:', parseError, t)
+          return null
+        }
+      }).filter((t: any) => t !== null)
+      
+      console.log('[TemplateGallery] 처리된 템플릿 수:', templatesWithContent.length)
       setTemplates(templatesWithContent)
-    } catch (error) {
-      console.error('템플릿 로드 실패:', error)
+    } catch (error: any) {
+      console.error('[TemplateGallery] 템플릿 로드 실패:', error)
+      console.error('[TemplateGallery] 에러 상세:', {
+        message: error.message,
+        stack: error.stack,
+        response: error.response
+      })
+      setTemplates([])
     } finally {
       setLoading(false)
     }
@@ -100,6 +125,32 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
       <div className="template-gallery-loading">
         <div className="spinner"></div>
         <p>템플릿을 불러오는 중...</p>
+      </div>
+    )
+  }
+
+  // 에러 상태 표시
+  if (templates.length === 0 && !loading) {
+    return (
+      <div className="template-gallery">
+        {showCloseButton && onClose && (
+          <button className="template-gallery-close" onClick={onClose}>
+            ✕
+          </button>
+        )}
+        <div className="template-gallery-header">
+          <h2>프롬프트 템플릿 갤러리</h2>
+          <p>원하는 템플릿을 선택하여 빠르게 프롬프트를 생성하세요</p>
+        </div>
+        <div className="template-gallery-empty" style={{ padding: '40px', textAlign: 'center' }}>
+          <p style={{ fontSize: '16px', marginBottom: '8px' }}>템플릿이 없습니다</p>
+          <p style={{ fontSize: '14px', color: '#666' }}>
+            템플릿을 생성하거나 데이터베이스를 확인해주세요.
+          </p>
+          <p style={{ fontSize: '12px', color: '#999', marginTop: '16px' }}>
+            콘솔을 확인하여 자세한 오류 정보를 확인할 수 있습니다.
+          </p>
+        </div>
       </div>
     )
   }
