@@ -16,12 +16,13 @@ export async function extractKeywordsFromPrompts(
   metaPrompt: string,
   contextPrompt: string
 ): Promise<ExtractedKeyword[]> {
-  if (!GEMINI_API_KEY) {
-    console.warn('[KeywordExtractor] GEMINI_API_KEY가 설정되지 않았습니다. 기본 키워드 추출을 사용합니다.')
-    return extractKeywordsFallback(metaPrompt + ' ' + contextPrompt)
-  }
-
+  // API 키가 없어도 폴백 로직으로 키워드 추출 시도
   try {
+    if (!GEMINI_API_KEY) {
+      console.warn('[KeywordExtractor] GEMINI_API_KEY가 설정되지 않았습니다. 기본 키워드 추출을 사용합니다.')
+      return extractKeywordsFallback(metaPrompt + ' ' + contextPrompt)
+    }
+
     const ai = new GoogleGenAI({})
 
     const prompt = `다음 프롬프트 텍스트에서 주요 키워드를 추출해주세요.
@@ -64,7 +65,20 @@ JSON만 응답하고 다른 설명은 포함하지 마세요.`
       },
     })
 
-    const text = response.text
+    // 응답 텍스트 추출 (다양한 응답 형식 지원)
+    let text = ''
+    if (typeof response.text === 'string') {
+      text = response.text
+    } else if (response.text?.toString) {
+      text = response.text.toString()
+    } else if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
+      text = response.candidates[0].content.parts[0].text
+    } else if (response.response?.text) {
+      text = response.response.text
+    } else {
+      console.warn('[KeywordExtractor] 응답 형식을 인식할 수 없습니다:', JSON.stringify(response).substring(0, 200))
+      throw new Error('응답 형식을 인식할 수 없습니다')
+    }
 
     // JSON 추출
     const jsonMatch = text.match(/\{[\s\S]*\}/)

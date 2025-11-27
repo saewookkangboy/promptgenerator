@@ -276,16 +276,21 @@ function PromptGenerator() {
 
         // AI 키워드 추출 (비동기, 실패해도 계속 진행)
         try {
+          console.log('[PromptGenerator] 키워드 추출 시작...')
           const keywordResult = await keywordAPI.extract(
             enrichedResults.metaPrompt,
             enrichedResults.contextPrompt
           )
+          console.log('[PromptGenerator] 키워드 추출 응답:', keywordResult)
           if (keywordResult.keywords && keywordResult.keywords.length > 0) {
             enrichedResults.hashtagKeywords = keywordResult.keywords
             console.log('[PromptGenerator] AI 키워드 추출 완료:', keywordResult.keywords.length, '개')
+          } else {
+            console.warn('[PromptGenerator] 키워드가 비어있습니다. 기본 해시태그 사용')
           }
-        } catch (keywordError) {
-          console.warn('[PromptGenerator] 키워드 추출 실패:', keywordError)
+        } catch (keywordError: any) {
+          console.error('[PromptGenerator] 키워드 추출 실패:', keywordError)
+          console.error('[PromptGenerator] 에러 상세:', keywordError?.message, keywordError?.stack)
           // 키워드 추출 실패해도 계속 진행 (기본 해시태그 사용)
         }
 
