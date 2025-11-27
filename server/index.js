@@ -7,7 +7,7 @@ const cron = require('node-cron')
 const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
-const { GoogleGenerativeAI } = require('@google/generative-ai')
+const { GoogleGenAI } = require('@google/genai')
 const { collectAllGuides } = require('./scraper/guideScraper')
 const { initializeScheduler } = require('./scheduler/guideScheduler')
 const { authenticateToken, requireAdmin } = require('./middleware/auth')
@@ -20,10 +20,10 @@ const {
 } = require('./services/guideService')
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview'
 
-// Google Generative AI 클라이언트 초기화
-const genAI = GEMINI_API_KEY ? new GoogleGenerativeAI(GEMINI_API_KEY) : null
+// Google Generative AI 클라이언트 초기화 (새로운 방식)
+const genAI = GEMINI_API_KEY ? new GoogleGenAI({}) : null
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY
 const OPENAI_SUMMARIZE_MODEL = process.env.OPENAI_SUMMARIZE_MODEL || 'gpt-4o-mini'
 
@@ -87,7 +87,7 @@ async function summarizeWithLLM(text, context = 'general') {
 }
 
 async function translateWithGemini(text, context = 'general', compress = false) {
-  if (!genAI) {
+  if (!GEMINI_API_KEY) {
     throw new Error('Gemini API 키가 설정되지 않았습니다.')
   }
   if (!text) return ''
@@ -105,20 +105,20 @@ async function translateWithGemini(text, context = 'general', compress = false) 
   const prompt = `${instructions.join(' ')}\nContext: ${context}\n\nText:\n${text}`
 
   try {
-    // Google Generative AI SDK 사용 (gemini-2.5-flash)
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
-    
-    const generationConfig = {
-      temperature: 0.2,
-      maxOutputTokens: compress ? 320 : 512,
-    }
+    // Google Generative AI SDK 사용 (새로운 방식)
+    const ai = new GoogleGenAI({})
 
-    const result = await model.generateContent(prompt, {
-      generationConfig,
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      config: {
+        thinkingConfig: {
+          thinkingLevel: 'low',
+        },
+      },
     })
 
-    const response = await result.response
-    const translated = response.text().trim()
+    const translated = response.text.trim()
     
     if (!translated) {
       throw new Error('Gemini 번역 응답이 비어 있습니다.')

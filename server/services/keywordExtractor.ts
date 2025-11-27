@@ -1,7 +1,7 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash-exp'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview'
 
 export interface ExtractedKeyword {
   keyword: string
@@ -22,8 +22,7 @@ export async function extractKeywordsFromPrompts(
   }
 
   try {
-    const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
+    const ai = new GoogleGenAI({})
 
     const prompt = `다음 프롬프트 텍스트에서 주요 키워드를 추출해주세요.
 
@@ -55,9 +54,17 @@ ${contextPrompt}
 
 JSON만 응답하고 다른 설명은 포함하지 마세요.`
 
-    const result = await model.generateContent(prompt)
-    const response = await result.response
-    const text = response.text()
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: prompt,
+      config: {
+        thinkingConfig: {
+          thinkingLevel: 'low',
+        },
+      },
+    })
+
+    const text = response.text
 
     // JSON 추출
     const jsonMatch = text.match(/\{[\s\S]*\}/)

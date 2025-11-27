@@ -1,5 +1,5 @@
 // AI 기반 템플릿 자동 생성 서비스
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import { GoogleGenAI } from '@google/genai'
 
 // PromptTemplate 타입 정의 (서버에서 사용)
 export interface PromptTemplate {
@@ -14,7 +14,7 @@ export interface PromptTemplate {
 }
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash-exp'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview'
 
 interface TemplateGenerationRequest {
   category: 'text' | 'image' | 'video' | 'engineering'
@@ -32,8 +32,7 @@ export async function generateTemplateWithAI(
     throw new Error('Gemini API 키가 설정되지 않았습니다.')
   }
 
-  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
-  const model = genAI.getGenerativeModel({ model: GEMINI_MODEL })
+  const ai = new GoogleGenAI({})
 
   const categoryPrompts: Record<string, string> = {
     text: `다음 프롬프트 라이브러리 문서를 기반으로 실무에서 바로 사용할 수 있는 고품질 텍스트 프롬프트 템플릿을 생성하세요.
@@ -163,9 +162,17 @@ export async function generateTemplateWithAI(
     : `실무에서 바로 사용할 수 있는 ${request.category} 카테고리의 프롬프트 템플릿을 생성하세요.`
 
   try {
-    const result = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`)
-    const response = await result.response
-    const text = response.text()
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: `${systemPrompt}\n\n${userPrompt}`,
+      config: {
+        thinkingConfig: {
+          thinkingLevel: 'low',
+        },
+      },
+    })
+
+    const text = response.text
 
     // JSON 추출 (마크다운 코드 블록 제거)
     let jsonText = text.trim()
