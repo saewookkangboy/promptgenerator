@@ -3,8 +3,27 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="description" content="텍스트, 이미지, 동영상 생성용 프롬프트를 자동으로 생성하는 도구" />
-    <meta name="keywords" content="프롬프트 생성기, AI 프롬프트, 프롬프트 엔지니어링" />
+    <meta name="description" content="프롬프트 메이커는 텍스트·이미지·동영상·엔지니어링 프롬프트를 AI로 자동 생성하고 Native English 변환, 템플릿 갤러리, 해시태그 추천을 지원하는 통합 플랫폼입니다." />
+    <meta name="keywords" content="prompt generator, 프롬프트 생성기, AI 프롬프트, 텍스트 프롬프트, 이미지 프롬프트, 동영상 프롬프트, 프롬프트 엔지니어링, 템플릿 갤러리, native english prompt" />
+    <meta name="robots" content="index,follow,max-image-preview:large" />
+    <meta name="googlebot" content="index,follow" />
+    <meta name="google-site-verification" content="" />
+    <meta name="naver-site-verification" content="" />
+    <link rel="canonical" href="https://promptmaker.app" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="프롬프트 메이커 | AI 텍스트·이미지·동영상 프롬프트 생성기" />
+    <meta property="og:description" content="텍스트, 이미지, 동영상, 엔지니어링 프롬프트를 한 번에 생성하고 AI 템플릿과 해시태그 추천까지 지원하는 올인원 플랫폼입니다." />
+    <meta property="og:url" content="https://promptmaker.app" />
+    <meta property="og:image" content="https://promptmaker.app/favicon.svg" />
+    <meta property="og:site_name" content="프롬프트 메이커" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="프롬프트 메이커 | AI 프롬프트 생성기" />
+    <meta name="twitter:description" content="AI 기반 텍스트·이미지·동영상·엔지니어링 프롬프트 생성, Native English 변환, 템플릿 갤러리를 지원합니다." />
+    <meta name="twitter:image" content="https://promptmaker.app/favicon.svg" />
+    <meta name="geo.region" content="KR-11" />
+    <meta name="geo.placename" content="Seoul" />
+    <meta name="geo.position" content="37.5665;126.9780" />
+    <meta name="ICBM" content="37.5665, 126.9780" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -22,6 +41,45 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      (function updateDynamicSEO() {
+        fetch('/seo/meta.json', { cache: 'no-cache' })
+          .then((res) => res.ok ? res.json() : null)
+          .then((data) => {
+            if (!data) return
+            const keywords = Array.isArray(data.metaKeywords) ? data.metaKeywords.join(', ') : ''
+            const description = data.descriptions?.primary || ''
+            const shortDescription = data.descriptions?.short || description
+
+            const setMeta = (selector, attr, value) => {
+              if (!value) return
+              let tag = document.querySelector(selector)
+              if (!tag) {
+                tag = document.createElement('meta')
+                if (selector.startsWith('meta[name=')) {
+                  tag.setAttribute('name', selector.match(/meta\[name=['"](.+?)['"]/)?.[1] || '')
+                } else if (selector.startsWith('meta[property=')) {
+                  tag.setAttribute('property', selector.match(/meta\[property=['"](.+?)['"]/)?.[1] || '')
+                }
+                document.head.appendChild(tag)
+              }
+              tag.setAttribute(attr, value)
+            }
+
+            if (keywords) {
+              setMeta('meta[name="keywords"]', 'content', keywords)
+            }
+            if (description) {
+              setMeta('meta[name="description"]', 'content', description)
+              setMeta('meta[property="og:description"]', 'content', description)
+            }
+            if (shortDescription) {
+              setMeta('meta[name="twitter:description"]', 'content', shortDescription)
+            }
+          })
+          .catch((err) => console.warn('[SEO] 메타 데이터 로드 실패:', err))
+      })();
+    </script>
     <script>
       // Chrome 확장 프로그램의 Firebase 오류 무시
       (function() {

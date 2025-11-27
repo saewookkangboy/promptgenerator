@@ -25,7 +25,8 @@
     "build:server": "tsc -p tsconfig.server.json",
     "dev:server": "tsc -p tsconfig.server.json --watch",
     "check:env": "node scripts/check-env.js",
-    "pre-deploy": "node scripts/pre-deploy-check.js"
+    "pre-deploy": "node scripts/pre-deploy-check.js",
+    "seo:generate": "node scripts/generate-seo-meta.js"
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

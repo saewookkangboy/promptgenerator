@@ -1,0 +1,587 @@
+{
+  "generatedAt": "2025-11-27T07:30:23.481Z",
+  "metaKeywords": [
+    "AI 추천",
+    "이미지",
+    "광고",
+    "브랜딩",
+    "생성",
+    "프롬프트",
+    "템플릿",
+    "프로젝트 관리",
+    "리스크 관리",
+    "계획",
+    "실행형",
+    "운영 최적화",
+    "프로세스 개선",
+    "As-Is",
+    "To-Be",
+    "법무 문서",
+    "Legal Document Preparation",
+    "시장조사",
+    "Market Research",
+    "지속가능성 기획",
+    "Sustainability Planning",
+    "제품 개발",
+    "Product Development",
+    "콘텐츠 제작",
+    "블로그 아티클",
+    "SEO",
+    "AEO",
+    "GEO",
+    "마케팅 전략",
+    "소셜 콘텐츠",
+    "캘린더",
+    "고객경험 개선",
+    "Customer Experience Enhancement",
+    "고품질",
+    "변수",
+    "주제",
+    "스타일",
+    "조명",
+    "구도",
+    "배경",
+    "분위기",
+    "품질",
+    "색상 팔레트",
+    "종횡비",
+    "부정 프롬프트",
+    "리스크 레지스터",
+    "발생확률",
+    "영향도",
+    "대응전략",
+    "병목",
+    "자동화",
+    "KPI",
+    "운영 혁신",
+    "컨설턴트",
+    "설문지",
+    "정량",
+    "정성",
+    "분석 설계",
+    "전략",
+    "이니셔티브",
+    "PRD",
+    "유저 스토리",
+    "기술 스펙",
+    "성공 지표",
+    "콘텐츠 에디터",
+    "퍼포먼스 마케터",
+    "목표 독자",
+    "채널",
+    "핵심 키워드",
+    "FAQ",
+    "체크리스트",
+    "CTA",
+    "디지털 마케팅 전략가",
+    "타겟 페르소나",
+    "핵심 오퍼",
+    "메시지",
+    "플랫폼",
+    "포맷",
+    "훅",
+    "제작 가이드",
+    "해시태그",
+    "최적 게시 시간",
+    "측정 방법",
+    "운영 체크리스트",
+    "담당 역할 분장",
+    "고객 여정 맵",
+    "터치포인트",
+    "기회",
+    "지표",
+    "개선 과제",
+    "목표",
+    "범위",
+    "제약사항",
+    "산출물",
+    "문제"
+  ],
+  "keywords": [
+    {
+      "keyword": "AI 추천",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "이미지",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "광고",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "브랜딩",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "생성",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "프롬프트",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "템플릿",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "프로젝트 관리",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "리스크 관리",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "계획",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "실행형",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "운영 최적화",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "프로세스 개선",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "As-Is",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "To-Be",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "법무 문서",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Legal Document Preparation",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "시장조사",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Market Research",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "지속가능성 기획",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Sustainability Planning",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "제품 개발",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Product Development",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "콘텐츠 제작",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "블로그 아티클",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "SEO",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "AEO",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "GEO",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "마케팅 전략",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "소셜 콘텐츠",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "캘린더",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "고객경험 개선",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Customer Experience Enhancement",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "고품질",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "변수",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "주제",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "스타일",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "조명",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "구도",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "배경",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "분위기",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "품질",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "색상 팔레트",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "종횡비",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "부정 프롬프트",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "리스크 레지스터",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "발생확률",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "영향도",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "대응전략",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "병목",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "자동화",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "KPI",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "운영 혁신",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "컨설턴트",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "설문지",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "정량",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "정성",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "분석 설계",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "전략",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "이니셔티브",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "PRD",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "유저 스토리",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "기술 스펙",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "성공 지표",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "콘텐츠 에디터",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "퍼포먼스 마케터",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "목표 독자",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "채널",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "핵심 키워드",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "FAQ",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "체크리스트",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "CTA",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "디지털 마케팅 전략가",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "타겟 페르소나",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "핵심 오퍼",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "메시지",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "플랫폼",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "포맷",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "훅",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "제작 가이드",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "해시태그",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "최적 게시 시간",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "측정 방법",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "운영 체크리스트",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "담당 역할 분장",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "고객 여정 맵",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "터치포인트",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "기회",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "지표",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "개선 과제",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "목표",
+      "importance": "low",
+      "pos": "명사"
+    },
+    {
+      "keyword": "범위",
+      "importance": "low",
+      "pos": "명사"
+    },
+    {
+      "keyword": "제약사항",
+      "importance": "low",
+      "pos": "명사"
+    },
+    {
+      "keyword": "산출물",
+      "importance": "low",
+      "pos": "명사"
+    },
+    {
+      "keyword": "문제",
+      "importance": "low",
+      "pos": "명사"
+    }
+  ],
+  "descriptions": {
+    "primary": "프롬프트 메이커는 텍스트·이미지·동영상·엔지니어링 프롬프트를 생성하는 AI 플랫폼입니다. 최근 30일 0건 생성, 인기 카테고리 - 데이터 수집 중.",
+    "short": "AI 기반 텍스트/이미지/동영상/엔지니어링 프롬프트 생성 플랫폼"
+  },
+  "geo": {
+    "region": "KR-11",
+    "placename": "Seoul",
+    "position": "37.5665;126.9780"
+  },
+  "categoryStats": []
+}

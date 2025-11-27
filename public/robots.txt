@@ -1,0 +1,8 @@
+User-agent: *
+Allow: /
+Sitemap: https://promptmaker.app/sitemap.xml
+
+# Disallow admin-only routes
+Disallow: /admin
+Disallow: /api/admin
+

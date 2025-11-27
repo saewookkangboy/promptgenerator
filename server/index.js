@@ -907,6 +907,7 @@ app.listen(PORT, () => {
   // 템플릿 스케줄러 초기화
   try {
     require('./scheduler/templateScheduler')
+    require('./scheduler/seoScheduler')
     console.log('✅ 템플릿 스케줄러 초기화 완료')
   } catch (error) {
     console.warn('⚠️  템플릿 스케줄러 초기화 실패:', error.message)
