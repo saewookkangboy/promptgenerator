@@ -9,7 +9,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "start": "node server/index.js",
+    "start": "npm run db:migrate:deploy && node server/index.js",
     "server": "node server/index.js",
     "server:dev": "nodemon server/index.js",
     "sync:models": "tsx scripts/sync-models.ts",

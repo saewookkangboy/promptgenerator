@@ -210,9 +210,17 @@ const corsOptions = {
 app.use(cors(corsOptions))
 app.use(express.json())
 
-// Health check
+// Health check endpoints
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() })
+})
+
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  })
 })
 
 // Gemini 기반 번역 프록시
@@ -833,6 +841,15 @@ try {
     console.error('상세 오류:', error)
   }
 }
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    status: 'ok', 
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
+  })
+})
 
 // 서버 시작
 app.listen(PORT, () => {

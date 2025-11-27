@@ -1,13 +1,16 @@
+# Nixpacks configuration for Railway
 [phases.setup]
-# Vite requires >=20.19; Railway default nodejs_20 is too old (20.18.x).
-# Use Node 22 to satisfy both Vite and future builds.
-nixPkgs = ["nodejs_22"]
+nixPkgs = ["nodejs-20_x", "npm"]
 
 [phases.install]
 cmds = ["npm ci"]
 
 [phases.build]
-cmds = ["npm run build"]
+cmds = [
+  "npm run build",
+  "npm run build:server",
+  "npm run db:generate"
+]
 
 [start]
-cmd = "node server/index.js"
+cmd = "npm start"

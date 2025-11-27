@@ -438,6 +438,24 @@ npm run preview
 
 ---
 
+## 🗄️ 데이터베이스
+
+이 서비스는 **PostgreSQL**을 사용합니다. SQLite나 파일 기반 캐시를 사용하지 않으며, 모든 데이터는 PostgreSQL 서버에 저장됩니다.
+
+### 저장되는 데이터
+
+- **사용자 회원가입 정보** (Users 테이블)
+- **프롬프트 템플릿** (Templates 테이블)
+- **사용자 프롬프트 이력** (Prompts 테이블)
+- **프롬프트 가이드라인** (PromptGuides 테이블)
+- **서비스 이용자 통계** (Analytics 테이블)
+- **워크스페이스 정보** (Workspaces 테이블)
+- **관리자 감사 로그** (AdminAuditLog 테이블)
+
+### Railway 배포
+
+Railway에 배포하는 방법은 [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md)를 참조하세요.
+
 ## 기술 스택
 
 ### 프론트엔드

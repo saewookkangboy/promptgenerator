@@ -27,3 +27,27 @@ dist-ssr
 .env
 .env.local
 .env.production
+.env.development
+
+# Prisma
+# Keep migrations but ignore generated client
+# node_modules/.prisma/
+
+# Build outputs
+server/**/*.js
+server/**/*.js.map
+server/**/*.d.ts
+server/**/*.d.ts.map
+!server/index.js
+
+# Database
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Railway
+.railway/
+
+# OS
+Thumbs.db
