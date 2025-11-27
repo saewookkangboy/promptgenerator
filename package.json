@@ -20,6 +20,7 @@
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
     "db:seed:library": "tsx scripts/seed-prompt-library.ts",
+    "db:generate:ai-templates": "tsx scripts/generate-ai-templates.ts",
     "db:update-admin": "node scripts/update-admin.js",
     "build:server": "tsc -p tsconfig.server.json",
     "dev:server": "tsc -p tsconfig.server.json --watch",

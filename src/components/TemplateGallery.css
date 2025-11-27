@@ -179,6 +179,11 @@
   color: white;
 }
 
+.badge.ai {
+  background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  color: white;
+}
+
 .template-description {
   color: #666;
   font-size: 14px;

@@ -16,7 +16,6 @@ import ResultCard from './ResultCard'
 import StructuredPromptCard from './StructuredPromptCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
-import TemplateGallery from './TemplateGallery'
 import TemplateVariableForm from './TemplateVariableForm'
 import './PromptGenerator.css'
 import './StructuredPromptCard.css'
@@ -142,8 +141,7 @@ function PromptGenerator() {
   const [guideInsight, setGuideInsight] = useState<PromptGuide | null>(null)
   // 모델 선택 UI는 Admin 템플릿 관리로 이동했으므로 기본값만 유지
   const [targetModel] = useState<ModelName>(FALLBACK_MODEL)
-  // 템플릿 관련 상태
-  const [showTemplateGallery, setShowTemplateGallery] = useState(false)
+  // 템플릿 관련 상태 (탭에서 템플릿 선택 시 사용)
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
   const [showVariableForm, setShowVariableForm] = useState(false)
 
@@ -381,11 +379,7 @@ function PromptGenerator() {
     }
   }, [results?.hashtags])
 
-  const handleTemplateSelect = useCallback((template: any) => {
-    setSelectedTemplate(template)
-    setShowTemplateGallery(false)
-    setShowVariableForm(true)
-  }, [])
+  // 템플릿 선택 핸들러는 전역 이벤트로만 처리 (탭에서 선택)
 
   const handleTemplateApply = useCallback(async (variables: Record<string, string>) => {
     if (!selectedTemplate) return
@@ -447,23 +441,8 @@ function PromptGenerator() {
 
   const renderPromptTextarea = () => (
     <div className="form-group">
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+      <div style={{ marginBottom: '8px' }}>
         <label htmlFor="user-prompt">자연어 프롬프트 입력</label>
-        <button
-          type="button"
-          onClick={() => setShowTemplateGallery(true)}
-          className="template-button"
-          style={{
-            padding: '6px 12px',
-            fontSize: '13px',
-            background: '#f0f0f0',
-            border: '1px solid #ddd',
-            borderRadius: '6px',
-            cursor: 'pointer',
-          }}
-        >
-          📋 템플릿 선택
-        </button>
       </div>
       <textarea
         id="user-prompt"
@@ -663,13 +642,6 @@ function PromptGenerator() {
   return (
     <div className="prompt-generator">
       {error && <ErrorMessage message={error} onDismiss={handleDismissError} />}
-      
-      {showTemplateGallery && (
-        <TemplateGallery
-          onSelect={handleTemplateSelect}
-          onClose={() => setShowTemplateGallery(false)}
-        />
-      )}
 
       {showVariableForm && selectedTemplate && (
         <TemplateVariableForm

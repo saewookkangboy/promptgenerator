@@ -138,5 +138,88 @@ node_cron_1.default.schedule('0 3 * * 1', async () => {
         console.error('[Template Scheduler] 오류:', error);
     }
 });
+// 매주 화요일 새벽 4시: AI 템플릿 자동 생성
+node_cron_1.default.schedule('0 4 * * 2', async () => {
+    console.log('[Template Scheduler] AI 템플릿 자동 생성 시작...');
+    try {
+        const { generateTemplatesByCategory } = require('../services/templateGenerator');
+        const { PrismaClient } = require('@prisma/client');
+        const prisma = new PrismaClient();
+        // Admin 사용자 찾기
+        const adminEmail = process.env.ADMIN_EMAIL || 'admin@example.com';
+        const admin = await prisma.user.findFirst({
+            where: { email: adminEmail },
+        });
+        if (!admin) {
+            console.error('[Template Scheduler] Admin 사용자를 찾을 수 없습니다.');
+            await prisma.$disconnect();
+            return;
+        }
+        const categories = ['text', 'image', 'video', 'engineering'];
+        const counts = { text: 3, image: 2, video: 2, engineering: 2 }; // 주간 생성 개수
+        let totalCreated = 0;
+        for (const category of categories) {
+            try {
+                const templates = await generateTemplatesByCategory(category, counts[category]);
+                for (const template of templates) {
+                    // 변수 추출
+                    const variables = [];
+                    const variableRegex = /\{\{(\w+)\}\}/g;
+                    const checkText = (text) => {
+                        let match;
+                        while ((match = variableRegex.exec(text)) !== null) {
+                            if (!variables.includes(match[1])) {
+                                variables.push(match[1]);
+                            }
+                        }
+                    };
+                    if (template.title)
+                        checkText(template.title);
+                    if (template.description)
+                        checkText(template.description);
+                    template.sections.forEach((section) => {
+                        if (section.content)
+                            checkText(section.content);
+                        if (section.helperText)
+                            checkText(section.helperText);
+                    });
+                    const templateName = `[AI 추천] ${category === 'text' ? '텍스트' : category === 'image' ? '이미지' : category === 'video' ? '비디오' : '엔지니어링'} - ${template.title}`;
+                    // 기존 템플릿 확인
+                    const existing = await prisma.template.findFirst({
+                        where: {
+                            name: templateName,
+                            category: category,
+                        },
+                    });
+                    if (!existing) {
+                        await prisma.template.create({
+                            data: {
+                                name: templateName,
+                                description: template.description || `${template.title} 템플릿`,
+                                category: category,
+                                content: JSON.stringify(template),
+                                variables: variables,
+                                isPublic: true,
+                                isPremium: false,
+                                tierRequired: 'FREE',
+                                authorId: admin.id,
+                            },
+                        });
+                        totalCreated++;
+                        console.log(`  ✅ 생성: ${templateName}`);
+                    }
+                }
+            }
+            catch (error) {
+                console.error(`❌ ${category} 카테고리 생성 실패:`, error.message);
+            }
+        }
+        console.log(`[Template Scheduler] AI 템플릿 생성 완료: ${totalCreated}개`);
+        await prisma.$disconnect();
+    }
+    catch (error) {
+        console.error('[Template Scheduler] AI 템플릿 생성 오류:', error);
+    }
+});
 console.log('✅ 템플릿 스케줄러 초기화 완료');
 //# sourceMappingURL=templateScheduler.js.map

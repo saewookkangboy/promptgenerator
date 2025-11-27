@@ -10,6 +10,7 @@ interface Template {
   category: string
   isPremium: boolean
   isTop5: boolean
+  isAI?: boolean
   usageCount: number
   rating: number
   content: PromptTemplate
@@ -47,6 +48,7 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
         ...t,
         content: typeof t.content === 'string' ? JSON.parse(t.content) : t.content,
         isTop5: t.name?.includes('[Top') || false,
+        isAI: t.name?.includes('[AI 추천]') || false,
       }))
       setTemplates(templatesWithContent)
     } catch (error) {
@@ -71,11 +73,23 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
       )
     }
 
-    // Top 5 우선 정렬
+    // 정렬: Top 5 > AI 추천 > 사용 횟수
     filtered.sort((a, b) => {
-      if (a.isTop5 && !b.isTop5) return -1
-      if (!a.isTop5 && b.isTop5) return 1
-      return b.usageCount - a.usageCount
+      const aIsTop5 = a.isTop5
+      const bIsTop5 = b.isTop5
+      const aIsAI = a.name?.includes('[AI 추천]') || false
+      const bIsAI = b.name?.includes('[AI 추천]') || false
+      
+      // Top 5 우선
+      if (aIsTop5 && !bIsTop5) return -1
+      if (!aIsTop5 && bIsTop5) return 1
+      
+      // AI 추천 다음
+      if (aIsAI && !bIsAI) return -1
+      if (!aIsAI && bIsAI) return 1
+      
+      // 사용 횟수 순
+      return (b.usageCount || 0) - (a.usageCount || 0)
     })
 
     setFilteredTemplates(filtered)
@@ -100,6 +114,9 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
       <div className="template-gallery-header">
         <h2>프롬프트 템플릿 갤러리</h2>
         <p>원하는 템플릿을 선택하여 빠르게 프롬프트를 생성하세요</p>
+        <p style={{ fontSize: '13px', color: '#999', marginTop: '8px' }}>
+          💡 AI가 자동으로 추천하는 템플릿과 수동으로 등록된 템플릿을 모두 확인할 수 있습니다
+        </p>
       </div>
 
       <div className="template-gallery-filters">
@@ -166,12 +183,15 @@ export default function TemplateGallery({ onSelect, onClose, showCloseButton = f
 }
 
 function TemplateCard({ template, onClick }: { template: Template; onClick: () => void }) {
+  const isAI = template.name?.includes('[AI 추천]') || false
+  
   return (
     <div className="template-card" onClick={onClick}>
       <div className="template-card-header">
         <h3>{template.name}</h3>
         <div className="template-badges">
           {template.isTop5 && <span className="badge top5">Top 5</span>}
+          {isAI && <span className="badge ai">🤖 AI 추천</span>}
           {template.isPremium && <span className="badge premium">프리미엄</span>}
         </div>
       </div>
