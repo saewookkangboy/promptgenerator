@@ -4,17 +4,20 @@ import { ToneStyle } from '../types/prompt.types'
 import { generatePrompts } from '../utils/promptGenerator'
 import { validatePrompt } from '../utils/validation'
 import { savePromptRecord } from '../utils/storage'
-import { promptAPI, guideAPI } from '../utils/api'
+import { promptAPI, guideAPI, templateAPI } from '../utils/api'
 import { upsertGuide } from '../utils/prompt-guide-storage'
 import { showNotification } from '../utils/notifications'
 import { PromptGuide, ModelName } from '../types/prompt-guide.types'
 import { MODEL_OPTIONS, getCategoryByModel } from '../config/model-options'
 import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 import { evaluateQuality, QualityReport } from '../utils/qualityRules'
+// import { applyTemplate } from '../utils/templateUtils' // 템플릿 적용은 서버에서 처리
 import ResultCard from './ResultCard'
 import StructuredPromptCard from './StructuredPromptCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
+import TemplateGallery from './TemplateGallery'
+import TemplateVariableForm from './TemplateVariableForm'
 import './PromptGenerator.css'
 import './StructuredPromptCard.css'
 
@@ -139,6 +142,10 @@ function PromptGenerator() {
   const [guideInsight, setGuideInsight] = useState<PromptGuide | null>(null)
   // 모델 선택 UI는 Admin 템플릿 관리로 이동했으므로 기본값만 유지
   const [targetModel] = useState<ModelName>(FALLBACK_MODEL)
+  // 템플릿 관련 상태
+  const [showTemplateGallery, setShowTemplateGallery] = useState(false)
+  const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+  const [showVariableForm, setShowVariableForm] = useState(false)
 
   const buildGenerationOptions = useCallback((): DetailedOptions => {
     return {
@@ -374,6 +381,38 @@ function PromptGenerator() {
     }
   }, [results?.hashtags])
 
+  const handleTemplateSelect = useCallback((template: any) => {
+    setSelectedTemplate(template)
+    setShowTemplateGallery(false)
+    setShowVariableForm(true)
+  }, [])
+
+  const handleTemplateApply = useCallback(async (variables: Record<string, string>) => {
+    if (!selectedTemplate) return
+
+    try {
+      // 템플릿 적용
+      const result = await templateAPI.apply(selectedTemplate.id, variables)
+      
+      // 사용자 프롬프트에 자동 채우기
+      setUserPrompt(result.prompt)
+      setShowVariableForm(false)
+      setSelectedTemplate(null)
+      
+      // Analytics 기록
+      try {
+        await templateAPI.recordUsage(selectedTemplate.id, { variables })
+      } catch (err) {
+        console.warn('템플릿 사용 기록 실패:', err)
+      }
+
+      showNotification('템플릿이 적용되었습니다. 프롬프트를 확인하고 생성 버튼을 눌러주세요.', 'success')
+    } catch (error: any) {
+      console.error('템플릿 적용 실패:', error)
+      showNotification('템플릿 적용에 실패했습니다.', 'error')
+    }
+  }, [selectedTemplate])
+
   const renderContentTypeSelector = () => (
     <div className="form-group">
       <label htmlFor="content-type">콘텐츠 유형 선택</label>
@@ -394,7 +433,24 @@ function PromptGenerator() {
 
   const renderPromptTextarea = () => (
     <div className="form-group">
-      <label htmlFor="user-prompt">자연어 프롬프트 입력</label>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+        <label htmlFor="user-prompt">자연어 프롬프트 입력</label>
+        <button
+          type="button"
+          onClick={() => setShowTemplateGallery(true)}
+          className="template-button"
+          style={{
+            padding: '6px 12px',
+            fontSize: '13px',
+            background: '#f0f0f0',
+            border: '1px solid #ddd',
+            borderRadius: '6px',
+            cursor: 'pointer',
+          }}
+        >
+          📋 템플릿 선택
+        </button>
+      </div>
       <textarea
         id="user-prompt"
         value={userPrompt}
@@ -593,6 +649,24 @@ function PromptGenerator() {
   return (
     <div className="prompt-generator">
       {error && <ErrorMessage message={error} onDismiss={handleDismissError} />}
+      
+      {showTemplateGallery && (
+        <TemplateGallery
+          onSelect={handleTemplateSelect}
+          onClose={() => setShowTemplateGallery(false)}
+        />
+      )}
+
+      {showVariableForm && selectedTemplate && (
+        <TemplateVariableForm
+          template={selectedTemplate}
+          onSubmit={handleTemplateApply}
+          onCancel={() => {
+            setShowVariableForm(false)
+            setSelectedTemplate(null)
+          }}
+        />
+      )}
       
       <div className="wizard-toggle">
         <div style={{ display: 'flex', gap: '8px' }}>

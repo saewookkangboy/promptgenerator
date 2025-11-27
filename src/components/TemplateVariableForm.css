@@ -1,0 +1,149 @@
+.template-variable-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.template-variable-form {
+  background: white;
+  border-radius: 12px;
+  max-width: 600px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.template-variable-form-header {
+  padding: 24px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.template-variable-form-header h3 {
+  font-size: 20px;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+  color: #1a1a1a;
+}
+
+.template-variable-form-header .template-description {
+  color: #666;
+  font-size: 14px;
+  margin: 0;
+}
+
+.template-variable-form-body {
+  padding: 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.form-instruction {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.variable-input-group {
+  margin-bottom: 20px;
+}
+
+.variable-input-group label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1a1a1a;
+  font-size: 14px;
+}
+
+.variable-hint {
+  font-weight: normal;
+  color: #666;
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.variable-input-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  transition: border-color 0.2s;
+}
+
+.variable-input-group textarea:focus {
+  outline: none;
+  border-color: #007bff;
+}
+
+.variable-input-group textarea.error {
+  border-color: #dc3545;
+}
+
+.error-message {
+  display: block;
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+.template-variable-form-footer {
+  padding: 16px 24px;
+  border-top: 1px solid #e0e0e0;
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.btn-secondary,
+.btn-primary {
+  padding: 10px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: none;
+}
+
+.btn-secondary {
+  background: #f5f5f5;
+  color: #666;
+}
+
+.btn-secondary:hover {
+  background: #e0e0e0;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+@media (max-width: 768px) {
+  .template-variable-form {
+    max-height: 95vh;
+  }
+  
+  .template-variable-form-header,
+  .template-variable-form-body {
+    padding: 16px;
+  }
+}
+

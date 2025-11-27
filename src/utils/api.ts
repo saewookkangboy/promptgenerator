@@ -314,6 +314,52 @@ export const guideAPI = {
   },
 }
 
+// 템플릿 API
+export const templateAPI = {
+  getPublic: async (params?: {
+    category?: string
+    search?: string
+    page?: number
+    limit?: number
+  }) => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value))
+        }
+      })
+    }
+    return apiRequest<{ templates: any[]; pagination: any }>(
+      `/api/templates/public?${queryParams.toString()}`
+    )
+  },
+
+  get: async (id: string) => {
+    return apiRequest<any>(`/api/templates/${id}`)
+  },
+
+  apply: async (id: string, variables: Record<string, string>) => {
+    return apiRequest<{ prompt: string }>(`/api/templates/${id}/apply`, {
+      method: 'POST',
+      body: JSON.stringify({ variables }),
+    })
+  },
+
+  recordUsage: async (templateId: string, data: {
+    variables: Record<string, string>
+    qualityScore?: number
+  }) => {
+    return apiRequest<void>('/api/analytics/template-used', {
+      method: 'POST',
+      body: JSON.stringify({
+        templateId,
+        ...data,
+      }),
+    })
+  },
+}
+
 // Admin API
 export const adminAPI = {
   getStats: async () => {

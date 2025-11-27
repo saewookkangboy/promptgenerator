@@ -673,19 +673,21 @@ app.get('/api/guides/public/latest', async (req, res) => {
 try {
   // TypeScript로 컴파일된 JavaScript 파일 사용
   // 먼저 routes/routes 경로를 시도하고, 없으면 routes 경로 사용
-  let promptsRouter, authRouter, usersRouter, adminRouter
+  let promptsRouter, authRouter, usersRouter, adminRouter, templatesRouter
   
   try {
     promptsRouter = require('./routes/routes/prompts')
     authRouter = require('./routes/routes/auth')
     usersRouter = require('./routes/routes/users')
     adminRouter = require('./routes/routes/admin')
+    templatesRouter = require('./routes/templates')
   } catch (e) {
     // routes/routes 경로에 없으면 routes 경로에서 로드
     promptsRouter = require('./routes/prompts')
     authRouter = require('./routes/auth')
     usersRouter = require('./routes/users')
     adminRouter = require('./routes/admin')
+    templatesRouter = require('./routes/templates')
   }
   
   // 라우터가 제대로 로드되었는지 확인
@@ -733,6 +735,39 @@ try {
   app.use('/api/users', finalUsersRouter)
   app.use('/api/prompts', finalPromptsRouter)
   app.use('/api/admin', finalAdminRouter)
+  
+  // 템플릿 라우트
+  const finalTemplatesRouter = templatesRouter.default || templatesRouter
+  if (finalTemplatesRouter) {
+    app.use('/api/templates', finalTemplatesRouter)
+    console.log('✅ 템플릿 API 라우트 로드됨: /api/templates')
+  }
+  
+  // Analytics 이벤트 라우트
+  app.post('/api/analytics/template-used', authenticateToken, async (req, res) => {
+    try {
+      const { templateId, variables, qualityScore } = req.body
+      const { prisma } = require('./db/prisma')
+      
+      await prisma.analytics.create({
+        data: {
+          userId: req.user.id,
+          eventType: 'TEMPLATE_USED',
+          eventData: {
+            templateId,
+            variables,
+            qualityScore,
+            timestamp: new Date().toISOString(),
+          },
+        },
+      })
+      
+      res.json({ success: true })
+    } catch (error) {
+      console.error('Analytics 기록 오류:', error)
+      res.status(500).json({ error: '이벤트 기록에 실패했습니다' })
+    }
+  })
   
   // 라우트 등록 확인용 엔드포인트 (개발/프로덕션 모두)
   app.get('/api/debug/admin-routes', (req, res) => {
@@ -805,6 +840,14 @@ app.listen(PORT, () => {
   
   // 스케줄러 초기화 (매일 새벽 3시에 수집)
   initializeScheduler()
+  
+  // 템플릿 스케줄러 초기화
+  try {
+    require('./scheduler/templateScheduler')
+    console.log('✅ 템플릿 스케줄러 초기화 완료')
+  } catch (error) {
+    console.warn('⚠️  템플릿 스케줄러 초기화 실패:', error.message)
+  }
 })
 
 // Graceful shutdown

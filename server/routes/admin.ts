@@ -768,6 +768,76 @@ router.post('/templates/:id/rollback', async (req: AuthRequest, res: Response) =
   }
 })
 
+// 템플릿 대시보드 데이터
+router.get('/templates/dashboard', authenticateToken, async (req: AuthRequest, res: Response) => {
+  try {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+
+    // 오늘의 통계
+    const todayUsage = await prisma.analytics.count({
+      where: {
+        eventType: 'TEMPLATE_USED',
+        createdAt: { gte: today },
+      },
+    })
+
+    // 가장 인기 있는 템플릿
+    const topTemplates = await prisma.template.findMany({
+      where: { isPublic: true },
+      orderBy: { usageCount: 'desc' },
+      take: 10,
+      select: {
+        id: true,
+        name: true,
+        usageCount: true,
+        rating: true,
+        category: true,
+      },
+    })
+
+    // 카테고리별 통계
+    const categoryStats = await prisma.template.groupBy({
+      by: ['category'],
+      where: { isPublic: true },
+      _count: { id: true },
+      _sum: { usageCount: true },
+    })
+
+    // 최근 7일 사용 추이
+    const sevenDaysAgo = new Date()
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7)
+
+    const dailyUsage = await prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
+      SELECT 
+        DATE(created_at) as date,
+        COUNT(*)::bigint as count
+      FROM analytics
+      WHERE event_type = 'TEMPLATE_USED'
+        AND created_at >= ${sevenDaysAgo}
+      GROUP BY DATE(created_at)
+      ORDER BY date ASC
+    `
+
+    res.json({
+      todayUsage,
+      topTemplates,
+      categoryStats: categoryStats.map(stat => ({
+        category: stat.category,
+        count: stat._count.id,
+        totalUsage: stat._sum.usageCount || 0,
+      })),
+      dailyUsage: dailyUsage.map(item => ({
+        date: item.date,
+        count: Number(item.count),
+      })),
+    })
+  } catch (error: any) {
+    console.error('템플릿 대시보드 오류:', error)
+    res.status(500).json({ error: '대시보드 데이터를 가져오는데 실패했습니다' })
+  }
+})
+
 // 감사 로그 조회
 router.get('/audit-logs', async (req: AuthRequest, res: Response) => {
   try {
