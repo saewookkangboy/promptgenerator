@@ -38,7 +38,14 @@ export default function TemplatePreviewModal({ template, onClose }: TemplatePrev
         setPrompt(result.prompt || '')
       } catch (err: any) {
         console.error('[TemplatePreviewModal] 템플릿 적용 실패:', err)
-        setError(err?.message || '템플릿을 불러오는데 실패했습니다.')
+        
+        // 인증 오류인 경우 특별 처리 (공개 템플릿이므로 폴백으로 처리)
+        if (err?.message?.includes('인증') || err?.message?.includes('로그인')) {
+          console.warn('[TemplatePreviewModal] 인증 오류 - 폴백으로 템플릿 내용 표시')
+          setError(null) // 인증 오류는 에러로 표시하지 않음
+        } else {
+          setError(err?.message || '템플릿을 불러오는데 실패했습니다.')
+        }
         
         // 에러 발생 시에도 템플릿 내용을 직접 표시
         try {

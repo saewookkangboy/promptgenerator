@@ -359,10 +359,51 @@ export const templateAPI = {
   },
 
   apply: async (id: string, variables: Record<string, string>) => {
-    return apiRequest<{ prompt: string }>(`/api/templates/${id}/apply`, {
-      method: 'POST',
-      body: JSON.stringify({ variables }),
-    })
+    // 공개 템플릿은 인증 없이 사용 가능하므로 인증 헤더를 보내지 않음
+    const normalizedEndpoint = `/api/templates/${id}/apply`
+    const url = `${API_BASE_URL}${normalizedEndpoint}`
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    
+    // 공개 템플릿은 인증 헤더 없이 요청
+    // (프리미엄 템플릿인 경우 서버에서 401을 반환하지만, 공개 템플릿은 문제없음)
+    
+    try {
+      console.log(`[templateAPI.apply] POST ${url}`)
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ variables }),
+      })
+
+      console.log(`[templateAPI.apply] ${response.status} ${response.statusText}`)
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: '알 수 없는 오류가 발생했습니다' }))
+        
+        // 401 에러인 경우, 공개 템플릿이므로 에러 메시지를 변경
+        if (response.status === 401) {
+          throw new Error(error.error || '템플릿에 접근할 수 없습니다. 프리미엄 템플릿은 로그인이 필요할 수 있습니다.')
+        }
+        
+        throw new Error(error.error || `HTTP ${response.status}`)
+      }
+
+      const jsonData = await response.json()
+      console.log(`[templateAPI.apply] 응답 성공:`, jsonData)
+      return jsonData
+    } catch (error: any) {
+      // 네트워크 오류 처리
+      if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+        console.error('[templateAPI.apply] 네트워크 오류:', error)
+        throw new Error(`서버에 연결할 수 없습니다. API 서버(${API_BASE_URL})가 실행 중인지 확인해주세요.`)
+      }
+      console.error('[templateAPI.apply] 요청 실패:', error)
+      throw error
+    }
   },
 
   recordUsage: async (templateId: string, data: {
