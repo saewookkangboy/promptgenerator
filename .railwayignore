@@ -1,0 +1,3 @@
+# Railway에서 Prisma 자동 실행 방지
+prisma/migrations
+

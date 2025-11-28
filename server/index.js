@@ -7,6 +7,7 @@ const cron = require('node-cron')
 const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
+const { execSync } = require('child_process')
 const jwt = require('jsonwebtoken')
 const { GoogleGenAI } = require('@google/genai')
 const { collectAllGuides } = require('./scraper/guideScraper')
@@ -20,6 +21,17 @@ const {
   sanitizeGuide,
 } = require('./services/guideService')
 const { prisma } = require('./db/prisma')
+
+// Railway 배포 시 마이그레이션 자동 실행
+if (process.env.RAILWAY_ENVIRONMENT || process.env.DATABASE_URL) {
+  try {
+    console.log('🔄 데이터베이스 마이그레이션 실행 중...')
+    execSync('npx prisma migrate deploy', { stdio: 'inherit' })
+    console.log('✅ 데이터베이스 마이그레이션 완료')
+  } catch (error) {
+    console.error('⚠️  마이그레이션 실행 실패 (계속 진행):', error.message)
+  }
+}
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview'

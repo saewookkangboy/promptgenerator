@@ -2,6 +2,7 @@
 
 [build]
 builder = "railpack"
+buildCommand = "npm run build"
 
 [deploy]
 startCommand = "npm start"
