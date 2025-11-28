@@ -86,7 +86,30 @@ async function apiRequest<T>(
     console.log(`[API Response] ${response.status} ${response.statusText}`)
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ error: '알 수 없는 오류가 발생했습니다' }))
+      let errorData: any = { error: null }
+      try {
+        errorData = await response.json()
+      } catch {
+        try {
+          const text = await response.text()
+          errorData = text ? { error: text } : { error: null }
+        } catch {
+          // ignore
+        }
+      }
+
+      // 문자열 본문일 때
+      if (typeof errorData === 'string') {
+        errorData = { error: errorData }
+      }
+
+      const fallbackMessage = `HTTP ${response.status} ${response.statusText || ''}`.trim()
+      const errorMessage =
+        errorData?.error ||
+        errorData?.message ||
+        errorData?.detail ||
+        fallbackMessage ||
+        '알 수 없는 오류가 발생했습니다'
       
       // 401 Unauthorized - 토큰 만료 또는 무효
       if (response.status === 401) {
@@ -102,10 +125,10 @@ async function apiRequest<T>(
           window.location.href = '/login'
         }
         // Admin 모드이거나 로그인 페이지에서는 에러만 throw (리다이렉트 안 함)
-        throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.')
+        throw new Error(errorMessage || '인증이 만료되었습니다. 다시 로그인해주세요.')
       }
 
-      throw new Error(error.error || `HTTP ${response.status}`)
+      throw new Error(errorMessage)
     }
 
     const jsonData = await response.json()

@@ -68,6 +68,10 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
       setDbHealth(result)
     } catch (error: any) {
       setDbHealthError(error?.message || 'DB 상태 확인에 실패했습니다.')
+      setDbHealth({
+        status: 'error',
+        message: error?.message || null,
+      })
     } finally {
       setDbHealthLoading(false)
     }
@@ -442,6 +446,11 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                   )}
                   {dbHealth?.message && (
                     <div style={{ color: '#c62828', fontSize: '0.9rem' }}>{dbHealth.message}</div>
+                  )}
+                  {dbHealth?.detail && (
+                    <div style={{ color: '#c62828', fontSize: '0.85rem' }}>
+                      {dbHealth.detail.code && `코드: ${dbHealth.detail.code}`}
+                    </div>
                   )}
                 </>
               )}

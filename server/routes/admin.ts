@@ -116,21 +116,28 @@ function serializeTemplate(template: any) {
 // DB 상태 체크
 router.get('/db/health', async (req: AuthRequest, res: Response) => {
   const startedAt = Date.now()
+  let status: 'ok' | 'error' = 'ok'
+  let message: string | null = null
+  let detail: any = null
   try {
     await prisma.$queryRaw`SELECT 1`
-    res.json({
-      status: 'ok',
-      latencyMs: Date.now() - startedAt,
-      timestamp: new Date().toISOString(),
-      database: maskDatabaseUrl(process.env.DATABASE_URL),
-    })
   } catch (error: any) {
-    res.status(500).json({
-      status: 'error',
-      latencyMs: Date.now() - startedAt,
-      message: error?.message || 'DB 연결 확인 중 오류가 발생했습니다.',
-    })
+    status = 'error'
+    message = error?.message || 'DB 연결 확인 중 오류가 발생했습니다.'
+    detail = {
+      code: error?.code,
+      meta: error?.meta,
+    }
   }
+
+  res.json({
+    status,
+    latencyMs: Date.now() - startedAt,
+    timestamp: new Date().toISOString(),
+    database: maskDatabaseUrl(process.env.DATABASE_URL),
+    message,
+    detail,
+  })
 })
 
 // 전체 통계 조회
