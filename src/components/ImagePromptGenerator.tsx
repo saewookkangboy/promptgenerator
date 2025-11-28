@@ -346,14 +346,12 @@ function ImagePromptGenerator() {
           className="model-dropdown-trigger"
           onClick={() => setImageDropdownOpen((prev) => !prev)}
         >
-          <div>
-            <div className="model-option__label">{selectedImageService?.label || '모델 선택'}</div>
-            <div className="model-option__meta">
-              <span>{selectedImageService?.provider || '제공사 미확인'}</span>
-              <span className="model-option__chip">{selectedImageService?.baseModel || '-'}</span>
-            </div>
-          </div>
-          <span className="model-dropdown-caret">{isImageDropdownOpen ? '▲' : '▼'}</span>
+          <span className="model-option__label">{selectedImageService?.label || '모델 선택'}</span>
+          <span className="model-option__meta-inline">
+            <span className="model-option__provider">{selectedImageService?.provider || '공식'}</span>
+            <span className="model-option__chip">{selectedImageService?.baseModel || '-'}</span>
+            <span className="model-dropdown-caret">{isImageDropdownOpen ? '▲' : '▼'}</span>
+          </span>
         </button>
         {isImageDropdownOpen && (
           <div className="model-option-dropdown">
@@ -363,17 +361,17 @@ function ImagePromptGenerator() {
                 <button
                   key={option.id}
                   type="button"
-                  className={`model-option ${isActive ? 'active' : ''}`}
+                  className={`model-option model-option--compact ${isActive ? 'active' : ''}`}
                   onClick={() => {
                     setSelectedImageServiceId(option.id)
                     setImageDropdownOpen(false)
                   }}
                 >
-                  <div className="model-option__label">{option.label}</div>
-                  <div className="model-option__meta">
-                    <span>{option.provider || '제공사 미확인'}</span>
+                  <span className="model-option__label">{option.label}</span>
+                  <span className="model-option__meta-inline">
+                    <span className="model-option__provider">{option.provider || '공식'}</span>
                     <span className="model-option__chip">{option.baseModel}</span>
-                  </div>
+                  </span>
                 </button>
               )
             })}

@@ -162,6 +162,25 @@
   gap: 6px;
 }
 
+.model-option__meta-inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-size-xs);
+  opacity: 0.8;
+}
+
+.model-option__provider {
+  font-weight: 500;
+  text-transform: capitalize;
+}
+
+.model-option--compact {
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+}
+
 .model-option__chip {
   border: 1px solid currentColor;
   border-radius: 999px;

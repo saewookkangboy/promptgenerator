@@ -400,14 +400,12 @@ function VideoPromptGenerator() {
           className="model-dropdown-trigger"
           onClick={() => setVideoDropdownOpen((prev) => !prev)}
         >
-          <div>
-            <div className="model-option__label">{selectedVideoService?.label || '모델 선택'}</div>
-            <div className="model-option__meta">
-              <span>{selectedVideoService?.provider || '제공사 미확인'}</span>
-              <span className="model-option__chip">{selectedVideoService?.baseModel || '-'}</span>
-            </div>
-          </div>
-          <span className="model-dropdown-caret">{isVideoDropdownOpen ? '▲' : '▼'}</span>
+          <span className="model-option__label">{selectedVideoService?.label || '모델 선택'}</span>
+          <span className="model-option__meta-inline">
+            <span className="model-option__provider">{selectedVideoService?.provider || '공식'}</span>
+            <span className="model-option__chip">{selectedVideoService?.baseModel || '-'}</span>
+            <span className="model-dropdown-caret">{isVideoDropdownOpen ? '▲' : '▼'}</span>
+          </span>
         </button>
         {isVideoDropdownOpen && (
           <div className="model-option-dropdown">
@@ -417,17 +415,17 @@ function VideoPromptGenerator() {
                 <button
                   key={option.id}
                   type="button"
-                  className={`model-option ${isActive ? 'active' : ''}`}
+                  className={`model-option model-option--compact ${isActive ? 'active' : ''}`}
                   onClick={() => {
                     setSelectedVideoServiceId(option.id)
                     setVideoDropdownOpen(false)
                   }}
                 >
-                  <div className="model-option__label">{option.label}</div>
-                  <div className="model-option__meta">
-                    <span>{option.provider || '제공사 미확인'}</span>
+                  <span className="model-option__label">{option.label}</span>
+                  <span className="model-option__meta-inline">
+                    <span className="model-option__provider">{option.provider || '공식'}</span>
                     <span className="model-option__chip">{option.baseModel}</span>
-                  </div>
+                  </span>
                 </button>
               )
             })}
