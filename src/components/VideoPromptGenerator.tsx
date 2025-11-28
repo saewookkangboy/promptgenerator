@@ -1,6 +1,6 @@
 // 동영상 프롬프트 생성 UI 컴포넌트
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { templateAPI, aiServicesAPI } from '../utils/api'
 import TemplateVariableForm from './TemplateVariableForm'
 import { VideoPromptOptions, VideoModel, VideoScene, CameraSettings, MotionSettings, VideoStyle, VideoTechnicalSettings } from '../types/video.types'
@@ -72,6 +72,16 @@ type VideoServiceOption = {
   baseModel: VideoModel
   provider?: string | null
 }
+
+const VIDEO_MODEL_PRIORITY: VideoModel[] = [
+  'sora',
+  'veo',
+  'runway',
+  'pika',
+  'stable-video',
+  'kling',
+  'luma',
+]
 
 const DEFAULT_VIDEO_SERVICE_OPTIONS: VideoServiceOption[] = [
   { id: 'video-sora', label: 'OpenAI Sora 2', baseModel: 'sora' },
@@ -159,9 +169,25 @@ const VIDEO_WIZARD_STEPS = [
 ]
 
 function VideoPromptGenerator() {
-  const [videoServiceOptions, setVideoServiceOptions] = useState<VideoServiceOption[]>(DEFAULT_VIDEO_SERVICE_OPTIONS)
+  const sortVideoOptions = (options: VideoServiceOption[]) => {
+    const priorityIndex = (model: VideoModel) => {
+      const index = VIDEO_MODEL_PRIORITY.indexOf(model)
+      return index === -1 ? VIDEO_MODEL_PRIORITY.length : index
+    }
+    return [...options].sort((a, b) => {
+      const diff = priorityIndex(a.baseModel) - priorityIndex(b.baseModel)
+      if (diff !== 0) return diff
+      return a.label.localeCompare(b.label)
+    })
+  }
+
+  const [videoServiceOptions, setVideoServiceOptions] = useState<VideoServiceOption[]>(
+    sortVideoOptions(DEFAULT_VIDEO_SERVICE_OPTIONS)
+  )
   const [selectedVideoServiceId, setSelectedVideoServiceId] = useState<string>(DEFAULT_VIDEO_SERVICE_ID)
   const [model, setModel] = useState<VideoModel>(DEFAULT_VIDEO_BASE_MODEL)
+  const [isVideoDropdownOpen, setVideoDropdownOpen] = useState(false)
+  const videoDropdownRef = useRef<HTMLDivElement | null>(null)
   const selectedVideoService = videoServiceOptions.find((option) => option.id === selectedVideoServiceId)
   const [overallStyle, setOverallStyle] = useState<VideoStyle>({
     genre: 'drama',
@@ -220,9 +246,11 @@ function VideoPromptGenerator() {
             provider: service.provider || null,
           }))
 
-          setVideoServiceOptions(options)
+          const sortedOptions = sortVideoOptions(options)
+
+          setVideoServiceOptions(sortedOptions)
           setSelectedVideoServiceId((prev) =>
-            options.some((option) => option.id === prev) ? prev : options[0].id
+            sortedOptions.some((option) => option.id === prev) ? prev : sortedOptions[0].id
           )
         }
       } catch (error) {
@@ -240,6 +268,20 @@ function VideoPromptGenerator() {
       setModel(option.baseModel)
     }
   }, [selectedVideoServiceId, videoServiceOptions])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (videoDropdownRef.current && !videoDropdownRef.current.contains(event.target as Node)) {
+        setVideoDropdownOpen(false)
+      }
+    }
+    if (isVideoDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isVideoDropdownOpen])
   
   // 템플릿 관련 상태
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
@@ -352,24 +394,45 @@ function VideoPromptGenerator() {
   const renderVideoModelSelector = () => (
     <div className="form-group">
       <label>동영상 생성 모델</label>
-      <div className="model-option-list">
-        {videoServiceOptions.map((option) => {
-          const isActive = option.id === selectedVideoServiceId
-          return (
-            <button
-              key={option.id}
-              type="button"
-              className={`model-option ${isActive ? 'active' : ''}`}
-              onClick={() => setSelectedVideoServiceId(option.id)}
-            >
-              <div className="model-option__label">{option.label}</div>
-              <div className="model-option__meta">
-                <span>{option.provider || '제공사 미확인'}</span>
-                <span className="model-option__chip">{option.baseModel}</span>
-              </div>
-            </button>
-          )
-        })}
+      <div className="model-dropdown" ref={videoDropdownRef}>
+        <button
+          type="button"
+          className="model-dropdown-trigger"
+          onClick={() => setVideoDropdownOpen((prev) => !prev)}
+        >
+          <div>
+            <div className="model-option__label">{selectedVideoService?.label || '모델 선택'}</div>
+            <div className="model-option__meta">
+              <span>{selectedVideoService?.provider || '제공사 미확인'}</span>
+              <span className="model-option__chip">{selectedVideoService?.baseModel || '-'}</span>
+            </div>
+          </div>
+          <span className="model-dropdown-caret">{isVideoDropdownOpen ? '▲' : '▼'}</span>
+        </button>
+        {isVideoDropdownOpen && (
+          <div className="model-option-dropdown">
+            {videoServiceOptions.map((option) => {
+              const isActive = option.id === selectedVideoServiceId
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`model-option ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedVideoServiceId(option.id)
+                    setVideoDropdownOpen(false)
+                  }}
+                >
+                  <div className="model-option__label">{option.label}</div>
+                  <div className="model-option__meta">
+                    <span>{option.provider || '제공사 미확인'}</span>
+                    <span className="model-option__chip">{option.baseModel}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )

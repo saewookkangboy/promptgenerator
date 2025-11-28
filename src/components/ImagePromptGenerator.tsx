@@ -1,6 +1,6 @@
 // 이미지 프롬프트 생성 UI 컴포넌트
 
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { templateAPI, aiServicesAPI } from '../utils/api'
 import TemplateVariableForm from './TemplateVariableForm'
 import { ImagePromptOptions, ImageModel, ImageStyle, Composition, Lighting, ColorPalette, TechnicalSettings } from '../types/image.types'
@@ -24,12 +24,24 @@ type ImageServiceOption = {
   provider?: string | null
 }
 
+const IMAGE_MODEL_PRIORITY: ImageModel[] = [
+  'midjourney',
+  'imagen-3',
+  'dalle',
+  'firefly',
+  'stable-diffusion',
+  'leonardo',
+  'flux',
+  'ideogram',
+  'comfyui',
+]
+
 const DEFAULT_IMAGE_SERVICE_OPTIONS: ImageServiceOption[] = [
   { id: 'image-midjourney', label: 'Midjourney', baseModel: 'midjourney' },
-  { id: 'image-dalle', label: 'DALL-E 3', baseModel: 'dalle' },
-  { id: 'image-stable-diffusion', label: 'Stable Diffusion', baseModel: 'stable-diffusion' },
-  { id: 'image-imagen', label: 'Google Imagen', baseModel: 'imagen-3' },
+  { id: 'image-imagen', label: 'Google Imagen 3', baseModel: 'imagen-3' },
+  { id: 'image-dalle', label: 'OpenAI DALL-E 3', baseModel: 'dalle' },
   { id: 'image-firefly', label: 'Adobe Firefly', baseModel: 'firefly' },
+  { id: 'image-stable-diffusion', label: 'Stability Stable Diffusion', baseModel: 'stable-diffusion' },
   { id: 'image-leonardo', label: 'Leonardo AI', baseModel: 'leonardo' },
   { id: 'image-flux', label: 'Flux', baseModel: 'flux' },
   { id: 'image-ideogram', label: 'Ideogram', baseModel: 'ideogram' },
@@ -127,9 +139,25 @@ const IMAGE_WIZARD_STEPS = [
 ]
 
 function ImagePromptGenerator() {
-  const [imageServiceOptions, setImageServiceOptions] = useState<ImageServiceOption[]>(DEFAULT_IMAGE_SERVICE_OPTIONS)
+  const sortImageOptions = (options: ImageServiceOption[]) => {
+    const priorityIndex = (model: ImageModel) => {
+      const index = IMAGE_MODEL_PRIORITY.indexOf(model)
+      return index === -1 ? IMAGE_MODEL_PRIORITY.length : index
+    }
+    return [...options].sort((a, b) => {
+      const diff = priorityIndex(a.baseModel) - priorityIndex(b.baseModel)
+      if (diff !== 0) return diff
+      return a.label.localeCompare(b.label)
+    })
+  }
+
+  const [imageServiceOptions, setImageServiceOptions] = useState<ImageServiceOption[]>(
+    sortImageOptions(DEFAULT_IMAGE_SERVICE_OPTIONS)
+  )
   const [selectedImageServiceId, setSelectedImageServiceId] = useState<string>(DEFAULT_IMAGE_SERVICE_ID)
   const [model, setModel] = useState<ImageModel>(DEFAULT_IMAGE_BASE_MODEL)
+  const [isImageDropdownOpen, setImageDropdownOpen] = useState(false)
+  const imageDropdownRef = useRef<HTMLDivElement | null>(null)
   const selectedImageService = imageServiceOptions.find((option) => option.id === selectedImageServiceId)
   const [subject, setSubject] = useState('')
   const [style, setStyle] = useState<ImageStyle>({
@@ -177,9 +205,11 @@ function ImagePromptGenerator() {
             provider: service.provider || null,
           }))
 
-          setImageServiceOptions(options)
+          const sortedOptions = sortImageOptions(options)
+
+          setImageServiceOptions(sortedOptions)
           setSelectedImageServiceId((prev) =>
-            options.some((option) => option.id === prev) ? prev : options[0].id
+            sortedOptions.some((option) => option.id === prev) ? prev : sortedOptions[0].id
           )
         }
       } catch (error) {
@@ -197,6 +227,20 @@ function ImagePromptGenerator() {
       setModel(option.baseModel)
     }
   }, [selectedImageServiceId, imageServiceOptions])
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (imageDropdownRef.current && !imageDropdownRef.current.contains(event.target as Node)) {
+        setImageDropdownOpen(false)
+      }
+    }
+    if (isImageDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside)
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isImageDropdownOpen])
   const [useWizardMode, setUseWizardMode] = useState(true)
   const [wizardStep, setWizardStep] = useState(1)
   
@@ -296,24 +340,45 @@ function ImagePromptGenerator() {
   const renderModelSelector = () => (
     <div className="form-group">
       <label>이미지 생성 모델</label>
-      <div className="model-option-list">
-        {imageServiceOptions.map((option) => {
-          const isActive = option.id === selectedImageServiceId
-          return (
-            <button
-              key={option.id}
-              type="button"
-              className={`model-option ${isActive ? 'active' : ''}`}
-              onClick={() => setSelectedImageServiceId(option.id)}
-            >
-              <div className="model-option__label">{option.label}</div>
-              <div className="model-option__meta">
-                <span>{option.provider || '제공사 미확인'}</span>
-                <span className="model-option__chip">{option.baseModel}</span>
-              </div>
-            </button>
-          )
-        })}
+      <div className="model-dropdown" ref={imageDropdownRef}>
+        <button
+          type="button"
+          className="model-dropdown-trigger"
+          onClick={() => setImageDropdownOpen((prev) => !prev)}
+        >
+          <div>
+            <div className="model-option__label">{selectedImageService?.label || '모델 선택'}</div>
+            <div className="model-option__meta">
+              <span>{selectedImageService?.provider || '제공사 미확인'}</span>
+              <span className="model-option__chip">{selectedImageService?.baseModel || '-'}</span>
+            </div>
+          </div>
+          <span className="model-dropdown-caret">{isImageDropdownOpen ? '▲' : '▼'}</span>
+        </button>
+        {isImageDropdownOpen && (
+          <div className="model-option-dropdown">
+            {imageServiceOptions.map((option) => {
+              const isActive = option.id === selectedImageServiceId
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  className={`model-option ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    setSelectedImageServiceId(option.id)
+                    setImageDropdownOpen(false)
+                  }}
+                >
+                  <div className="model-option__label">{option.label}</div>
+                  <div className="model-option__meta">
+                    <span>{option.provider || '제공사 미확인'}</span>
+                    <span className="model-option__chip">{option.baseModel}</span>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
       </div>
     </div>
   )
