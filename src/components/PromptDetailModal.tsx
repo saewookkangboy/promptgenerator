@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { adminAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
 import './PromptDetailModal.css'
 
