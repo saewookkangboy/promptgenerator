@@ -5,9 +5,13 @@
 ## 📋 목차
 
 - [주요 기능](#주요-기능)
+- [최신 업데이트](#최신-업데이트)
 - [기능 상세](#기능-상세)
 - [설치 및 실행](#설치-및-실행)
+- [백엔드 및 API](#백엔드-및-api)
+- [AI 서비스 자동화](#ai-서비스-자동화)
 - [사용 방법](#사용-방법)
+- [데이터베이스](#데이터베이스)
 - [기술 스택](#기술-스택)
 - [프로젝트 구조](#프로젝트-구조)
 
@@ -222,6 +226,15 @@
 
 ---
 
+## 최신 업데이트
+
+- **백엔드/DB 확장**: Prisma 기반 PostgreSQL 스키마(워크스페이스, 폴더/태그, 프롬프트 버전/AB 테스트, 멀티모델 생성, 템플릿, 감사 로그 등 19개 테이블)와 JWT 인증 API(`/api/auth`, `/api/users`, `/api/prompts`, `/api/admin`, `/api/templates`)를 추가했습니다.
+- **AI 서비스 자동화**: `data/ai-gen-services.md`를 파싱해 DB에 저장하고, 주 1회 URL 검증·상태 갱신을 수행합니다. 프론트에서 이미지/동영상 모델 목록을 DB에서 동적으로 불러옵니다. API: `/api/ai-services`, `/api/ai-services/:id`, `/api/ai-services/category/:category`.
+- **실행 스크립트 정리**: `npm run build:server`, `npm run server:dev`, `npm run ai-services:parse`, `npm run ai-services:update`, `npm run start:with-migrate` 등 서버/자동화용 스크립트를 추가했습니다.
+- **Node 버전 상향**: `package.json` 기준 최소 Node는 `20.19.0`, npm은 `10` 이상입니다.
+
+---
+
 ### 디자인 및 UI/UX
 
 #### 디자인 시스템
@@ -257,8 +270,8 @@
 ## 설치 및 실행
 
 ### 요구사항
-- Node.js 18 이상
-- npm 또는 yarn
+- Node.js 20.19.0 이상, npm 10+
+- PostgreSQL 15+ (로컬 또는 매니지드)
 
 ### 설치
 
@@ -278,6 +291,11 @@ npm install
 
 ```bash
 DATABASE_URL="postgresql://YOUR_DB_URL"
+PORT=3001
+VITE_API_BASE_URL="http://localhost:3001"
+FRONTEND_URL="http://localhost:5173"
+JWT_SECRET="YOUR_JWT_SECRET" # 신규 (필수)
+ADMIN_EMAIL="admin@example.com" # 콤마로 여러 개 지정 가능
 GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 GEMINI_MODEL="gemini-1.5-flash-latest" # 선택
 OPENAI_API_KEY="YOUR_OPENAI_API_KEY" # 요약 파이프라인 압축용 (선택)
@@ -294,8 +312,24 @@ GOOGLE_SEARCH_ENGINE_ID=""
 OPTIMIZE_API_KEY=""
 ```
 
+- `JWT_SECRET`는 모든 인증/관리자 API에 필수입니다. `ADMIN_EMAIL`을 콤마로 지정하면 Admin 권한을 부여할 수 있습니다.
+- `VITE_API_BASE_URL`/`FRONTEND_URL`은 프론트-백엔드 CORS/프록시를 맞추기 위해 설정합니다. 기본 포트는 `PORT=3001`입니다.
 - Google Custom Search 키/ID는 [Programmable Search Engine](https://programmablesearchengine.google.com/)에서 검색 엔진 생성 후 얻을 수 있습니다. `googleapis.com/customsearch/v1` 호출이 가능한 API 키를 반드시 활성화하세요.
 - `OPTIMIZE_API_KEY`는 Prisma Client에 `withOptimize` 확장을 적용할 때 필요합니다. 설정하지 않아도 기본 Prisma는 동작하지만, 쿼리 최적화 지표를 확인하려면 키를 발급 받아 입력하세요.
+
+### 데이터베이스 초기화
+
+```bash
+# 스키마 반영
+npm run db:push
+
+# 기본 관리자/샘플 데이터 (선택)
+npm run db:seed
+npm run db:seed:library # 프롬프트 라이브러리 템플릿
+
+# AI 서비스 정보 입력 (data/ai-gen-services.md 필요)
+npm run ai-services:parse
+```
 
 ### 번역 호출 로그
 
@@ -305,7 +339,12 @@ OPTIMIZE_API_KEY=""
 ### 개발 서버 실행
 
 ```bash
-npm run dev
+# 백엔드 (Express + Prisma)
+npm run build:server   # TypeScript 라우트 컴파일
+npm run server:dev     # nodemon, http://localhost:3001
+
+# 프론트엔드 (Vite)
+npm run dev            # http://localhost:5173
 ```
 
 브라우저에서 `http://localhost:5173` 접속
@@ -314,6 +353,9 @@ npm run dev
 
 ```bash
 npm run build
+npm run start              # server/index.js 실행
+# 또는 마이그레이션 포함 실행
+npm run start:with-migrate
 ```
 
 빌드된 파일은 `dist` 폴더에 생성됩니다.
@@ -333,9 +375,26 @@ npm run preview
 | 프론트 타입/번들 검사 | `npm run build` | Vite + TypeScript 빌드 |
 | 서버 타입 검사 | `npm run build:server` | `tsconfig.server.json` 기반 |
 | 환경 변수 점검 | `npm run check:env` | 누락된 필수 키를 콘솔로 안내 |
+| DB 스키마 반영 | `npm run db:push` | Prisma 스키마 적용 |
+| AI 서비스 데이터 갱신 | `npm run ai-services:update` | 파싱 + URL 검증 + 상태 업데이트 |
 
 - Prompt Guide 파이프라인을 검증하려면 `npm run server` 실행 후 `POST /api/guides/collect`(전체) 또는 `/api/guides/collect/:modelName`(단일)을 호출하고, `GET /api/admin/guides/history` 응답에서 최신 수집 결과를 확인하세요.
 - 프론트엔드에서는 모델 선택 → “가이드 새로고침” → 프롬프트 생성 순으로 진행하면서 결과 카드 상단의 “모델 가이드 반영됨” 영역에 기대한 제목/신뢰도가 표시되는지 확인하면 됩니다.
+
+## 백엔드 및 API
+
+- **Express + Prisma + PostgreSQL**로 서버를 구성했으며, TypeScript 라우트(`server/routes/*.ts`)는 `npm run build:server`로 컴파일합니다.
+- **JWT 인증**: `/api/auth/register`, `/api/auth/login`, `/api/auth/me`를 제공하며 `JWT_SECRET`과 `ADMIN_EMAIL` 기반으로 Admin 권한을 부여합니다.
+- **프롬프트/워크스페이스 API**: `/api/prompts`에서 폴더·태그 필터, 프롬프트 버전 관리, 워크스페이스 권한 체크를 지원합니다.
+- **템플릿/가이드/관리자 API**: `/api/templates`, `/api/admin/*`, `/api/guides/*`를 통해 템플릿 관리, 가이드 수집/히스토리 조회, 통계·감사 로그 조회를 제공합니다.
+- **멀티모델/AB 테스트 스키마**를 포함하여 모델별 점수 예측, A/B 테스트, 멀티모델 생성 결과를 저장할 수 있습니다.
+
+## AI 서비스 자동화
+
+- `data/ai-gen-services.md`를 파싱해 **AIService** 테이블에 저장하고, 주 1회(월요일 09:00 KST) URL 상태를 자동 검증합니다. 스크립트는 `scripts/parse-ai-services.js`, 스케줄러는 `server/scheduler/aiServiceScheduler.js`에 있습니다.
+- 프론트의 이미지/동영상 모델 선택기는 `/api/ai-services` 응답을 이용해 DB에 저장된 서비스 목록을 동적으로 불러옵니다.
+- **API**: `/api/ai-services`, `/api/ai-services/:id`, `/api/ai-services/category/:category` (카테고리/상태 필터 지원).
+- **명령어**: `npm run ai-services:parse`(초기 적재), `npm run ai-services:update`(파싱+URL 검증 일괄 수행). 상세 사용법은 `docs/AI_SERVICES_AUTOMATION.md` 참고.
 
 ---
 
@@ -440,23 +499,26 @@ npm run preview
 
 ## 🗄️ 데이터베이스
 
-이 서비스는 **PostgreSQL**을 사용합니다. SQLite나 파일 기반 캐시를 사용하지 않으며, 모든 데이터는 PostgreSQL 서버에 저장됩니다.
+이 서비스는 **PostgreSQL**만 사용합니다. Prisma 스키마는 `prisma/schema.prisma`에, SQL 버전은 `database/schema.sql`에 정의되어 있습니다. `npm run db:push` 또는 `npm run db:migrate`로 스키마를 적용하세요.
 
-### 저장되는 데이터
+### 주요 테이블 그룹
 
-- **사용자 회원가입 정보** (Users 테이블)
-- **프롬프트 템플릿** (Templates 테이블)
-- **사용자 프롬프트 이력** (Prompts 테이블)
-- **프롬프트 가이드라인** (PromptGuides 테이블)
-- **서비스 이용자 통계** (Analytics 테이블)
-- **워크스페이스 정보** (Workspaces 테이블)
-- **관리자 감사 로그** (AdminAuditLog 테이블)
+- **사용자/권한/구독**: `User`, `Workspace`, `WorkspaceMember`, `PromptShare`, `AdminAuditLog` (JWT 기반 인증 + 워크스페이스/권한 관리)
+- **프롬프트/버전/테스트**: `Prompt`, `PromptVersion`, `Folder`, `PromptTag`, `PromptTagRelation`, `ABTest`, `ABTestVariant`, `TestResult`, `ModelOptimization`, `MultiModelGeneration`, `MultiModelResult`
+- **템플릿/가이드/수집**: `Template`, `PromptGuide`, `GuideSource`, `GuideCollectionJob`, `GuideCollectionResult` (가이드 스크래핑/히스토리)
+- **자동화/메타데이터**: `AIService`(AI 모델 정보 자동화), `Analytics`, `Comment` 등 서비스 로그와 통계
 
-### Railway 배포
+### 배포 가이드
 
-Railway에 배포하는 방법은 [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md)를 참조하세요.
+- Railway 배포는 [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.md) 참고, 서버 포트(`PORT`)와 DB URL만 맞추면 됩니다.
 
 ## 기술 스택
+
+### 백엔드
+- **Express 5 + Node 20**: API 서버 및 스케줄러
+- **Prisma + PostgreSQL**: ORM/DB
+- **JWT/CORS/Middleware**: `jsonwebtoken`, `cors`, 커스텀 인증/권한 미들웨어
+- **node-cron/cheerio**: 가이드·AI 서비스 수집 및 정기 실행
 
 ### 프론트엔드
 - **React 18**: UI 라이브러리
@@ -477,59 +539,21 @@ Railway에 배포하는 방법은 [RAILWAY_DEPLOYMENT.md](./RAILWAY_DEPLOYMENT.m
 ## 프로젝트 구조
 
 ```
-src/
-├── types/                    # 타입 정의
-│   ├── prompt.types.ts      # 기본 프롬프트 타입
-│   ├── image.types.ts       # 이미지 생성 타입
-│   ├── video.types.ts       # 동영상 생성 타입
-│   ├── engineering.types.ts # 프롬프트 엔지니어링 타입
-│   └── index.ts             # 타입 통합 export
-│
-├── generators/               # 프롬프트 생성기
-│   ├── base/                # 기본 추상 클래스
-│   │   └── BasePromptGenerator.ts
-│   ├── text/                # 텍스트 생성기
-│   │   └── TextPromptGenerator.ts
-│   ├── image/               # 이미지 생성기
-│   │   ├── ImagePromptGenerator.ts
-│   │   ├── midjourney/
-│   │   │   └── MidjourneyGenerator.ts
-│   │   └── dalle/
-│   │       └── DALLEGenerator.ts
-│   ├── video/               # 동영상 생성기
-│   │   ├── VideoPromptGenerator.ts
-│   │   ├── sora/
-│   │   │   └── SoraGenerator.ts
-│   │   └── veo/
-│   │       └── VeoGenerator.ts
-│   ├── engineering/         # 프롬프트 엔지니어링
-│   │   └── PromptEngineer.ts
-│   └── factory/             # 팩토리 패턴
-│       └── PromptGeneratorFactory.ts
-│
-├── components/              # UI 컴포넌트
-│   ├── PromptGenerator.tsx          # 텍스트 생성 UI
-│   ├── ImagePromptGenerator.tsx     # 이미지 생성 UI
-│   ├── VideoPromptGenerator.tsx     # 동영상 생성 UI
-│   ├── EngineeringPromptGenerator.tsx # 엔지니어링 UI
-│   ├── AdminLogin.tsx               # Admin 로그인 UI
-│   ├── AdminDashboard.tsx           # Admin 대시보드 UI
-│   ├── ResultCard.tsx               # 결과 표시 카드
-│   ├── LoadingSpinner.tsx           # 로딩 스피너 컴포넌트
-│   ├── ErrorMessage.tsx             # 에러 메시지 컴포넌트
-│   └── *.css                        # 스타일 파일
-│
-├── utils/                   # 유틸리티
-│   ├── englishTranslator.ts # 영어 번역 유틸리티
-│   ├── validation.ts        # 입력 검증 유틸리티
-│   ├── storage.ts           # 데이터 저장 유틸리티 (Admin 기록)
-│   ├── hooks.ts             # 공통 React 훅
-│   ├── constants.ts         # 공통 상수
-│   └── notifications.ts     # 알림 유틸리티
-│
-├── App.tsx                  # 메인 앱 컴포넌트
-├── main.tsx                 # 진입점
-└── index.css                # 전역 스타일
+server/                      # Express API 서버
+├── routes/                  # auth, users, prompts, templates, admin, ai-services
+├── scheduler/               # guide/aiService/template 스케줄러
+├── scraper/                 # 프롬프트 가이드 수집기
+├── services/                # 가이드/템플릿/키워드 유틸
+└── db/prisma.ts             # Prisma 클라이언트
+
+prisma/
+├── schema.prisma            # 19개 모델 정의 (User, Prompt, Template, AIService 등)
+└── seed.ts                  # 기본 관리자/샘플 데이터 시드
+
+database/schema.sql          # PostgreSQL용 DDL 스냅샷
+data/ai-gen-services.md      # AI 서비스 메타데이터 소스
+scripts/                     # env 체크, AI 서비스 파서, 템플릿 생성 등
+src/                         # React/Vite 프론트엔드 (제너레이터, Admin UI, 공통 유틸 포함)
 ```
 
 ---
@@ -645,6 +669,12 @@ src/
   - 행 선택 시 시각적 피드백
   - "메인으로" 버튼으로 일반 모드 복귀
   - 접근성 고려 (키보드 네비게이션, 포커스 상태)
+
+### 백엔드/자동화 업데이트 (2025)
+- Prisma 스키마 확장: 워크스페이스/폴더/태그, 프롬프트 버전, AB 테스트, 멀티모델 생성, 템플릿, 감사 로그, AI 서비스 등 19개 모델 반영.
+- Express API 추가: `/api/auth`, `/api/users`, `/api/prompts`, `/api/templates`, `/api/admin/*`, `/api/guides/*`, `/api/ai-services` 엔드포인트 정리 및 JWT 기반 접근 제어.
+- 자동화 파이프라인: 가이드 수집 스케줄러(`server/scheduler/guideScheduler.js`), AI 서비스 상태 갱신(`aiServiceScheduler.js`), 템플릿 생성 스케줄러(`templateScheduler.ts`).
+- 실행 스크립트: `npm run ai-services:parse/update`, `npm run build:server`, `npm run start:with-migrate`, `npm run pre-deploy` 등 배포/데이터 동기화를 위한 커맨드 추가.
 
 ---
 

@@ -5,7 +5,7 @@ builder = "railpack"
 buildCommand = "npm run build"
 
 [deploy]
-startCommand = "npm start"
+startCommand = "npm run start:with-migrate"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 
@@ -15,4 +15,3 @@ path = "/api/health"
 interval = 30
 timeout = 10
 retries = 3
-

@@ -65,9 +65,9 @@ OPENAI_SUMMARIZE_MODEL=gpt-4o-mini
 VITE_API_URL=https://your-backend-domain.railway.app
 ```
 
-### 4. 데이터베이스 마이그레이션
+### 4. 데이터베이스 마이그레이션 및 서버 시작
 
-Railway는 배포 시 자동으로 `npm start`를 실행하며, 이는 다음을 수행합니다:
+`railway.toml`의 `startCommand`는 `npm run start:with-migrate`로 설정되어 있어 배포 시 다음 순서로 실행됩니다:
 - `npm run db:migrate:deploy` - 데이터베이스 마이그레이션 실행
 - `node server/index.js` - 서버 시작
 
@@ -194,4 +194,3 @@ railway run npm run db:seed:library
 2. **ADMIN_PASSWORD**: 강력한 비밀번호 사용
 3. **CORS_ORIGIN**: 프로덕션 도메인만 허용
 4. **환경 변수**: 민감한 정보는 Railway Variables에만 저장
-

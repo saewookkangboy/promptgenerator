@@ -32,14 +32,37 @@ function hasApiDocsKeyword(url) {
 }
 
 // 마크다운 테이블 파싱
-function parseMarkdownTable(content, category) {
+function parseMarkdownTable(content, category, headingKeyword) {
   const lines = content.split('\n')
   const services = []
   let inTable = false
   let headerFound = false
+  let inSection = false
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i].trim()
+
+    // 섹션 진입/이탈 감지
+    if (line.startsWith('##')) {
+      const normalized = line.replace(/[#\s\d\)\(]/g, '').toLowerCase()
+      const keywordNormalized = headingKeyword.replace(/\s+/g, '').toLowerCase()
+
+      if (normalized.includes(keywordNormalized)) {
+        inSection = true
+        inTable = false
+        headerFound = false
+        continue
+      }
+
+      if (inSection) {
+        // 이미 섹션 안이었고 다른 섹션을 만났으면 종료
+        break
+      }
+    }
+
+    if (!inSection) {
+      continue
+    }
 
     // 테이블 시작 감지 (헤더 라인)
     if (line.startsWith('| 서비스 명') || line.startsWith('| 서비스명')) {
@@ -54,7 +77,7 @@ function parseMarkdownTable(content, category) {
     }
 
     // 테이블 종료 감지 (빈 줄 또는 다른 섹션)
-    if (inTable && (line === '' || line.startsWith('##'))) {
+    if (inTable && line === '') {
       if (headerFound) break
       inTable = false
       continue
@@ -147,11 +170,11 @@ async function parseAndStoreAIServices() {
     const content = fs.readFileSync(filePath, 'utf-8')
 
     // 이미지 서비스 파싱
-    const imageServices = parseMarkdownTable(content, 'IMAGE')
+  const imageServices = parseMarkdownTable(content, 'IMAGE', '이미지생성')
     console.log(`📸 이미지 서비스 ${imageServices.length}개 발견`)
 
     // 동영상 서비스 파싱
-    const videoServices = parseMarkdownTable(content, 'VIDEO')
+  const videoServices = parseMarkdownTable(content, 'VIDEO', '동영상생성')
     console.log(`🎬 동영상 서비스 ${videoServices.length}개 발견`)
 
     const allServices = [...imageServices, ...videoServices]

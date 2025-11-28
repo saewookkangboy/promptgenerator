@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { clearAdminAuth } from '../utils/storage'
 import { removeToken, adminAPI } from '../utils/api'
 import VisitGraphModal from './VisitGraphModal'
@@ -80,6 +80,45 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   useEffect(() => {
     fetchDbHealth()
   }, [fetchDbHealth])
+
+  const dbStatusConfig = useMemo(() => {
+    if (dbHealthLoading) {
+      return {
+        label: '상태 확인 중',
+        tone: 'loading',
+        description: 'DB 상태를 점검하는 중입니다.',
+        latencyText: '',
+      }
+    }
+
+    if (!dbHealth) {
+      return {
+        label: '정보 없음',
+        tone: 'neutral',
+        description: 'DB 상태 정보를 불러오지 못했습니다.',
+        latencyText: '',
+      }
+    }
+
+    const latencyText =
+      typeof dbHealth.latencyMs === 'number' ? `${Math.round(dbHealth.latencyMs)}ms` : ''
+
+    if (dbHealth.status === 'ok') {
+      return {
+        label: '정상 연결',
+        tone: 'success',
+        description: '핵심 쿼리가 정상 응답 중입니다.',
+        latencyText,
+      }
+    }
+
+    return {
+      label: '오류 발생',
+      tone: 'danger',
+      description: dbHealthError || dbHealth.message || 'DB 연결 오류가 감지되었습니다.',
+      latencyText,
+    }
+  }, [dbHealth, dbHealthError, dbHealthLoading])
 
   const filteredRecords = selectedCategory === 'all' 
     ? records 
@@ -428,36 +467,46 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
           )}
           {!loading && isServerOnline && (
           <>
-          <div className="admin-status-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
-            <div>
-              <div style={{ fontWeight: 600 }}>DB 연결 상태</div>
-              {dbHealthLoading && <div>확인 중...</div>}
-              {!dbHealthLoading && (
-                <>
-                  <div>
-                    상태: {dbHealth?.status === 'ok' ? '정상 연결' : '오류'}
-                    {dbHealth?.latencyMs !== undefined && ` · ${dbHealth.latencyMs}ms`}
-                  </div>
-                  {dbHealth?.database && (
-                    <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>DB: {dbHealth.database}</div>
-                  )}
-                  {dbHealthError && (
-                    <div style={{ color: '#c62828', fontSize: '0.9rem' }}>{dbHealthError}</div>
-                  )}
-                  {dbHealth?.message && (
-                    <div style={{ color: '#c62828', fontSize: '0.9rem' }}>{dbHealth.message}</div>
-                  )}
-                  {dbHealth?.detail && (
-                    <div style={{ color: '#c62828', fontSize: '0.85rem' }}>
-                      {dbHealth.detail.code && `코드: ${dbHealth.detail.code}`}
-                    </div>
-                  )}
-                </>
+          <div className={`db-status-card tone-${dbStatusConfig.tone}`}>
+            <div className="db-status-header">
+              <div className="db-status-heading">
+                <span className="db-status-pill">
+                  <span className="db-status-dot" />
+                  {dbStatusConfig.label}
+                </span>
+                {dbStatusConfig.latencyText && (
+                  <span className="db-status-latency">· {dbStatusConfig.latencyText}</span>
+                )}
+              </div>
+              <button
+                className="db-status-refresh"
+                onClick={fetchDbHealth}
+                disabled={dbHealthLoading}
+              >
+                {dbHealthLoading ? '확인 중…' : 'DB 상태 새로고침'}
+              </button>
+            </div>
+            <div className="db-status-body">
+              <p className="db-status-description">{dbStatusConfig.description}</p>
+              {dbHealth?.database && (
+                <div className="db-status-meta">
+                  <span className="meta-label">연결 대상</span>
+                  <span className="meta-value">{dbHealth.database}</span>
+                </div>
+              )}
+              {(dbHealthError || dbHealth?.message) && dbStatusConfig.tone !== 'success' && (
+                <div className="db-status-meta db-status-meta-error">
+                  <span className="meta-label">메시지</span>
+                  <span className="meta-value">{dbHealthError || dbHealth?.message}</span>
+                </div>
+              )}
+              {dbHealth?.detail?.code && (
+                <div className="db-status-meta db-status-meta-error">
+                  <span className="meta-label">코드</span>
+                  <span className="meta-value">{dbHealth.detail.code}</span>
+                </div>
               )}
             </div>
-            <button className="template-button secondary" onClick={fetchDbHealth} disabled={dbHealthLoading}>
-              {dbHealthLoading ? '확인 중...' : 'DB 상태 새로고침'}
-            </button>
           </div>
 
           <div className="admin-stats-grid">

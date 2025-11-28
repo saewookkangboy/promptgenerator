@@ -2,19 +2,26 @@
 
 // 환경 변수 검증 스크립트
 // 배포 전 필수 환경 변수가 설정되었는지 확인
+require('dotenv').config()
 
 const requiredEnvVars = [
+  'DATABASE_URL',
+  'JWT_SECRET',
+  'ADMIN_EMAIL',
+  'ADMIN_PASSWORD',
+  'PORT',
   'GEMINI_API_KEY',
-  'OPENAI_API_KEY',
 ]
 
 const optionalEnvVars = [
   'GEMINI_MODEL',
+  'OPENAI_API_KEY',
   'OPENAI_SUMMARIZE_MODEL',
-  'DATABASE_URL',
   'FRONTEND_URL',
-  'PORT',
+  'VITE_API_BASE_URL',
   'NODE_ENV',
+  'PUBLIC_BASE_URL',
+  'PUBLIC_BRAND_NAME',
 ]
 
 console.log('🔍 환경 변수 검증 중...\n')
@@ -82,4 +89,3 @@ if (hasErrors) {
   console.log('✅ 모든 환경 변수가 올바르게 설정되었습니다!')
   process.exit(0)
 }
-

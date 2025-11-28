@@ -1,143 +1,119 @@
 {
-  "generatedAt": "2025-11-28T04:27:39.202Z",
+  "generatedAt": "2025-11-28T07:30:07.917Z",
   "brand": "AllRounder.im",
   "baseUrl": "https://allrounder.im",
   "metaKeywords": [
     "imagen",
     "이미지",
     "프롬프트",
+    "prompt",
     "프로젝트 관리",
-    "프로젝트",
-    "관리",
-    "리스크 관리",
-    "리스크",
-    "계획",
+    "리스크 관리 계획",
     "실행형",
     "템플릿",
+    "실무",
     "PM",
     "리스크 레지스터",
     "발생확률",
     "영향도",
+    "탐지 시그널",
     "대응전략",
     "Owner",
+    "Due",
     "Status",
-    "대응 플랜",
-    "운영 방식",
-    "리뷰",
     "변경관리",
-    "AI 추천",
     "광고",
     "브랜딩",
-    "생성",
-    "제품",
-    "서비스",
-    "브랜드",
+    "생성하다",
     "고품질",
-    "주제",
-    "스타일",
-    "조명",
-    "구도",
-    "시점",
-    "배경",
-    "분위기",
-    "감성",
-    "품질",
-    "디테일",
+    "Subject",
+    "Style",
+    "Lighting",
+    "Composition",
+    "Viewpoint",
+    "Background",
+    "Environment",
+    "Mood",
+    "Emotion",
+    "Quality",
+    "Details",
     "photorealistic",
     "8K",
     "high resolution",
     "cinematic",
     "professional photography",
-    "색상 팔레트",
-    "종횡비",
-    "부정 프롬프트",
+    "Color Palette",
+    "Aspect Ratio",
     "Negative Prompt",
     "운영 최적화",
-    "운영",
-    "최적화",
     "프로세스 개선",
-    "프로세스",
-    "개선",
     "As-Is",
     "To-Be",
-    "운영 혁신",
     "Operational Excellence",
+    "컨설턴트",
     "병목",
-    "자동화",
-    "표준화",
-    "문서",
+    "개선안",
+    "자동화 포인트",
+    "표준화 문서",
     "체크리스트",
     "KPI",
-    "설계",
+    "리드타임",
+    "오류율",
+    "재작업률",
+    "처리량",
     "법무 문서",
-    "법무",
     "Legal Document Preparation",
     "NDA",
-    "조항",
-    "개요",
+    "핵심 조항",
     "시장조사",
     "Market Research",
-    "설문지",
     "정량",
     "정성",
-    "분석",
+    "설문지",
+    "분석 설계",
     "지속가능성 기획",
-    "지속가능성",
-    "기획",
     "Sustainability Planning",
-    "전략",
-    "목표",
+    "단기 목표",
+    "장기 목표",
     "이니셔티브",
+    "지속가능성 전략",
     "제품 개발",
-    "개발",
     "Product Development",
-    "PRD",
+    "PRD 템플릿",
     "유저 스토리",
     "기술 스펙",
     "성공 지표",
     "마케팅 전략",
-    "마케팅",
-    "소셜 콘텐츠",
-    "콘텐츠",
-    "캘린더",
-    "타겟",
-    "페르소나",
+    "소셜 콘텐츠 캘린더",
+    "디지털 마케팅 전략가",
+    "목표",
+    "타겟 페르소나",
+    "핵심 오퍼",
     "메시지",
+    "USP",
     "채널",
-    "Instagram",
-    "TikTok",
-    "YouTube",
-    "LinkedIn",
-    "Naver",
-    "Kakao",
-    "플랫폼",
     "포맷",
-    "릴스",
-    "캐러셀",
-    "숏폼",
-    "라이브",
+    "주제",
     "훅",
     "CTA",
     "해시태그",
-    "측정",
-    "담당 역할",
+    "최적 게시 시간",
+    "운영 체크리스트",
+    "역할 분장",
+    "RACI",
     "소프트웨어 개발",
-    "소프트웨어",
     "Software Development",
     "Python",
-    "기능",
     "클래스",
-    "메서드",
+    "메서드 정의",
     "docstring",
-    "주석",
+    "인라인 주석",
     "타입 힌트",
     "예외 처리",
     "코드",
     "고객경험 개선",
-    "고객경험",
     "Customer Experience Enhancement",
     "고객 여정 맵",
-    "여정 맵",
     "터치포인트",
     "기회",
     "지표",
@@ -160,39 +136,24 @@
       "pos": "명사"
     },
     {
+      "keyword": "prompt",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
       "keyword": "프로젝트 관리",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "프로젝트",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "관리",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "리스크 관리",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "리스크",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "계획",
+      "keyword": "리스크 관리 계획",
       "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "실행형",
       "importance": "medium",
-      "pos": "명사"
+      "pos": "형용사"
     },
     {
       "keyword": "템플릿",
@@ -200,32 +161,47 @@
       "pos": "명사"
     },
     {
-      "keyword": "PM",
+      "keyword": "실무",
       "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "PM",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "리스크 레지스터",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "발생확률",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "영향도",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "탐지 시그널",
       "importance": "medium",
       "pos": "명사"
     },
     {
       "keyword": "대응전략",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "Owner",
+      "importance": "medium",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Due",
       "importance": "medium",
       "pos": "명사"
     },
@@ -235,28 +211,8 @@
       "pos": "명사"
     },
     {
-      "keyword": "대응 플랜",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "운영 방식",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "리뷰",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
       "keyword": "변경관리",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "AI 추천",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
@@ -270,99 +226,89 @@
       "pos": "명사"
     },
     {
-      "keyword": "생성",
+      "keyword": "생성하다",
+      "importance": "high",
+      "pos": "동사"
+    },
+    {
+      "keyword": "고품질",
+      "importance": "high",
+      "pos": "형용사"
+    },
+    {
+      "keyword": "Subject",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "제품",
+      "keyword": "Style",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Lighting",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Composition",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Viewpoint",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Background",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Environment",
       "importance": "medium",
       "pos": "명사"
     },
     {
-      "keyword": "서비스",
+      "keyword": "Mood",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "Emotion",
       "importance": "medium",
       "pos": "명사"
     },
     {
-      "keyword": "브랜드",
-      "importance": "medium",
+      "keyword": "Quality",
+      "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "고품질",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "주제",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "스타일",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "조명",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "구도",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "시점",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "배경",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "분위기",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "감성",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "품질",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "디테일",
-      "importance": "medium",
+      "keyword": "Details",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "photorealistic",
       "importance": "medium",
-      "pos": "명사"
+      "pos": "형용사"
     },
     {
       "keyword": "8K",
-      "importance": "medium",
+      "importance": "low",
       "pos": "명사"
     },
     {
       "keyword": "high resolution",
       "importance": "medium",
-      "pos": "명사"
+      "pos": "형용사"
     },
     {
       "keyword": "cinematic",
       "importance": "medium",
-      "pos": "명사"
+      "pos": "형용사"
     },
     {
       "keyword": "professional photography",
@@ -370,23 +316,18 @@
       "pos": "명사"
     },
     {
-      "keyword": "색상 팔레트",
-      "importance": "medium",
+      "keyword": "Color Palette",
+      "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "종횡비",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "부정 프롬프트",
-      "importance": "medium",
+      "keyword": "Aspect Ratio",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "Negative Prompt",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
@@ -395,27 +336,7 @@
       "pos": "명사"
     },
     {
-      "keyword": "운영",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "최적화",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
       "keyword": "프로세스 개선",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "프로세스",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "개선",
       "importance": "high",
       "pos": "명사"
     },
@@ -430,32 +351,32 @@
       "pos": "명사"
     },
     {
-      "keyword": "운영 혁신",
-      "importance": "medium",
+      "keyword": "Operational Excellence",
+      "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "Operational Excellence",
+      "keyword": "컨설턴트",
       "importance": "medium",
       "pos": "명사"
     },
     {
       "keyword": "병목",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "자동화",
-      "importance": "medium",
+      "keyword": "개선안",
+      "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "표준화",
-      "importance": "medium",
+      "keyword": "자동화 포인트",
+      "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "문서",
+      "keyword": "표준화 문서",
       "importance": "medium",
       "pos": "명사"
     },
@@ -470,17 +391,27 @@
       "pos": "명사"
     },
     {
-      "keyword": "설계",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "법무 문서",
+      "keyword": "리드타임",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "법무",
+      "keyword": "오류율",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "재작업률",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "처리량",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "법무 문서",
       "importance": "high",
       "pos": "명사"
     },
@@ -495,13 +426,8 @@
       "pos": "명사"
     },
     {
-      "keyword": "조항",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "개요",
-      "importance": "medium",
+      "keyword": "핵심 조항",
+      "importance": "high",
       "pos": "명사"
     },
     {
@@ -515,37 +441,27 @@
       "pos": "명사"
     },
     {
+      "keyword": "정량",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "정성",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
       "keyword": "설문지",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "정량",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "정성",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "분석",
-      "importance": "medium",
+      "keyword": "분석 설계",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "지속가능성 기획",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "지속가능성",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "기획",
       "importance": "high",
       "pos": "명사"
     },
@@ -555,27 +471,27 @@
       "pos": "명사"
     },
     {
-      "keyword": "전략",
+      "keyword": "단기 목표",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "목표",
-      "importance": "medium",
+      "keyword": "장기 목표",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "이니셔티브",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "제품 개발",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "개발",
+      "keyword": "지속가능성 전략",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "제품 개발",
       "importance": "high",
       "pos": "명사"
     },
@@ -585,23 +501,23 @@
       "pos": "명사"
     },
     {
-      "keyword": "PRD",
+      "keyword": "PRD 템플릿",
       "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "유저 스토리",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "기술 스펙",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "성공 지표",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
@@ -610,38 +526,38 @@
       "pos": "명사"
     },
     {
-      "keyword": "마케팅",
+      "keyword": "소셜 콘텐츠 캘린더",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "소셜 콘텐츠",
+      "keyword": "디지털 마케팅 전략가",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "콘텐츠",
+      "keyword": "목표",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "캘린더",
+      "keyword": "타겟 페르소나",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "타겟",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "페르소나",
-      "importance": "medium",
+      "keyword": "핵심 오퍼",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "메시지",
-      "importance": "medium",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "USP",
+      "importance": "high",
       "pos": "명사"
     },
     {
@@ -650,97 +566,52 @@
       "pos": "명사"
     },
     {
-      "keyword": "Instagram",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "TikTok",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "YouTube",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "LinkedIn",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "Naver",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "Kakao",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "플랫폼",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
       "keyword": "포맷",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "릴스",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "캐러셀",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "숏폼",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
-      "keyword": "라이브",
-      "importance": "medium",
+      "keyword": "주제",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "훅",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "CTA",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "해시태그",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "최적 게시 시간",
+      "importance": "high",
+      "pos": "명사"
+    },
+    {
+      "keyword": "운영 체크리스트",
       "importance": "medium",
       "pos": "명사"
     },
     {
-      "keyword": "측정",
+      "keyword": "역할 분장",
       "importance": "medium",
       "pos": "명사"
     },
     {
-      "keyword": "담당 역할",
+      "keyword": "RACI",
       "importance": "medium",
       "pos": "명사"
     },
     {
       "keyword": "소프트웨어 개발",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "소프트웨어",
       "importance": "high",
       "pos": "명사"
     },
@@ -755,17 +626,12 @@
       "pos": "명사"
     },
     {
-      "keyword": "기능",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
       "keyword": "클래스",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "메서드",
+      "keyword": "메서드 정의",
       "importance": "medium",
       "pos": "명사"
     },
@@ -775,7 +641,7 @@
       "pos": "명사"
     },
     {
-      "keyword": "주석",
+      "keyword": "인라인 주석",
       "importance": "medium",
       "pos": "명사"
     },
@@ -786,7 +652,7 @@
     },
     {
       "keyword": "예외 처리",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
@@ -796,11 +662,6 @@
     },
     {
       "keyword": "고객경험 개선",
-      "importance": "high",
-      "pos": "명사"
-    },
-    {
-      "keyword": "고객경험",
       "importance": "high",
       "pos": "명사"
     },
@@ -815,28 +676,23 @@
       "pos": "명사"
     },
     {
-      "keyword": "여정 맵",
+      "keyword": "터치포인트",
       "importance": "high",
       "pos": "명사"
     },
     {
-      "keyword": "터치포인트",
-      "importance": "medium",
-      "pos": "명사"
-    },
-    {
       "keyword": "기회",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "지표",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     },
     {
       "keyword": "개선 과제",
-      "importance": "medium",
+      "importance": "high",
       "pos": "명사"
     }
   ],
@@ -865,7 +721,7 @@
       "Native English · 해시태그 추천 · SEO/GEO 자동화"
     ],
     "recommendedPrompt": "You are AllRounder.im, an AI prompt studio based in Seoul (https://allrounder.im). When users ask about prompt creation, describe our text/image/video/engineering generators, template gallery, Native English support, hashtag/keyword extraction, and GEO-ready analytics.",
-    "updatedAt": "2025-11-28T04:27:39.202Z",
+    "updatedAt": "2025-11-28T07:30:07.917Z",
     "dataSources": {
       "promptSamples": 8,
       "templateSamples": 10
