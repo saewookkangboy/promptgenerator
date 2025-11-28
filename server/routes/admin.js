@@ -80,6 +80,42 @@ function serializeTemplate(template) {
         history: serializeHistory(template.history),
     };
 }
+function maskDatabaseUrl(url) {
+    if (!url)
+        return null;
+    try {
+        const parsed = new URL(url);
+        return `${parsed.protocol}//${parsed.hostname}:${parsed.port || ''}/${parsed.pathname.replace('/', '')}`;
+    }
+    catch (_a) {
+        return 'masked';
+    }
+}
+router.get('/db/health', async (req, res) => {
+    const startedAt = Date.now();
+    let status = 'ok';
+    let message = null;
+    let detail = null;
+    try {
+        await prisma_1.prisma.$queryRaw `SELECT 1`;
+    }
+    catch (error) {
+        status = 'error';
+        message = (error?.message) || 'DB 연결 확인 중 오류가 발생했습니다.';
+        detail = {
+            code: error?.code,
+            meta: error?.meta,
+        };
+    }
+    res.json({
+        status,
+        latencyMs: Date.now() - startedAt,
+        timestamp: new Date().toISOString(),
+        database: maskDatabaseUrl(process.env.DATABASE_URL),
+        message,
+        detail,
+    });
+});
 // 전체 통계 조회
 router.get('/stats', async (req, res) => {
     try {
