@@ -1,7 +1,7 @@
 // 동영상 프롬프트 생성 UI 컴포넌트
 
 import { useState, useCallback, useEffect } from 'react'
-import { templateAPI } from '../utils/api'
+import { templateAPI, aiServicesAPI } from '../utils/api'
 import TemplateVariableForm from './TemplateVariableForm'
 import { VideoPromptOptions, VideoModel, VideoScene, CameraSettings, MotionSettings, VideoStyle, VideoTechnicalSettings } from '../types/video.types'
 import { PromptResult } from '../types/prompt.types'
@@ -11,6 +11,7 @@ import { promptAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
 import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 import { convertToNativeEnglish } from '../utils/englishTranslator'
+import { hasPromptSaveAuth, reportPromptSaveFailure } from '../utils/promptSaveReporter'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
@@ -65,13 +66,25 @@ function ScenePromptDisplay({ scene, index }: { scene: any; index: number }) {
   )
 }
 
-const VIDEO_MODELS: { value: VideoModel; label: string }[] = [
+// 기본 모델 목록 (DB에서 로드 실패 시 사용)
+const DEFAULT_VIDEO_MODELS: { value: VideoModel; label: string }[] = [
   { value: 'sora', label: 'OpenAI Sora 2' },
   { value: 'veo', label: 'Google Veo 3' },
   { value: 'runway', label: 'Runway Gen-3' },
   { value: 'pika', label: 'Pika Labs' },
   { value: 'stable-video', label: 'Stable Video Diffusion' },
 ]
+
+// 서비스명을 모델 코드로 매핑하는 함수
+function mapServiceNameToVideoModel(serviceName: string): VideoModel | null {
+  const lowerName = serviceName.toLowerCase()
+  if (lowerName.includes('sora')) return 'sora'
+  if (lowerName.includes('veo')) return 'veo'
+  if (lowerName.includes('runway')) return 'runway'
+  if (lowerName.includes('pika')) return 'pika'
+  if (lowerName.includes('stable') || lowerName.includes('video')) return 'stable-video'
+  return null
+}
 
 const GENRES = [
   { value: 'action', label: '액션' },
@@ -127,6 +140,7 @@ const VIDEO_WIZARD_STEPS = [
 ]
 
 function VideoPromptGenerator() {
+  const [videoModels, setVideoModels] = useState<{ value: VideoModel; label: string }[]>(DEFAULT_VIDEO_MODELS)
   const [model, setModel] = useState<VideoModel>('sora')
   const [overallStyle, setOverallStyle] = useState<VideoStyle>({
     genre: 'drama',
@@ -171,6 +185,47 @@ function VideoPromptGenerator() {
   const [wizardStep, setWizardStep] = useState(1)
   const wizardSteps = VIDEO_WIZARD_STEPS
   const wizardStepCount = wizardSteps.length
+
+  // DB에서 동영상 서비스 목록 로드
+  useEffect(() => {
+    const loadVideoServices = async () => {
+      try {
+        const response = await aiServicesAPI.getByCategory('VIDEO')
+        if (response.success && response.data && response.data.length > 0) {
+          const models = response.data
+            .map((service: any) => {
+              const modelCode = mapServiceNameToVideoModel(service.serviceName)
+              if (modelCode) {
+                return {
+                  value: modelCode,
+                  label: service.serviceName,
+                }
+              }
+              return null
+            })
+            .filter((m: any) => m !== null) as { value: VideoModel; label: string }[]
+
+          // 중복 제거
+          const uniqueModels = Array.from(
+            new Map(models.map((m) => [m.value, m])).values()
+          )
+
+          if (uniqueModels.length > 0) {
+            setVideoModels(uniqueModels)
+            // 기본 모델이 목록에 없으면 첫 번째 모델로 설정
+            if (!uniqueModels.find((m) => m.value === model)) {
+              setModel(uniqueModels[0].value)
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('동영상 서비스 목록 로드 실패, 기본 목록 사용:', error)
+        // 기본 목록 유지
+      }
+    }
+
+    loadVideoServices()
+  }, [])
   
   // 템플릿 관련 상태
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
@@ -290,7 +345,7 @@ function VideoPromptGenerator() {
           onChange={(e) => setModel(e.target.value as VideoModel)}
           className="content-type-select"
         >
-          {VIDEO_MODELS.map((m) => (
+          {videoModels.map((m) => (
             <option key={m.value} value={m.value}>
               {m.label}
             </option>
@@ -517,7 +572,7 @@ function VideoPromptGenerator() {
             <div>
               <p className="quality-panel__label">요약</p>
               <div className="quality-panel__score" style={{ fontSize: '1rem', color: '#000' }}>
-                {VIDEO_MODELS.find((m) => m.value === model)?.label}
+                {videoModels.find((m) => m.value === model)?.label}
               </div>
             </div>
           </div>
@@ -658,28 +713,40 @@ function VideoPromptGenerator() {
           },
         })
 
-        // 서버에 저장 시도 (로그인 없이도 시도)
-        try {
-          await promptAPI.create({
-            title: `${model} 동영상 프롬프트`,
-            content: generated.prompt || '',
-            category: 'VIDEO',
-            model: model,
-            inputText: scenes.map(s => s.description).join(' '),
-            options: {
-              genre: overallStyle.genre,
-              mood: overallStyle.mood,
-              totalDuration: technical.totalDuration,
-              fps: technical.fps,
-              resolution: technical.resolution,
-              sceneCount: scenes.length,
-              hasReferenceImage: hasReferenceImage,
-              scenes: (generated as any).scenes,
-              englishVersion: (generated as any).englishVersion,
-            },
-          })
-        } catch (serverError) {
-          console.warn('서버 저장 실패:', serverError)
+        // 서버에 저장 시도 (로그인이 없으면 알림 및 실패 로그)
+        if (!hasPromptSaveAuth()) {
+          await reportPromptSaveFailure(
+            'VIDEO',
+            'unauthenticated',
+            { inputPreview: scenes.map((s) => s.description).join(' ').slice(0, 120) },
+            '로그인 후에만 프롬프트가 서버 DB에 저장됩니다. 로그인 후 다시 시도해주세요.'
+          )
+        } else {
+          try {
+            await promptAPI.create({
+              title: `${model} 동영상 프롬프트`,
+              content: generated.prompt || '',
+              category: 'VIDEO',
+              model: model,
+              inputText: scenes.map(s => s.description).join(' '),
+              options: {
+                genre: overallStyle.genre,
+                mood: overallStyle.mood,
+                totalDuration: technical.totalDuration,
+                fps: technical.fps,
+                resolution: technical.resolution,
+                sceneCount: scenes.length,
+                hasReferenceImage: hasReferenceImage,
+                scenes: (generated as any).scenes,
+                englishVersion: (generated as any).englishVersion,
+              },
+            })
+          } catch (serverError: any) {
+            console.warn('서버 저장 실패:', serverError)
+            await reportPromptSaveFailure('VIDEO', serverError?.message || 'server_error', {
+              inputPreview: scenes.map((s) => s.description).join(' ').slice(0, 120),
+            })
+          }
         }
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)
@@ -1454,4 +1521,3 @@ function VideoPromptGenerator() {
 }
 
 export default VideoPromptGenerator
-

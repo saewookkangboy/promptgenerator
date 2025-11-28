@@ -7,6 +7,7 @@ const cron = require('node-cron')
 const axios = require('axios')
 const fs = require('fs')
 const path = require('path')
+const jwt = require('jsonwebtoken')
 const { GoogleGenAI } = require('@google/genai')
 const { collectAllGuides } = require('./scraper/guideScraper')
 const { initializeScheduler } = require('./scheduler/guideScheduler')
@@ -18,6 +19,7 @@ const {
   getGuideByModel,
   sanitizeGuide,
 } = require('./services/guideService')
+const { prisma } = require('./db/prisma')
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview'
@@ -744,6 +746,11 @@ try {
   app.use('/api/prompts', finalPromptsRouter)
   app.use('/api/admin', finalAdminRouter)
   
+  // AI 서비스 정보 API
+  const aiServicesRouter = require('./routes/aiServices')
+  app.use('/api/ai-services', aiServicesRouter)
+  console.log('✅ AI 서비스 API 라우트 로드됨: /api/ai-services')
+  
   // 템플릿 라우트
   const finalTemplatesRouter = templatesRouter.default || templatesRouter
   if (finalTemplatesRouter) {
@@ -775,8 +782,7 @@ try {
   app.post('/api/analytics/template-used', async (req, res) => {
     try {
       const { templateId, variables, qualityScore } = req.body
-      const { prisma } = require('./db/prisma')
-      
+
       // 템플릿 사용 카운트 증가
       if (templateId) {
         await prisma.template.update({
@@ -820,6 +826,42 @@ try {
     } catch (error) {
       console.error('Analytics 기록 오류:', error)
       res.status(500).json({ error: '이벤트 기록에 실패했습니다' })
+    }
+  })
+
+  // 프롬프트 저장 실패 로깅 (인증 여부와 관계없이 기록)
+  app.post('/api/analytics/prompt-save-failed', async (req, res) => {
+    const { reason, category, context } = req.body || {}
+    let userId = null
+
+    // 토큰이 있으면 사용자 식별 (실패해도 무시)
+    const token = req.headers.authorization?.replace('Bearer ', '')
+    if (token) {
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key')
+        userId = decoded.id
+      } catch (jwtError) {
+        console.warn('[Analytics] 토큰 확인 실패 (로그 계속 진행):', jwtError.message)
+      }
+    }
+
+    try {
+      await prisma.analytics.create({
+        data: {
+          userId,
+          eventType: 'PROMPT_SAVE_FAILED',
+          eventData: {
+            reason: reason || 'unknown',
+            category: category || 'unknown',
+            context: context || {},
+          },
+        },
+      })
+
+      res.json({ success: true })
+    } catch (error) {
+      console.error('프롬프트 저장 실패 로그 기록 오류:', error)
+      res.status(500).json({ error: '프롬프트 실패 로그 기록에 실패했습니다.' })
     }
   })
   
@@ -908,6 +950,7 @@ app.listen(PORT, () => {
   try {
     require('./scheduler/templateScheduler')
     require('./scheduler/seoScheduler')
+    require('./scheduler/aiServiceScheduler')
     console.log('✅ 템플릿 스케줄러 초기화 완료')
   } catch (error) {
     console.warn('⚠️  템플릿 스케줄러 초기화 실패:', error.message)
@@ -926,4 +969,3 @@ process.on('SIGINT', () => {
 })
 
 module.exports = app
-

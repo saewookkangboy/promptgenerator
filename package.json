@@ -28,7 +28,9 @@
     "dev:server": "tsc -p tsconfig.server.json --watch",
     "check:env": "node scripts/check-env.js",
     "pre-deploy": "node scripts/pre-deploy-check.js",
-    "seo:generate": "node scripts/generate-seo-meta.js"
+    "seo:generate": "node scripts/generate-seo-meta.js",
+    "ai-services:parse": "node scripts/parse-ai-services.js",
+    "ai-services:update": "node -e \"require('./server/scheduler/aiServiceScheduler').runAIServiceUpdate('manual')\""
   },
   "dependencies": {
     "@google/genai": "^1.30.0",

@@ -42,6 +42,17 @@ async function logAdminAction(
   }
 }
 
+// DB 연결 정보 마스킹
+function maskDatabaseUrl(url?: string | null): string | null {
+  if (!url) return null
+  try {
+    const parsed = new URL(url)
+    return `${parsed.protocol}//${parsed.hostname}:${parsed.port || ''}/${parsed.pathname.replace('/', '')}`
+  } catch {
+    return 'masked'
+  }
+}
+
 type TemplateHistoryEntry = {
   version: number
   name: string
@@ -101,6 +112,26 @@ function serializeTemplate(template: any) {
     history: serializeHistory(template.history),
   }
 }
+
+// DB 상태 체크
+router.get('/db/health', async (req: AuthRequest, res: Response) => {
+  const startedAt = Date.now()
+  try {
+    await prisma.$queryRaw`SELECT 1`
+    res.json({
+      status: 'ok',
+      latencyMs: Date.now() - startedAt,
+      timestamp: new Date().toISOString(),
+      database: maskDatabaseUrl(process.env.DATABASE_URL),
+    })
+  } catch (error: any) {
+    res.status(500).json({
+      status: 'error',
+      latencyMs: Date.now() - startedAt,
+      message: error?.message || 'DB 연결 확인 중 오류가 발생했습니다.',
+    })
+  }
+})
 
 // 전체 통계 조회
 router.get('/stats', async (req: AuthRequest, res: Response) => {
@@ -889,4 +920,3 @@ router.get('/audit-logs', async (req: AuthRequest, res: Response) => {
 })
 
 export default router
-

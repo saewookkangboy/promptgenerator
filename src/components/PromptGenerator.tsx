@@ -7,6 +7,7 @@ import { savePromptRecord } from '../utils/storage'
 import { promptAPI, guideAPI, templateAPI, keywordAPI } from '../utils/api'
 import { upsertGuide } from '../utils/prompt-guide-storage'
 import { showNotification } from '../utils/notifications'
+import { hasPromptSaveAuth, reportPromptSaveFailure } from '../utils/promptSaveReporter'
 import { PromptGuide, ModelName } from '../types/prompt-guide.types'
 import { MODEL_OPTIONS, getCategoryByModel } from '../config/model-options'
 import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
@@ -315,30 +316,40 @@ function PromptGenerator() {
         })
 
         // 서버에 저장 시도 (로그인 없이도 시도)
-        try {
-          await promptAPI.create({
-            title: `${contentType} 프롬프트`,
-            content: generated.metaPrompt,
-            category: 'TEXT',
-            inputText: userPrompt,
-            options: {
-              contentType,
-              age: detailedOptions.age,
-              gender: detailedOptions.gender,
-              occupation: detailedOptions.occupation,
-              conversational: detailedOptions.conversational,
-              toneStyles: detailedOptions.toneStyles,
-              goal: detailedOptions.goal,
-              targetModel,
-              appliedGuideId: enrichedResults.appliedGuide?.guideId,
-              contextPrompt: generated.contextPrompt,
-              hashtags: generated.hashtags,
-            },
-          })
-          // 서버 저장 성공 (조용히 처리, 사용자에게 알림 없음)
-        } catch (serverError) {
-          // 서버 저장 실패해도 계속 진행 (로컬 저장은 성공)
-          console.warn('서버 저장 실패:', serverError)
+        if (!hasPromptSaveAuth()) {
+          await reportPromptSaveFailure(
+            'TEXT',
+            'unauthenticated',
+            { inputPreview: userPrompt.slice(0, 120) },
+            '로그인 후에만 프롬프트가 서버 DB에 저장됩니다. 로그인 후 다시 시도해주세요.'
+          )
+        } else {
+          try {
+            await promptAPI.create({
+              title: `${contentType} 프롬프트`,
+              content: generated.metaPrompt,
+              category: 'TEXT',
+              inputText: userPrompt,
+              options: {
+                contentType,
+                age: detailedOptions.age,
+                gender: detailedOptions.gender,
+                occupation: detailedOptions.occupation,
+                conversational: detailedOptions.conversational,
+                toneStyles: detailedOptions.toneStyles,
+                goal: detailedOptions.goal,
+                targetModel,
+                appliedGuideId: enrichedResults.appliedGuide?.guideId,
+                contextPrompt: generated.contextPrompt,
+                hashtags: generated.hashtags,
+              },
+            })
+          } catch (serverError: any) {
+            console.warn('서버 저장 실패:', serverError)
+            await reportPromptSaveFailure('TEXT', serverError?.message || 'server_error', {
+              inputPreview: userPrompt.slice(0, 120),
+            })
+          }
         }
       } catch (err) {
         setError('프롬프트 생성 중 오류가 발생했습니다.')

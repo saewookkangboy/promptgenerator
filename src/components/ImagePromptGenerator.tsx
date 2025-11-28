@@ -1,7 +1,7 @@
 // 이미지 프롬프트 생성 UI 컴포넌트
 
 import { useState, useCallback, useEffect } from 'react'
-import { templateAPI } from '../utils/api'
+import { templateAPI, aiServicesAPI } from '../utils/api'
 import TemplateVariableForm from './TemplateVariableForm'
 import { ImagePromptOptions, ImageModel, ImageStyle, Composition, Lighting, ColorPalette, TechnicalSettings } from '../types/image.types'
 import { PromptResult } from '../types/prompt.types'
@@ -11,12 +11,14 @@ import { savePromptRecord } from '../utils/storage'
 import { promptAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
 import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
+import { hasPromptSaveAuth, reportPromptSaveFailure } from '../utils/promptSaveReporter'
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
 import './PromptGenerator.css'
 
-const IMAGE_MODELS: { value: ImageModel; label: string }[] = [
+// 기본 모델 목록 (DB에서 로드 실패 시 사용)
+const DEFAULT_IMAGE_MODELS: { value: ImageModel; label: string }[] = [
   { value: 'midjourney', label: 'Midjourney' },
   { value: 'dalle', label: 'DALL-E 3' },
   { value: 'stable-diffusion', label: 'Stable Diffusion' },
@@ -28,6 +30,21 @@ const IMAGE_MODELS: { value: ImageModel; label: string }[] = [
   { value: 'ideogram', label: 'Ideogram' },
   { value: 'comfyui', label: 'ComfyUI' },
 ]
+
+// 서비스명을 모델 코드로 매핑하는 함수
+function mapServiceNameToModel(serviceName: string): ImageModel | null {
+  const lowerName = serviceName.toLowerCase()
+  if (lowerName.includes('midjourney')) return 'midjourney'
+  if (lowerName.includes('dall') || lowerName.includes('dalle')) return 'dalle'
+  if (lowerName.includes('stable') || lowerName.includes('diffusion')) return 'stable-diffusion'
+  if (lowerName.includes('imagen')) return 'imagen-3'
+  if (lowerName.includes('firefly')) return 'firefly'
+  if (lowerName.includes('leonardo')) return 'leonardo'
+  if (lowerName.includes('flux')) return 'flux'
+  if (lowerName.includes('ideogram')) return 'ideogram'
+  if (lowerName.includes('comfy')) return 'comfyui'
+  return null
+}
 
 const ART_STYLES = [
   { value: 'realistic', label: '사진/리얼리즘' },
@@ -92,6 +109,7 @@ const IMAGE_WIZARD_STEPS = [
 ]
 
 function ImagePromptGenerator() {
+  const [imageModels, setImageModels] = useState<{ value: ImageModel; label: string }[]>(DEFAULT_IMAGE_MODELS)
   const [model, setModel] = useState<ImageModel>('midjourney')
   const [subject, setSubject] = useState('')
   const [style, setStyle] = useState<ImageStyle>({
@@ -125,6 +143,47 @@ function ImagePromptGenerator() {
   
   // 모델별 고급 옵션 state
   const [modelSpecific, setModelSpecific] = useState<any>({})
+
+  // DB에서 이미지 서비스 목록 로드
+  useEffect(() => {
+    const loadImageServices = async () => {
+      try {
+        const response = await aiServicesAPI.getByCategory('IMAGE')
+        if (response.success && response.data && response.data.length > 0) {
+          const models = response.data
+            .map((service: any) => {
+              const modelCode = mapServiceNameToModel(service.serviceName)
+              if (modelCode) {
+                return {
+                  value: modelCode,
+                  label: service.serviceName,
+                }
+              }
+              return null
+            })
+            .filter((m: any) => m !== null) as { value: ImageModel; label: string }[]
+
+          // 중복 제거
+          const uniqueModels = Array.from(
+            new Map(models.map((m) => [m.value, m])).values()
+          )
+
+          if (uniqueModels.length > 0) {
+            setImageModels(uniqueModels)
+            // 기본 모델이 목록에 없으면 첫 번째 모델로 설정
+            if (!uniqueModels.find((m) => m.value === model)) {
+              setModel(uniqueModels[0].value)
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('이미지 서비스 목록 로드 실패, 기본 목록 사용:', error)
+        // 기본 목록 유지
+      }
+    }
+
+    loadImageServices()
+  }, [])
   const [useWizardMode, setUseWizardMode] = useState(true)
   const [wizardStep, setWizardStep] = useState(1)
   
@@ -230,7 +289,7 @@ function ImagePromptGenerator() {
         onChange={(e) => setModel(e.target.value as ImageModel)}
         className="content-type-select"
       >
-        {IMAGE_MODELS.map((m) => (
+        {imageModels.map((m) => (
           <option key={m.value} value={m.value}>
             {m.label}
           </option>
@@ -705,7 +764,7 @@ function ImagePromptGenerator() {
           <div className="summary-info-grid">
             <div className="summary-info-card">
               <div className="summary-info-label">모델</div>
-              <div className="summary-info-value">{IMAGE_MODELS.find((m) => m.value === model)?.label || model}</div>
+              <div className="summary-info-value">{imageModels.find((m) => m.value === model)?.label || model}</div>
             </div>
             <div className="summary-info-card">
               <div className="summary-info-label">주제</div>
@@ -814,27 +873,39 @@ function ImagePromptGenerator() {
           },
         })
 
-        // 서버에 저장 시도 (로그인 없이도 시도)
-        try {
-          await promptAPI.create({
-            title: `${model} 이미지 프롬프트`,
-            content: generated.prompt || '',
-            category: 'IMAGE',
-            model: model,
-            inputText: subject,
-            options: {
-              artStyle: style.artStyle,
-              framing: composition.framing,
-              lighting: lighting.type,
-              colorMood: color.mood,
-              aspectRatio: technical.aspectRatio,
-              quality: technical.quality,
-              negativePrompt: negativePrompt.length > 0 ? negativePrompt : undefined,
-              englishVersion: (generated as any).englishVersion,
-            },
-          })
-        } catch (serverError) {
-          console.warn('서버 저장 실패:', serverError)
+        // 서버에 저장 시도 (로그인이 없으면 알림 및 실패 로그)
+        if (!hasPromptSaveAuth()) {
+          await reportPromptSaveFailure(
+            'IMAGE',
+            'unauthenticated',
+            { inputPreview: subject.slice(0, 120) },
+            '로그인 후에만 프롬프트가 서버 DB에 저장됩니다. 로그인 후 다시 시도해주세요.'
+          )
+        } else {
+          try {
+            await promptAPI.create({
+              title: `${model} 이미지 프롬프트`,
+              content: generated.prompt || '',
+              category: 'IMAGE',
+              model: model,
+              inputText: subject,
+              options: {
+                artStyle: style.artStyle,
+                framing: composition.framing,
+                lighting: lighting.type,
+                colorMood: color.mood,
+                aspectRatio: technical.aspectRatio,
+                quality: technical.quality,
+                negativePrompt: negativePrompt.length > 0 ? negativePrompt : undefined,
+                englishVersion: (generated as any).englishVersion,
+              },
+            })
+          } catch (serverError: any) {
+            console.warn('서버 저장 실패:', serverError)
+            await reportPromptSaveFailure('IMAGE', serverError?.message || 'server_error', {
+              inputPreview: subject.slice(0, 120),
+            })
+          }
         }
       } catch (error: any) {
         setError(`프롬프트 생성 오류: ${error.message}`)
@@ -1593,5 +1664,3 @@ function ImagePromptGenerator() {
 }
 
 export default ImagePromptGenerator
-
-

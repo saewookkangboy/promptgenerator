@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { clearAdminAuth } from '../utils/storage'
-import { removeToken } from '../utils/api'
+import { removeToken, adminAPI } from '../utils/api'
 import VisitGraphModal from './VisitGraphModal'
 import TemplateManager from './TemplateManager'
 import UserEditModal from './UserEditModal'
@@ -23,6 +23,9 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
   const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
   const [selectedPromptData, setSelectedPromptData] = useState<any | null>(null)
+  const [dbHealth, setDbHealth] = useState<any | null>(null)
+  const [dbHealthLoading, setDbHealthLoading] = useState(false)
+  const [dbHealthError, setDbHealthError] = useState<string | null>(null)
   const {
     generationStats: stats,
     statsOverview: serverStats,
@@ -56,6 +59,23 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
     clearAdminAuth()
     onLogout()
   }
+
+  const fetchDbHealth = useCallback(async () => {
+    setDbHealthLoading(true)
+    setDbHealthError(null)
+    try {
+      const result = await adminAPI.getDbHealth()
+      setDbHealth(result)
+    } catch (error: any) {
+      setDbHealthError(error?.message || 'DB 상태 확인에 실패했습니다.')
+    } finally {
+      setDbHealthLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchDbHealth()
+  }, [fetchDbHealth])
 
   const filteredRecords = selectedCategory === 'all' 
     ? records 
@@ -404,6 +424,33 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
           )}
           {!loading && isServerOnline && (
           <>
+          <div className="admin-status-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+            <div>
+              <div style={{ fontWeight: 600 }}>DB 연결 상태</div>
+              {dbHealthLoading && <div>확인 중...</div>}
+              {!dbHealthLoading && (
+                <>
+                  <div>
+                    상태: {dbHealth?.status === 'ok' ? '정상 연결' : '오류'}
+                    {dbHealth?.latencyMs !== undefined && ` · ${dbHealth.latencyMs}ms`}
+                  </div>
+                  {dbHealth?.database && (
+                    <div style={{ fontSize: '0.9rem', opacity: 0.8 }}>DB: {dbHealth.database}</div>
+                  )}
+                  {dbHealthError && (
+                    <div style={{ color: '#c62828', fontSize: '0.9rem' }}>{dbHealthError}</div>
+                  )}
+                  {dbHealth?.message && (
+                    <div style={{ color: '#c62828', fontSize: '0.9rem' }}>{dbHealth.message}</div>
+                  )}
+                </>
+              )}
+            </div>
+            <button className="template-button secondary" onClick={fetchDbHealth} disabled={dbHealthLoading}>
+              {dbHealthLoading ? '확인 중...' : 'DB 상태 새로고침'}
+            </button>
+          </div>
+
           <div className="admin-stats-grid">
             <div className="stat-card stat-card-clickable" onClick={() => setIsGraphModalOpen(true)}>
               <div className="stat-label">총 방문수</div>

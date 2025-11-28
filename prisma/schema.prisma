@@ -700,3 +700,50 @@ model GuideCollectionResult {
   @@map("guide_collection_results")
 }
 
+// ============================================
+// 21. AI Services (AI 생성 서비스 정보)
+// ============================================
+model AIService {
+  id                String        @id @default(uuid())
+  category          AIServiceCategory
+  serviceName       String        @map("service_name")
+  homepageUrl       String        @map("homepage_url")
+  apiDocsUrl        String        @map("api_docs_url")
+  provider          String?
+  apiStatus         AIServiceStatus @default(UNKNOWN) @map("api_status")
+  authType          AIServiceAuthType @default(UNKNOWN) @map("auth_type")
+  notes             String?       @db.Text
+  fingerprint       String        @unique // sha256(category + service_name + api_docs_url)
+  httpStatusHome    Int?          @map("http_status_home")
+  httpStatusDocs    Int?          @map("http_status_docs")
+  lastVerifiedAt    DateTime?    @map("last_verified_at")
+  isActive          Boolean       @default(true) @map("is_active")
+  createdAt         DateTime      @default(now()) @map("created_at")
+  updatedAt         DateTime      @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([serviceName])
+  @@index([apiStatus])
+  @@index([isActive])
+  @@index([lastVerifiedAt])
+  @@map("ai_services")
+}
+
+enum AIServiceCategory {
+  IMAGE
+  VIDEO
+}
+
+enum AIServiceStatus {
+  PUBLIC
+  GATED
+  UNKNOWN
+}
+
+enum AIServiceAuthType {
+  API_KEY
+  OAUTH
+  AWS_SIGV4
+  UNKNOWN
+}
+

@@ -439,6 +439,10 @@ export const adminAPI = {
     return apiRequest<any>('/api/admin/stats')
   },
 
+  getDbHealth: async () => {
+    return apiRequest<any>('/api/admin/db/health')
+  },
+
   getUsers: async (params?: {
     page?: number
     limit?: number
@@ -562,6 +566,20 @@ export const adminAPI = {
   },
 }
 
+// Analytics API
+export const analyticsAPI = {
+  logPromptSaveFailure: async (data: {
+    category: string
+    reason: string
+    context?: any
+  }) => {
+    return apiRequest<{ success: boolean }>('/api/analytics/prompt-save-failed', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+}
+
 // 번역 API
 export const translationAPI = {
   translateToEnglish: async (
@@ -582,5 +600,35 @@ export const translationAPI = {
         context: options.context,
       }),
     })
+  },
+}
+
+// AI 서비스 정보 API
+export const aiServicesAPI = {
+  list: async (params?: {
+    category?: 'IMAGE' | 'VIDEO'
+    status?: 'PUBLIC' | 'GATED' | 'UNKNOWN'
+  }) => {
+    const queryParams = new URLSearchParams()
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) {
+          queryParams.append(key, String(value))
+        }
+      })
+    }
+    return apiRequest<{ success: boolean; data: any[]; count: number }>(
+      `/api/ai-services?${queryParams.toString()}`
+    )
+  },
+
+  get: async (id: string) => {
+    return apiRequest<{ success: boolean; data: any }>(`/api/ai-services/${id}`)
+  },
+
+  getByCategory: async (category: 'IMAGE' | 'VIDEO') => {
+    return apiRequest<{ success: boolean; data: any[]; count: number }>(
+      `/api/ai-services/category/${category}`
+    )
   },
 }
