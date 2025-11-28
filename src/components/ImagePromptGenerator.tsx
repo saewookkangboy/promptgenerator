@@ -1035,7 +1035,7 @@ function ImagePromptGenerator() {
             onChange={(e) => setModel(e.target.value as ImageModel)}
             className="content-type-select"
           >
-            {IMAGE_MODELS.map((m) => (
+            {imageModels.map((m) => (
               <option key={m.value} value={m.value}>
                 {m.label}
               </option>

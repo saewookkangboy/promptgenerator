@@ -889,7 +889,7 @@ function VideoPromptGenerator() {
             onChange={(e) => setModel(e.target.value as VideoModel)}
             className="content-type-select"
           >
-            {VIDEO_MODELS.map((m) => (
+            {videoModels.map((m) => (
               <option key={m.value} value={m.value}>
                 {m.label}
               </option>
