@@ -537,6 +537,20 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
             </div>
           </div>
 
+          <div className="lab-grid">
+            <div className="lab-card">
+              <div className="lab-title">AB 테스트 / 프롬프트 최적화</div>
+              <p className="lab-desc">
+                Prisma 스키마(ABTest · ABTestVariant · ModelOptimization)가 적용된 상태입니다. API 라우트만 연결하면 Admin에서 실험 생성/결과 조회를 활성화할 수 있습니다.
+              </p>
+              <ul className="lab-list">
+                <li>DB 상태: {dbHealth?.status === 'ok' ? '정상 연결' : '확인 필요'}</li>
+                <li>필요 작업: Admin/API에 AB 테스트 CRUD · 실행 엔드포인트 추가</li>
+                <li>권장: Premium 플랜 전용 노출 및 사용량 로깅</li>
+              </ul>
+            </div>
+          </div>
+
           <div className="admin-section">
         <div className="admin-section-header">
           <h2>프롬프트 생성 기록</h2>

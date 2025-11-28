@@ -33,6 +33,17 @@
   
   /* 터치 타겟 최소 크기 */
   --touch-target-min: 44px;
+
+  /* 버튼 토큰 (DB 새로고침 스타일 기준) */
+  --btn-bg: #ffffff;
+  --btn-text: #111827;
+  --btn-border: #dcdcdc;
+  --btn-radius: 999px;
+  --btn-hover-bg: #111827;
+  --btn-hover-text: #ffffff;
+  --btn-hover-border: #111827;
+  --btn-padding-y: 10px;
+  --btn-padding-x: 18px;
 }
 
 body {
@@ -175,6 +186,54 @@ textarea:focus-visible {
   z-index: 1;
 }
 
+/* 공통 버튼 스타일 (DB 새로고침 디자인) */
+button {
+  padding: var(--btn-padding-y) var(--btn-padding-x);
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--btn-radius);
+  font-weight: 500;
+  font-size: var(--font-size-sm);
+  font-family: "IBM Plex Sans KR", sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  min-height: var(--touch-target-min);
+  min-width: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-transform: none;
+  letter-spacing: 0;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:hover:not(:disabled) {
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
+  border-color: var(--btn-hover-border);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* 프라이머리 액션 버튼 */
+.btn-primary {
+  background: var(--btn-hover-bg);
+  color: var(--btn-hover-text);
+  border-color: var(--btn-hover-border);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #0a0a0a;
+  border-color: #0a0a0a;
+  color: #ffffff;
+}
+
 /* 스킵 링크 (스크린 리더용) */
 .skip-link {
   position: absolute;
@@ -289,4 +348,3 @@ a.small {
     text-rendering: optimizeLegibility;
   }
 }
-

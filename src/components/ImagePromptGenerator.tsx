@@ -17,33 +17,51 @@ import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
 import './PromptGenerator.css'
 
-// 기본 모델 목록 (DB에서 로드 실패 시 사용)
-const DEFAULT_IMAGE_MODELS: { value: ImageModel; label: string }[] = [
-  { value: 'midjourney', label: 'Midjourney' },
-  { value: 'dalle', label: 'DALL-E 3' },
-  { value: 'stable-diffusion', label: 'Stable Diffusion' },
-  { value: 'imagen', label: 'Google Imagen' },
-  { value: 'imagen-3', label: 'Google Imagen 3 (Nano Banana Pro)' },
-  { value: 'firefly', label: 'Adobe Firefly' },
-  { value: 'leonardo', label: 'Leonardo AI' },
-  { value: 'flux', label: 'Flux' },
-  { value: 'ideogram', label: 'Ideogram' },
-  { value: 'comfyui', label: 'ComfyUI' },
+type ImageServiceOption = {
+  id: string
+  label: string
+  baseModel: ImageModel
+  provider?: string | null
+}
+
+const DEFAULT_IMAGE_SERVICE_OPTIONS: ImageServiceOption[] = [
+  { id: 'image-midjourney', label: 'Midjourney', baseModel: 'midjourney' },
+  { id: 'image-dalle', label: 'DALL-E 3', baseModel: 'dalle' },
+  { id: 'image-stable-diffusion', label: 'Stable Diffusion', baseModel: 'stable-diffusion' },
+  { id: 'image-imagen', label: 'Google Imagen', baseModel: 'imagen-3' },
+  { id: 'image-firefly', label: 'Adobe Firefly', baseModel: 'firefly' },
+  { id: 'image-leonardo', label: 'Leonardo AI', baseModel: 'leonardo' },
+  { id: 'image-flux', label: 'Flux', baseModel: 'flux' },
+  { id: 'image-ideogram', label: 'Ideogram', baseModel: 'ideogram' },
+  { id: 'image-comfyui', label: 'ComfyUI', baseModel: 'comfyui' },
 ]
 
+const DEFAULT_IMAGE_SERVICE_ID = DEFAULT_IMAGE_SERVICE_OPTIONS[0].id
+const DEFAULT_IMAGE_BASE_MODEL = DEFAULT_IMAGE_SERVICE_OPTIONS[0].baseModel
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') || 'image-service'
+
 // 서비스명을 모델 코드로 매핑하는 함수
-function mapServiceNameToModel(serviceName: string): ImageModel | null {
+function mapServiceNameToModel(serviceName: string): ImageModel {
   const lowerName = serviceName.toLowerCase()
   if (lowerName.includes('midjourney')) return 'midjourney'
-  if (lowerName.includes('dall') || lowerName.includes('dalle')) return 'dalle'
-  if (lowerName.includes('stable') || lowerName.includes('diffusion')) return 'stable-diffusion'
-  if (lowerName.includes('imagen')) return 'imagen-3'
-  if (lowerName.includes('firefly')) return 'firefly'
+  if (lowerName.includes('dall') || lowerName.includes('dalle') || lowerName.includes('openai')) return 'dalle'
+  if (lowerName.includes('stable') || lowerName.includes('stability')) return 'stable-diffusion'
+  if (lowerName.includes('imagen') || lowerName.includes('gemini') || lowerName.includes('google')) return 'imagen-3'
+  if (lowerName.includes('firefly') || lowerName.includes('adobe')) return 'firefly'
   if (lowerName.includes('leonardo')) return 'leonardo'
   if (lowerName.includes('flux')) return 'flux'
   if (lowerName.includes('ideogram')) return 'ideogram'
   if (lowerName.includes('comfy')) return 'comfyui'
-  return null
+  if (lowerName.includes('luma')) return 'imagen-3'
+  if (lowerName.includes('runway')) return 'midjourney'
+  if (lowerName.includes('hugging') || lowerName.includes('replicate') || lowerName.includes('fal') || lowerName.includes('bedrock') || lowerName.includes('amazon'))
+    return 'stable-diffusion'
+  return 'midjourney'
 }
 
 const ART_STYLES = [
@@ -109,8 +127,10 @@ const IMAGE_WIZARD_STEPS = [
 ]
 
 function ImagePromptGenerator() {
-  const [imageModels, setImageModels] = useState<{ value: ImageModel; label: string }[]>(DEFAULT_IMAGE_MODELS)
-  const [model, setModel] = useState<ImageModel>('midjourney')
+  const [imageServiceOptions, setImageServiceOptions] = useState<ImageServiceOption[]>(DEFAULT_IMAGE_SERVICE_OPTIONS)
+  const [selectedImageServiceId, setSelectedImageServiceId] = useState<string>(DEFAULT_IMAGE_SERVICE_ID)
+  const [model, setModel] = useState<ImageModel>(DEFAULT_IMAGE_BASE_MODEL)
+  const selectedImageService = imageServiceOptions.find((option) => option.id === selectedImageServiceId)
   const [subject, setSubject] = useState('')
   const [style, setStyle] = useState<ImageStyle>({
     artStyle: 'realistic',
@@ -150,31 +170,17 @@ function ImagePromptGenerator() {
       try {
         const response = await aiServicesAPI.getByCategory('IMAGE')
         if (response.success && response.data && response.data.length > 0) {
-          const models = response.data
-            .map((service: any) => {
-              const modelCode = mapServiceNameToModel(service.serviceName)
-              if (modelCode) {
-                return {
-                  value: modelCode,
-                  label: service.serviceName,
-                }
-              }
-              return null
-            })
-            .filter((m: any) => m !== null) as { value: ImageModel; label: string }[]
+          const options: ImageServiceOption[] = response.data.map((service: any) => ({
+            id: service.id || slugify(service.serviceName),
+            label: service.serviceName,
+            baseModel: mapServiceNameToModel(service.serviceName),
+            provider: service.provider || null,
+          }))
 
-          // 중복 제거
-          const uniqueModels = Array.from(
-            new Map(models.map((m) => [m.value, m])).values()
+          setImageServiceOptions(options)
+          setSelectedImageServiceId((prev) =>
+            options.some((option) => option.id === prev) ? prev : options[0].id
           )
-
-          if (uniqueModels.length > 0) {
-            setImageModels(uniqueModels)
-            // 기본 모델이 목록에 없으면 첫 번째 모델로 설정
-            if (!uniqueModels.find((m) => m.value === model)) {
-              setModel(uniqueModels[0].value)
-            }
-          }
         }
       } catch (error) {
         console.warn('이미지 서비스 목록 로드 실패, 기본 목록 사용:', error)
@@ -184,6 +190,13 @@ function ImagePromptGenerator() {
 
     loadImageServices()
   }, [])
+
+  useEffect(() => {
+    const option = imageServiceOptions.find((opt) => opt.id === selectedImageServiceId)
+    if (option) {
+      setModel(option.baseModel)
+    }
+  }, [selectedImageServiceId, imageServiceOptions])
   const [useWizardMode, setUseWizardMode] = useState(true)
   const [wizardStep, setWizardStep] = useState(1)
   
@@ -282,19 +295,26 @@ function ImagePromptGenerator() {
 
   const renderModelSelector = () => (
     <div className="form-group">
-      <label htmlFor="image-model">이미지 생성 모델</label>
-      <select
-        id="image-model"
-        value={model}
-        onChange={(e) => setModel(e.target.value as ImageModel)}
-        className="content-type-select"
-      >
-        {imageModels.map((m) => (
-          <option key={m.value} value={m.value}>
-            {m.label}
-          </option>
-        ))}
-      </select>
+      <label>이미지 생성 모델</label>
+      <div className="model-option-list">
+        {imageServiceOptions.map((option) => {
+          const isActive = option.id === selectedImageServiceId
+          return (
+            <button
+              key={option.id}
+              type="button"
+              className={`model-option ${isActive ? 'active' : ''}`}
+              onClick={() => setSelectedImageServiceId(option.id)}
+            >
+              <div className="model-option__label">{option.label}</div>
+              <div className="model-option__meta">
+                <span>{option.provider || '제공사 미확인'}</span>
+                <span className="model-option__chip">{option.baseModel}</span>
+              </div>
+            </button>
+          )
+        })}
+      </div>
     </div>
   )
 
@@ -764,7 +784,12 @@ function ImagePromptGenerator() {
           <div className="summary-info-grid">
             <div className="summary-info-card">
               <div className="summary-info-label">모델</div>
-              <div className="summary-info-value">{imageModels.find((m) => m.value === model)?.label || model}</div>
+              <div className="summary-info-value">
+                {selectedImageService?.label || '-'}
+                {selectedImageService?.provider && (
+                  <span style={{ opacity: 0.7, marginLeft: 4 }}>({selectedImageService.provider})</span>
+                )}
+              </div>
             </div>
             <div className="summary-info-card">
               <div className="summary-info-label">주제</div>
@@ -1031,13 +1056,13 @@ function ImagePromptGenerator() {
           <label htmlFor="image-model">이미지 생성 모델</label>
           <select
             id="image-model"
-            value={model}
-            onChange={(e) => setModel(e.target.value as ImageModel)}
+            value={selectedImageServiceId}
+            onChange={(e) => setSelectedImageServiceId(e.target.value)}
             className="content-type-select"
           >
-            {imageModels.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
+            {imageServiceOptions.map((option) => (
+              <option key={option.id} value={option.id}>
+                {option.label}
               </option>
             ))}
           </select>

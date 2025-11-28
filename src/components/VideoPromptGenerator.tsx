@@ -66,24 +66,43 @@ function ScenePromptDisplay({ scene, index }: { scene: any; index: number }) {
   )
 }
 
-// 기본 모델 목록 (DB에서 로드 실패 시 사용)
-const DEFAULT_VIDEO_MODELS: { value: VideoModel; label: string }[] = [
-  { value: 'sora', label: 'OpenAI Sora 2' },
-  { value: 'veo', label: 'Google Veo 3' },
-  { value: 'runway', label: 'Runway Gen-3' },
-  { value: 'pika', label: 'Pika Labs' },
-  { value: 'stable-video', label: 'Stable Video Diffusion' },
+type VideoServiceOption = {
+  id: string
+  label: string
+  baseModel: VideoModel
+  provider?: string | null
+}
+
+const DEFAULT_VIDEO_SERVICE_OPTIONS: VideoServiceOption[] = [
+  { id: 'video-sora', label: 'OpenAI Sora 2', baseModel: 'sora' },
+  { id: 'video-veo', label: 'Google Veo 3', baseModel: 'veo' },
+  { id: 'video-runway', label: 'Runway Gen-3', baseModel: 'runway' },
+  { id: 'video-pika', label: 'Pika Labs', baseModel: 'pika' },
+  { id: 'video-stable', label: 'Stable Video Diffusion', baseModel: 'stable-video' },
 ]
 
+const DEFAULT_VIDEO_SERVICE_ID = DEFAULT_VIDEO_SERVICE_OPTIONS[0].id
+const DEFAULT_VIDEO_BASE_MODEL = DEFAULT_VIDEO_SERVICE_OPTIONS[0].baseModel
+
+const slugify = (value: string) =>
+  value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/(^-|-$)/g, '') || 'video-service'
+
 // 서비스명을 모델 코드로 매핑하는 함수
-function mapServiceNameToVideoModel(serviceName: string): VideoModel | null {
+function mapServiceNameToVideoModel(serviceName: string): VideoModel {
   const lowerName = serviceName.toLowerCase()
-  if (lowerName.includes('sora')) return 'sora'
-  if (lowerName.includes('veo')) return 'veo'
+  if (lowerName.includes('sora') || lowerName.includes('video api')) return 'sora'
+  if (lowerName.includes('veo') || lowerName.includes('vertex')) return 'veo'
   if (lowerName.includes('runway')) return 'runway'
   if (lowerName.includes('pika')) return 'pika'
-  if (lowerName.includes('stable') || lowerName.includes('video')) return 'stable-video'
-  return null
+  if (lowerName.includes('stable') || lowerName.includes('fal') || lowerName.includes('replicate') || lowerName.includes('bedrock') || lowerName.includes('leonardo'))
+    return 'stable-video'
+  if (lowerName.includes('kling')) return 'kling'
+  if (lowerName.includes('luma')) return 'luma'
+  if (lowerName.includes('firefly') || lowerName.includes('adobe')) return 'runway'
+  return 'sora'
 }
 
 const GENRES = [
@@ -140,8 +159,10 @@ const VIDEO_WIZARD_STEPS = [
 ]
 
 function VideoPromptGenerator() {
-  const [videoModels, setVideoModels] = useState<{ value: VideoModel; label: string }[]>(DEFAULT_VIDEO_MODELS)
-  const [model, setModel] = useState<VideoModel>('sora')
+  const [videoServiceOptions, setVideoServiceOptions] = useState<VideoServiceOption[]>(DEFAULT_VIDEO_SERVICE_OPTIONS)
+  const [selectedVideoServiceId, setSelectedVideoServiceId] = useState<string>(DEFAULT_VIDEO_SERVICE_ID)
+  const [model, setModel] = useState<VideoModel>(DEFAULT_VIDEO_BASE_MODEL)
+  const selectedVideoService = videoServiceOptions.find((option) => option.id === selectedVideoServiceId)
   const [overallStyle, setOverallStyle] = useState<VideoStyle>({
     genre: 'drama',
     mood: 'peaceful',
@@ -192,31 +213,17 @@ function VideoPromptGenerator() {
       try {
         const response = await aiServicesAPI.getByCategory('VIDEO')
         if (response.success && response.data && response.data.length > 0) {
-          const models = response.data
-            .map((service: any) => {
-              const modelCode = mapServiceNameToVideoModel(service.serviceName)
-              if (modelCode) {
-                return {
-                  value: modelCode,
-                  label: service.serviceName,
-                }
-              }
-              return null
-            })
-            .filter((m: any) => m !== null) as { value: VideoModel; label: string }[]
+          const options: VideoServiceOption[] = response.data.map((service: any) => ({
+            id: service.id || slugify(service.serviceName),
+            label: service.serviceName,
+            baseModel: mapServiceNameToVideoModel(service.serviceName),
+            provider: service.provider || null,
+          }))
 
-          // 중복 제거
-          const uniqueModels = Array.from(
-            new Map(models.map((m) => [m.value, m])).values()
+          setVideoServiceOptions(options)
+          setSelectedVideoServiceId((prev) =>
+            options.some((option) => option.id === prev) ? prev : options[0].id
           )
-
-          if (uniqueModels.length > 0) {
-            setVideoModels(uniqueModels)
-            // 기본 모델이 목록에 없으면 첫 번째 모델로 설정
-            if (!uniqueModels.find((m) => m.value === model)) {
-              setModel(uniqueModels[0].value)
-            }
-          }
         }
       } catch (error) {
         console.warn('동영상 서비스 목록 로드 실패, 기본 목록 사용:', error)
@@ -226,6 +233,13 @@ function VideoPromptGenerator() {
 
     loadVideoServices()
   }, [])
+
+  useEffect(() => {
+    const option = videoServiceOptions.find((opt) => opt.id === selectedVideoServiceId)
+    if (option) {
+      setModel(option.baseModel)
+    }
+  }, [selectedVideoServiceId, videoServiceOptions])
   
   // 템플릿 관련 상태
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
@@ -335,23 +349,34 @@ function VideoPromptGenerator() {
     }
   }, [])
 
+  const renderVideoModelSelector = () => (
+    <div className="form-group">
+      <label>동영상 생성 모델</label>
+      <div className="model-option-list">
+        {videoServiceOptions.map((option) => {
+          const isActive = option.id === selectedVideoServiceId
+          return (
+            <button
+              key={option.id}
+              type="button"
+              className={`model-option ${isActive ? 'active' : ''}`}
+              onClick={() => setSelectedVideoServiceId(option.id)}
+            >
+              <div className="model-option__label">{option.label}</div>
+              <div className="model-option__meta">
+                <span>{option.provider || '제공사 미확인'}</span>
+                <span className="model-option__chip">{option.baseModel}</span>
+              </div>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+
   const renderWizardOverview = () => (
     <div className="wizard-panel">
-      <div className="form-group">
-        <label htmlFor="video-model-wizard">동영상 생성 모델</label>
-        <select
-          id="video-model-wizard"
-          value={model}
-          onChange={(e) => setModel(e.target.value as VideoModel)}
-          className="content-type-select"
-        >
-          {videoModels.map((m) => (
-            <option key={m.value} value={m.value}>
-              {m.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {renderVideoModelSelector()}
 
       <div className="options-grid">
         <div className="form-group">
@@ -572,7 +597,7 @@ function VideoPromptGenerator() {
             <div>
               <p className="quality-panel__label">요약</p>
               <div className="quality-panel__score" style={{ fontSize: '1rem', color: '#000' }}>
-                {videoModels.find((m) => m.value === model)?.label}
+                {selectedVideoService?.label || '-'}
               </div>
             </div>
           </div>
@@ -881,21 +906,7 @@ function VideoPromptGenerator() {
 
       {!useWizardMode && (
         <div className="input-section">
-        <div className="form-group">
-          <label htmlFor="video-model">동영상 생성 모델</label>
-          <select
-            id="video-model"
-            value={model}
-            onChange={(e) => setModel(e.target.value as VideoModel)}
-            className="content-type-select"
-          >
-            {videoModels.map((m) => (
-              <option key={m.value} value={m.value}>
-                {m.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {renderVideoModelSelector()}
 
         <div className="options-grid">
           <div className="form-group">
