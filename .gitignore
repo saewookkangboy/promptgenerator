@@ -45,6 +45,8 @@ server/**/*.d.ts.map
 !server/index.js
 !server/utils/seoMetaGenerator.js
 !server/scheduler/seoScheduler.js
+!server/routes/aiServices.js
+!server/scheduler/aiServiceScheduler.js
 
 # Database
 *.db
