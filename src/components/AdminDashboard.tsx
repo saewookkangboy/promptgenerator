@@ -3,6 +3,8 @@ import { clearAdminAuth } from '../utils/storage'
 import { removeToken } from '../utils/api'
 import VisitGraphModal from './VisitGraphModal'
 import TemplateManager from './TemplateManager'
+import UserEditModal from './UserEditModal'
+import PromptDetailModal from './PromptDetailModal'
 import { useAdminData, AdminPromptRecord } from '../hooks/useAdminData'
 import './AdminDashboard.css'
 
@@ -18,6 +20,9 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   const [activeSection, setActiveSection] = useState<'stats' | 'users' | 'prompts' | 'templates'>('stats')
   const [usersPage, setUsersPage] = useState(1)
   const [promptsPage, setPromptsPage] = useState(1)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  const [selectedPromptId, setSelectedPromptId] = useState<string | null>(null)
+  const [selectedPromptData, setSelectedPromptData] = useState<any | null>(null)
   const {
     generationStats: stats,
     statsOverview: serverStats,
@@ -247,8 +252,9 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                                 <td>
                                   <button
                                     className="admin-action-button"
-                                    onClick={() => {
-                                      console.log('사용자 편집:', user.id)
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedUserId(user.id)
                                     }}
                                   >
                                     편집
@@ -349,8 +355,10 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                                 <td>
                                   <button
                                     className="admin-action-button"
-                                    onClick={() => {
-                                      console.log('프롬프트 상세:', prompt.id)
+                                    onClick={(e) => {
+                                      e.stopPropagation()
+                                      setSelectedPromptId(prompt.id)
+                                      setSelectedPromptData(prompt)
                                     }}
                                   >
                                     상세
@@ -569,6 +577,23 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
       <VisitGraphModal
         isOpen={isGraphModalOpen}
         onClose={() => setIsGraphModalOpen(false)}
+      />
+
+      <UserEditModal
+        isOpen={selectedUserId !== null}
+        userId={selectedUserId}
+        onClose={() => setSelectedUserId(null)}
+        onUpdate={refresh}
+      />
+
+      <PromptDetailModal
+        isOpen={selectedPromptId !== null}
+        promptId={selectedPromptId}
+        promptData={selectedPromptData}
+        onClose={() => {
+          setSelectedPromptId(null)
+          setSelectedPromptData(null)
+        }}
       />
     </div>
   )

@@ -1,0 +1,128 @@
+.prompt-detail-modal {
+  max-width: 800px;
+}
+
+.prompt-info-section {
+  margin-bottom: 24px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.content-section {
+  margin-bottom: 24px;
+}
+
+.content-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+}
+
+.content-text {
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border: 1px solid #e5e5e5;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #000;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.options-section {
+  margin-top: 24px;
+}
+
+.options-section h3 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+}
+
+.options-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #e5e5e5;
+}
+
+.options-table tbody tr {
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.options-table tbody tr:last-child {
+  border-bottom: none;
+}
+
+.options-label {
+  padding: 12px 16px;
+  background: #f8f9fa;
+  font-weight: 500;
+  color: #666;
+  font-size: 14px;
+  width: 150px;
+  vertical-align: top;
+}
+
+.options-value {
+  padding: 12px 16px;
+  color: #000;
+  font-size: 14px;
+  word-break: break-word;
+}
+
+.category-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.category-badge.category-text {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.category-badge.category-image {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+.category-badge.category-video {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.category-badge.category-engineering {
+  background: #e8f5e9;
+  color: #2e7d32;
+}
+
+@media (max-width: 768px) {
+  .prompt-detail-modal {
+    max-width: 100%;
+  }
+
+  .content-text {
+    max-height: 300px;
+  }
+
+  .options-label {
+    width: 120px;
+    font-size: 12px;
+  }
+
+  .options-value {
+    font-size: 12px;
+  }
+}
+
