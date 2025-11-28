@@ -4,7 +4,8 @@ const { prisma } = require('../db/prisma')
 const { GoogleGenAI } = require('@google/genai')
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || ''
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview'
+const DEFAULT_GEMINI_MODEL = 'gemini-3-pro-preview'
+const GEMINI_MODEL = process.env.GEMINI_MODEL || DEFAULT_GEMINI_MODEL
 const BRAND_NAME = process.env.PUBLIC_BRAND_NAME || 'AllRounder.im'
 const BASE_DOMAIN = process.env.PUBLIC_BASE_URL || 'https://allrounder.im'
 const ai = GEMINI_API_KEY ? new GoogleGenAI({}) : null
@@ -16,12 +17,15 @@ if (!fs.existsSync(SEO_DIR)) {
   fs.mkdirSync(SEO_DIR, { recursive: true })
 }
 
-async function extractKeywordsWithAI(text, { allowRetry = true } = {}) {
+async function extractKeywordsWithAI(
+  text,
+  { allowRetry = true, model = GEMINI_MODEL, allowFallback = true } = {}
+) {
   if (!ai || !text) return []
 
   try {
     const requestPayload = {
-      model: GEMINI_MODEL,
+      model,
       contents: `다음 텍스트에서 한국어와 영어 키워드를 중요도(high/medium/low) 및 품사(명사/동사/형용사)와 함께 JSON 배열로 추출해주세요. 응답은 {"keywords":[...]} 형식이어야 합니다.\n\n텍스트:\n${text}`,
     }
     if (allowRetry) {
@@ -49,9 +53,20 @@ async function extractKeywordsWithAI(text, { allowRetry = true } = {}) {
   } catch (error) {
     const message = typeof error?.message === 'string' ? error.message : JSON.stringify(error)
     console.warn('[SEO Meta] AI 키워드 추출 실패:', message)
+    const notFoundPattern = /not\s+found|NOT_FOUND/i
+    if (allowFallback && notFoundPattern.test(message) && model !== DEFAULT_GEMINI_MODEL) {
+      console.warn(
+        `[SEO Meta] 모델 ${model} 지원 불가, 기본 모델 ${DEFAULT_GEMINI_MODEL}로 재시도합니다.`
+      )
+      return extractKeywordsWithAI(text, {
+        allowRetry,
+        model: DEFAULT_GEMINI_MODEL,
+        allowFallback: false,
+      })
+    }
     if (allowRetry && message.includes('Thinking level is not supported')) {
       console.warn('[SEO Meta] thinkingConfig 없이 재시도합니다.')
-      return extractKeywordsWithAI(text, { allowRetry: false })
+      return extractKeywordsWithAI(text, { allowRetry: false, model, allowFallback })
     }
     return []
   }
