@@ -133,40 +133,142 @@ export class DALLEGenerator extends ImagePromptGenerator {
     return qualityMap[technical.quality] || 'high quality'
   }
 
+  private getModelDisplayName(model: ImagePromptOptions['model']): string {
+    const modelNames: Record<string, string> = {
+      'midjourney': 'Midjourney',
+      'dalle': 'DALL-E 3',
+      'stable-diffusion': 'Stable Diffusion',
+      'imagen': 'Google Imagen',
+      'imagen-3': 'Google Imagen 3 (Nano Banana Pro)',
+      'firefly': 'Adobe Firefly',
+      'leonardo': 'Leonardo AI',
+      'flux': 'Flux',
+      'ideogram': 'Ideogram',
+      'comfyui': 'ComfyUI',
+    }
+    return modelNames[model] || model
+  }
+
+  private getModelSpecificGuidance(model: ImagePromptOptions['model']): string {
+    const guidanceMap: Record<string, string> = {
+      'dalle': 'DALL-E는 자연어 프롬프트를 선호하므로, 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.',
+      'imagen': 'Google Imagen은 자연어 프롬프트를 선호하므로, 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.',
+      'imagen-3': 'Google Imagen 3는 구조화된 자연어 프롬프트를 선호합니다. 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.',
+      'firefly': 'Adobe Firefly는 자연어 프롬프트를 선호하므로, 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.',
+      'leonardo': 'Leonardo AI는 자연어 프롬프트를 선호하므로, 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.',
+      'flux': 'Flux는 자연어 프롬프트를 선호하므로, 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.',
+      'ideogram': 'Ideogram은 자연어 프롬프트를 선호하므로, 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.',
+      'comfyui': 'ComfyUI는 구조화된 프롬프트를 선호하므로, 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.',
+    }
+    return guidanceMap[model] || '위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.'
+  }
+
   private buildContextPrompt(options: ImagePromptOptions): string {
     const dalle = options.modelSpecific?.dalle
+    const modelName = this.getModelDisplayName(options.model)
+    const modelGuidance = this.getModelSpecificGuidance(options.model)
     
-    return `이미지 생성 프롬프트 컨텍스트 (DALL-E 3):
+    // 모델별 특정 정보 구성
+    let modelSpecificInfo = ''
+    if (options.model === 'imagen-3') {
+      const imagen3 = options.modelSpecific?.imagen3
+      modelSpecificInfo = `프롬프트 구조: ${imagen3?.promptStructure || 'structured'}
+${imagen3?.guidanceScale ? `Guidance Scale: ${imagen3.guidanceScale}` : ''}
+${imagen3?.numInferenceSteps ? `Inference Steps: ${imagen3.numInferenceSteps}` : ''}
+${imagen3?.safetyFilter ? `안전 필터: ${imagen3.safetyFilter}` : ''}
+`
+    } else if (options.model === 'firefly') {
+      const firefly = options.modelSpecific?.firefly
+      modelSpecificInfo = `${firefly?.contentType ? `콘텐츠 타입: ${firefly.contentType}` : ''}
+${firefly?.commercialUse !== undefined ? `상업적 사용: ${firefly.commercialUse ? '가능' : '불가능'}` : ''}
+`
+    } else if (options.model === 'leonardo') {
+      const leonardo = options.modelSpecific?.leonardo
+      modelSpecificInfo = `${leonardo?.model ? `모델: ${leonardo.model}` : ''}
+${leonardo?.guidanceScale ? `Guidance Scale: ${leonardo.guidanceScale}` : ''}
+`
+    } else if (options.model === 'flux') {
+      const flux = options.modelSpecific?.flux
+      modelSpecificInfo = `${flux?.promptStrength ? `Prompt Strength: ${flux.promptStrength}` : ''}
+`
+    } else if (options.model === 'dalle') {
+      modelSpecificInfo = `크기: ${dalle?.size || '1024x1024'}
+스타일 모드: ${dalle?.style || 'vivid'}
+`
+    }
+    
+    return `이미지 생성 프롬프트 컨텍스트 (${modelName}):
 
-모델: DALL-E 3
+모델: ${modelName}
 주제: ${options.subject}
 스타일: ${options.style.artStyle}${options.style.customStyle ? ` (${options.style.customStyle})` : ''}
 구도: ${options.composition.framing}
 조명: ${options.lighting.type}
 색상: ${options.color.mood} 팔레트
-크기: ${dalle?.size || '1024x1024'}
-스타일 모드: ${dalle?.style || 'vivid'}
-${options.negativePrompt && options.negativePrompt.length > 0 ? `제외 요소: ${options.negativePrompt.join(', ')}` : ''}
+${modelSpecificInfo}${options.negativePrompt && options.negativePrompt.length > 0 ? `제외 요소: ${options.negativePrompt.join(', ')}` : ''}
 
-DALL-E는 자연어 프롬프트를 선호하므로, 위 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.`
+${modelGuidance}`
+  }
+
+  private getModelSpecificGuidanceEnglish(model: ImagePromptOptions['model']): string {
+    const guidanceMap: Record<string, string> = {
+      'dalle': 'DALL-E prefers natural language prompts. Use the prompt as-is or adjust wording to match your creative direction.',
+      'imagen': 'Google Imagen prefers natural language prompts. Use the prompt as-is or adjust wording to match your creative direction.',
+      'imagen-3': 'Google Imagen 3 prefers structured natural language prompts. Use the prompt as-is or adjust wording to match your creative direction.',
+      'firefly': 'Adobe Firefly prefers natural language prompts. Use the prompt as-is or adjust wording to match your creative direction.',
+      'leonardo': 'Leonardo AI prefers natural language prompts. Use the prompt as-is or adjust wording to match your creative direction.',
+      'flux': 'Flux prefers natural language prompts. Use the prompt as-is or adjust wording to match your creative direction.',
+      'ideogram': 'Ideogram prefers natural language prompts. Use the prompt as-is or adjust wording to match your creative direction.',
+      'comfyui': 'ComfyUI prefers structured prompts. Use the prompt as-is or adjust wording to match your creative direction.',
+    }
+    return guidanceMap[model] || 'Use the prompt as-is or adjust wording to match your creative direction.'
   }
 
   private buildEnglishContextPrompt(options: ImagePromptOptions): string {
     const dalle = options.modelSpecific?.dalle
+    const modelName = this.getModelDisplayName(options.model)
+    const modelGuidance = this.getModelSpecificGuidanceEnglish(options.model)
+    
+    // 모델별 특정 정보 구성
+    let modelSpecificInfo = ''
+    if (options.model === 'imagen-3') {
+      const imagen3 = options.modelSpecific?.imagen3
+      modelSpecificInfo = `Prompt structure: ${imagen3?.promptStructure || 'structured'}
+${imagen3?.guidanceScale ? `Guidance Scale: ${imagen3.guidanceScale}` : ''}
+${imagen3?.numInferenceSteps ? `Inference Steps: ${imagen3.numInferenceSteps}` : ''}
+${imagen3?.safetyFilter ? `Safety filter: ${imagen3.safetyFilter}` : ''}
+`
+    } else if (options.model === 'firefly') {
+      const firefly = options.modelSpecific?.firefly
+      modelSpecificInfo = `${firefly?.contentType ? `Content type: ${firefly.contentType}` : ''}
+${firefly?.commercialUse !== undefined ? `Commercial use: ${firefly.commercialUse ? 'allowed' : 'not allowed'}` : ''}
+`
+    } else if (options.model === 'leonardo') {
+      const leonardo = options.modelSpecific?.leonardo
+      modelSpecificInfo = `${leonardo?.model ? `Model: ${leonardo.model}` : ''}
+${leonardo?.guidanceScale ? `Guidance Scale: ${leonardo.guidanceScale}` : ''}
+`
+    } else if (options.model === 'flux') {
+      const flux = options.modelSpecific?.flux
+      modelSpecificInfo = `${flux?.promptStrength ? `Prompt Strength: ${flux.promptStrength}` : ''}
+`
+    } else if (options.model === 'dalle') {
+      modelSpecificInfo = `Size: ${dalle?.size || '1024x1024'}
+Style mode: ${dalle?.style || 'vivid'}
+`
+    }
 
-    return `Image generation context (DALL-E 3):
+    return `Image generation context (${modelName}):
 
-Model: DALL-E 3
+Model: ${modelName}
 Subject: ${options.subject}
 Style: ${options.style.artStyle}${options.style.customStyle ? ` (${options.style.customStyle})` : ''}
 Composition: ${options.composition.framing}
 Lighting: ${options.lighting.type}
 Color palette: ${options.color.mood}
-Size: ${dalle?.size || '1024x1024'}
-Style mode: ${dalle?.style || 'vivid'}
-${options.negativePrompt && options.negativePrompt.length > 0 ? `Exclude: ${options.negativePrompt.join(', ')}` : ''}
+${modelSpecificInfo}${options.negativePrompt && options.negativePrompt.length > 0 ? `Exclude: ${options.negativePrompt.join(', ')}` : ''}
 
-DALL-E prefers natural language prompts. Use the prompt as-is or adjust wording to match your creative direction.`
+${modelGuidance}`
   }
 }
 

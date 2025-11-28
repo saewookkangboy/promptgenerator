@@ -142,10 +142,28 @@ export class VeoGenerator extends VideoPromptGenerator {
     return parts.join(', ')
   }
 
+  private getModelDisplayName(model: VideoPromptOptions['model']): string {
+    const modelNames: Record<string, string> = {
+      'sora': 'OpenAI Sora',
+      'sora-2': 'OpenAI Sora 2',
+      'veo': 'Google Veo',
+      'veo-3': 'Google Veo 3',
+      'runway': 'Runway',
+      'runway-gen3': 'Runway Gen-3',
+      'pika': 'Pika Labs',
+      'pika-2': 'Pika Labs 2.0',
+      'stable-video': 'Stable Video Diffusion',
+      'kling': 'Kling AI',
+      'luma': 'Luma Dream Machine',
+    }
+    return modelNames[model] || model
+  }
+
   private buildMetaPrompt(options: VideoPromptOptions): string {
     const style = this.formatStyle(options.overallStyle)
+    const modelName = this.getModelDisplayName(options.model)
     
-    return `동영상 생성 프롬프트 (Google Veo 3):
+    return `동영상 생성 프롬프트 (${modelName}):
 
 장르: ${options.overallStyle.genre}
 분위기: ${options.overallStyle.mood}
@@ -165,35 +183,58 @@ ${options.scenes.map((scene, i) =>
 ).join('\n')}`
   }
 
+  private getModelSpecificGuidance(model: VideoPromptOptions['model']): string {
+    if (model === 'veo-3') {
+      return 'Google Veo 3는 구조화된 자연어 프롬프트를 선호합니다. 초고해상도와 긴 컷을 지원하므로, 각 장면의 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.'
+    }
+    return 'Google Veo는 자연어 프롬프트를 선호합니다. 각 장면의 프롬프트를 그대로 사용하거나 필요에 따라 자연스럽게 수정하여 사용하세요.'
+  }
+
   private buildContextPrompt(options: VideoPromptOptions): string {
     const veo = options.modelSpecific?.veo
+    const veo3 = options.modelSpecific?.veo3
+    const modelName = this.getModelDisplayName(options.model)
+    const modelGuidance = this.getModelSpecificGuidance(options.model)
     
-    let context = `동영상 생성 컨텍스트 (Google Veo 3):
+    // 모델별 특정 정보 구성
+    let modelSpecificInfo = ''
+    if (options.model === 'veo-3') {
+      modelSpecificInfo = `품질: ${veo3?.quality || veo?.quality || 'high'}
+${veo3?.motionControl ? `모션 제어: ${veo3.motionControl}` : ''}
+${veo3?.promptStructure ? `프롬프트 구조: ${veo3.promptStructure}` : ''}
+확장 길이: ${veo3?.extendedDuration || veo?.extendedDuration ? '활성화 (최대 60초)' : '비활성화'}
+`
+    } else {
+      modelSpecificInfo = `품질: ${veo?.quality || 'high'}
+확장 길이: ${veo?.extendedDuration ? '활성화' : '비활성화'}
+`
+    }
+    
+    let context = `동영상 생성 컨텍스트 (${modelName}):
 
-모델: Google Veo 3
+모델: ${modelName}
 전체 스타일: ${options.overallStyle.genre}, ${options.overallStyle.mood}
 기술 사양: ${options.technical.resolution}, ${options.technical.fps}fps
 아스펙트 비율: ${options.technical.aspectRatio}
 총 장면 수: ${options.scenes.length}
 총 길이: ${options.technical.totalDuration}초
-품질: ${veo?.quality || 'high'}
-확장 길이: ${veo?.extendedDuration ? '활성화' : '비활성화'}
-`
+${modelSpecificInfo}`
 
     if (options.hasReferenceImage && options.referenceImageDescription) {
-      context += `\n참조 이미지: ${options.referenceImageDescription}`
+      context += `참조 이미지: ${options.referenceImageDescription}\n`
     }
 
     if (options.overallStyle.contextualTone) {
-      context += `\n문맥적 톤앤매너: ${options.overallStyle.contextualTone}`
+      context += `문맥적 톤앤매너: ${options.overallStyle.contextualTone}\n`
     }
 
     if (options.overallStyle.qualitativeTone) {
-      context += `\n정성적 톤앤매너: ${options.overallStyle.qualitativeTone}`
+      context += `정성적 톤앤매너: ${options.overallStyle.qualitativeTone}\n`
     }
 
-    context += `\n\nVeo 3는 초고해상도와 긴 컷을 지원합니다.
+    context += `\n${modelName}는 초고해상도와 긴 컷을 지원합니다.
 각 장면은 자연스럽게 연결되며, 전체적인 스토리 흐름을 유지합니다.
+${modelGuidance}
 ${options.hasReferenceImage ? '참조 이미지의 스타일과 구도를 반영하여 일관된 비주얼을 유지하세요.' : ''}
 ${options.overallStyle.contextualTone || options.overallStyle.qualitativeTone ? '톤앤매너를 일관되게 유지하여 전체적인 분위기를 조성하세요.' : ''}`
 
@@ -211,8 +252,9 @@ ${options.overallStyle.contextualTone || options.overallStyle.qualitativeTone ? 
     if (options.overallStyle.qualitativeTone) {
       toneParts.push(`Qualitative tone: ${options.overallStyle.qualitativeTone}`)
     }
+    const modelName = this.getModelDisplayName(options.model)
 
-    return `Video generation prompt (Google Veo 3):
+    return `Video generation prompt (${modelName}):
 
 Genre: ${options.overallStyle.genre}
 Mood: ${options.overallStyle.mood}
@@ -232,8 +274,18 @@ ${scenes
   .join('\n')}`
   }
 
+  private getModelSpecificGuidanceEnglish(model: VideoPromptOptions['model']): string {
+    if (model === 'veo-3') {
+      return 'Google Veo 3 prefers structured natural language prompts. It supports ultra-high-resolution and long-form shots. Use each scene prompt as-is or adjust wording to match your creative direction.'
+    }
+    return 'Google Veo prefers natural language prompts. Use each scene prompt as-is or adjust wording to match your creative direction.'
+  }
+
   private buildEnglishContextPrompt(options: VideoPromptOptions): string {
     const veo = options.modelSpecific?.veo
+    const veo3 = options.modelSpecific?.veo3
+    const modelName = this.getModelDisplayName(options.model)
+    const modelGuidance = this.getModelSpecificGuidanceEnglish(options.model)
     const toneParts: string[] = []
     if (options.overallStyle.contextualTone) {
       toneParts.push(`Contextual tone: ${options.overallStyle.contextualTone}`)
@@ -241,22 +293,35 @@ ${scenes
     if (options.overallStyle.qualitativeTone) {
       toneParts.push(`Qualitative tone: ${options.overallStyle.qualitativeTone}`)
     }
+    
+    // 모델별 특정 정보 구성
+    let modelSpecificInfo = ''
+    if (options.model === 'veo-3') {
+      modelSpecificInfo = `Quality setting: ${veo3?.quality || veo?.quality || 'high'}
+${veo3?.motionControl ? `Motion control: ${veo3.motionControl}` : ''}
+${veo3?.promptStructure ? `Prompt structure: ${veo3.promptStructure}` : ''}
+Extended duration: ${veo3?.extendedDuration || veo?.extendedDuration ? 'enabled (up to 60s)' : 'disabled'}
+`
+    } else {
+      modelSpecificInfo = `Quality setting: ${veo?.quality || 'high'}
+Extended duration: ${veo?.extendedDuration ? 'enabled' : 'disabled'}
+`
+    }
 
-    return `Video generation context (Google Veo 3):
+    return `Video generation context (${modelName}):
 
-Model: Google Veo 3
+Model: ${modelName}
 Overall style: ${options.overallStyle.genre}, ${options.overallStyle.mood}
 Technical specs: ${options.technical.resolution}, ${options.technical.fps}fps
 Aspect ratio: ${options.technical.aspectRatio}
 Total scenes: ${options.scenes.length}
 Total duration: ${options.technical.totalDuration} seconds
-Quality setting: ${veo?.quality || 'high'}
-Extended duration: ${veo?.extendedDuration ? 'enabled' : 'disabled'}
-${toneParts.join('\n')}
+${modelSpecificInfo}${toneParts.join('\n')}
 ${options.hasReferenceImage && options.referenceImageDescription ? `Reference image: ${options.referenceImageDescription}` : ''}
 
-Veo 3 supports ultra-high-resolution and long-form shots.
+${modelName} supports ultra-high-resolution and long-form shots.
 Ensure each scene flows naturally and maintains the requested mood.
+${modelGuidance}
 Honor the reference image and tonal guidelines throughout the video.`
   }
 }

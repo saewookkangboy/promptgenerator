@@ -702,15 +702,36 @@ function ImagePromptGenerator() {
         </div>
         <div className="quality-panel__section">
           <h4>핵심 설정</h4>
-          <ul>
-            <li>모델: {IMAGE_MODELS.find((m) => m.value === model)?.label || model}</li>
-            <li>주제: {subject || '-'}</li>
-            <li>스타일: {style.artStyle}</li>
-            <li>프레이밍/구도: {composition.framing} · {composition.rule}</li>
-            <li>조명: {lighting.type} / {lighting.direction}</li>
-            <li>색상 & 비율: {color.mood} · {technical.aspectRatio}</li>
-            <li>품질: {technical.quality} /100</li>
-          </ul>
+          <div className="summary-info-grid">
+            <div className="summary-info-card">
+              <div className="summary-info-label">모델</div>
+              <div className="summary-info-value">{IMAGE_MODELS.find((m) => m.value === model)?.label || model}</div>
+            </div>
+            <div className="summary-info-card">
+              <div className="summary-info-label">주제</div>
+              <div className="summary-info-value">{subject || '-'}</div>
+            </div>
+            <div className="summary-info-card">
+              <div className="summary-info-label">스타일</div>
+              <div className="summary-info-value">{style.artStyle}</div>
+            </div>
+            <div className="summary-info-card">
+              <div className="summary-info-label">프레이밍/구도</div>
+              <div className="summary-info-value">{composition.framing} · {composition.rule}</div>
+            </div>
+            <div className="summary-info-card">
+              <div className="summary-info-label">조명</div>
+              <div className="summary-info-value">{lighting.type} / {lighting.direction}</div>
+            </div>
+            <div className="summary-info-card">
+              <div className="summary-info-label">색상 & 비율</div>
+              <div className="summary-info-value">{color.mood} · {technical.aspectRatio}</div>
+            </div>
+            <div className="summary-info-card">
+              <div className="summary-info-label">품질</div>
+              <div className="summary-info-value">{technical.quality} / 5</div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

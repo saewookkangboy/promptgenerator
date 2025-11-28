@@ -523,12 +523,24 @@ function VideoPromptGenerator() {
           </div>
           <div className="quality-panel__section">
             <h4>핵심 설정</h4>
-            <ul>
-              <li>장르/무드: {overallStyle.genre} · {overallStyle.mood}</li>
-              <li>장면 수: {scenes.length}개 / 총 {totalDuration}초</li>
-              <li>기술: {technical.resolution}, {technical.fps}fps, {technical.aspectRatio}</li>
-              <li>레퍼런스: {hasReferenceImage ? '사용' : '없음'}</li>
-            </ul>
+            <div className="summary-info-grid">
+              <div className="summary-info-card">
+                <div className="summary-info-label">장르/무드</div>
+                <div className="summary-info-value">{overallStyle.genre} · {overallStyle.mood}</div>
+              </div>
+              <div className="summary-info-card">
+                <div className="summary-info-label">장면 수</div>
+                <div className="summary-info-value">{scenes.length}개 / 총 {totalDuration}초</div>
+              </div>
+              <div className="summary-info-card">
+                <div className="summary-info-label">기술 사양</div>
+                <div className="summary-info-value">{technical.resolution}, {technical.fps}fps, {technical.aspectRatio}</div>
+              </div>
+              <div className="summary-info-card">
+                <div className="summary-info-label">레퍼런스</div>
+                <div className="summary-info-value">{hasReferenceImage ? '사용' : '없음'}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>

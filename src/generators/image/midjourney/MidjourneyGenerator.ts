@@ -123,38 +123,81 @@ export class MidjourneyGenerator extends ImagePromptGenerator {
     return ratioMap[aspectRatio] || `--ar ${aspectRatio}`
   }
 
+  private getModelDisplayName(model: ImagePromptOptions['model']): string {
+    const modelNames: Record<string, string> = {
+      'midjourney': 'Midjourney',
+      'dalle': 'DALL-E 3',
+      'stable-diffusion': 'Stable Diffusion',
+      'imagen': 'Google Imagen',
+      'imagen-3': 'Google Imagen 3 (Nano Banana Pro)',
+      'firefly': 'Adobe Firefly',
+      'leonardo': 'Leonardo AI',
+      'flux': 'Flux',
+      'ideogram': 'Ideogram',
+      'comfyui': 'ComfyUI',
+    }
+    return modelNames[model] || model
+  }
+
+
   private buildContextPrompt(options: ImagePromptOptions): string {
     const midjourney = options.modelSpecific?.midjourney
+    const stableDiffusion = options.modelSpecific?.stableDiffusion
+    const modelName = this.getModelDisplayName(options.model)
     
-    return `이미지 생성 프롬프트 컨텍스트 (Midjourney):
+    let modelSpecificInfo = ''
+    if (options.model === 'stable-diffusion') {
+      modelSpecificInfo = `${stableDiffusion ? `CFG Scale: ${stableDiffusion.cfgScale}` : ''}
+${stableDiffusion ? `Sampling Steps: ${stableDiffusion.steps}` : ''}
+${stableDiffusion ? `Sampler: ${stableDiffusion.sampler}` : ''}
+`
+    } else {
+      modelSpecificInfo = `${midjourney?.version ? `버전: ${midjourney.version}` : ''}
+${midjourney?.chaos ? `창의성 (Chaos): ${midjourney.chaos}` : ''}
+${midjourney?.seed ? `시드: ${midjourney.seed}` : ''}
+`
+    }
+    
+    return `이미지 생성 프롬프트 컨텍스트 (${modelName}):
 
-모델: Midjourney ${midjourney?.version || 6}
+모델: ${modelName}${midjourney?.version ? ` ${midjourney.version}` : ''}
 주제: ${options.subject}
 스타일: ${options.style.artStyle}${options.style.customStyle ? ` (${options.style.customStyle})` : ''}
 구도: ${options.composition.framing}, ${options.composition.rule}
 조명: ${options.lighting.type}, ${options.lighting.direction}
 색상: ${options.color.mood} 팔레트
 해상도: ${options.technical.aspectRatio}
-${options.negativePrompt && options.negativePrompt.length > 0 ? `제외 요소: ${options.negativePrompt.join(', ')}` : ''}
-${midjourney?.chaos ? `창의성 (Chaos): ${midjourney.chaos}` : ''}
-${midjourney?.seed ? `시드: ${midjourney.seed}` : ''}`
+${modelSpecificInfo}${options.negativePrompt && options.negativePrompt.length > 0 ? `제외 요소: ${options.negativePrompt.join(', ')}` : ''}`
   }
 
   private buildEnglishContextPrompt(options: ImagePromptOptions): string {
     const midjourney = options.modelSpecific?.midjourney
+    const stableDiffusion = options.modelSpecific?.stableDiffusion
+    const modelName = this.getModelDisplayName(options.model)
+    
+    let modelSpecificInfo = ''
+    if (options.model === 'stable-diffusion') {
+      modelSpecificInfo = `${stableDiffusion ? `CFG Scale: ${stableDiffusion.cfgScale}` : ''}
+${stableDiffusion ? `Sampling Steps: ${stableDiffusion.steps}` : ''}
+${stableDiffusion ? `Sampler: ${stableDiffusion.sampler}` : ''}
+`
+    } else {
+      modelSpecificInfo = `${midjourney?.version ? `Version: ${midjourney.version}` : ''}
+${midjourney?.chaos ? `Creativity (Chaos): ${midjourney.chaos}` : ''}
+${midjourney?.seed ? `Seed: ${midjourney.seed}` : ''}
+`
+    }
 
-    return `Image generation context (Midjourney):
+    return `Image generation context (${modelName}):
 
-Model: Midjourney ${midjourney?.version || 6}
+Model: ${modelName}${midjourney?.version ? ` ${midjourney.version}` : ''}
 Subject: ${options.subject}
 Style: ${options.style.artStyle}${options.style.customStyle ? ` (${options.style.customStyle})` : ''}
 Composition: ${options.composition.framing}, ${options.composition.rule}
 Lighting: ${options.lighting.type}, ${options.lighting.direction}
 Color palette: ${options.color.mood}
 Aspect ratio: ${options.technical.aspectRatio}
-${options.negativePrompt && options.negativePrompt.length > 0 ? `Exclude: ${options.negativePrompt.join(', ')}` : ''}
-${midjourney?.chaos ? `Creativity (Chaos): ${midjourney.chaos}` : ''}
-${midjourney?.seed ? `Seed: ${midjourney.seed}` : ''}`
+${modelSpecificInfo}${options.negativePrompt && options.negativePrompt.length > 0 ? `Exclude: ${options.negativePrompt.join(', ')}` : ''}`
   }
 }
 
