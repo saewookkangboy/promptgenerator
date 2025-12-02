@@ -1,7 +1,7 @@
 // 동영상 프롬프트 생성 UI 컴포넌트
 
 import { useState, useCallback, useEffect, useRef } from 'react'
-import { templateAPI, aiServicesAPI } from '../utils/api'
+import { templateAPI, aiServicesAPI, promptOptimizerAPI } from '../utils/api'
 import TemplateVariableForm from './TemplateVariableForm'
 import { VideoPromptOptions, VideoModel, VideoScene, CameraSettings, MotionSettings, VideoStyle, VideoTechnicalSettings } from '../types/video.types'
 import { PromptResult } from '../types/prompt.types'
@@ -228,6 +228,8 @@ function VideoPromptGenerator() {
   const [showAdvanced, setShowAdvanced] = useState(false)
   const [modelSpecific, setModelSpecific] = useState<any>({})
   const [hashtagsCopied, setHashtagsCopied] = useState(false)
+  const [optimizedResult, setOptimizedResult] = useState<any>(null)
+  const [isOptimizing, setIsOptimizing] = useState(false)
   const [useWizardMode, setUseWizardMode] = useState(true)
   const [wizardStep, setWizardStep] = useState(1)
   const wizardSteps = VIDEO_WIZARD_STEPS
@@ -1550,12 +1552,88 @@ function VideoPromptGenerator() {
             showEnglishToggle={true}
           />
           {results.fullPrompt && (
-            <ResultCard
-              title="전체 프롬프트 (복사용)"
-              content={results.fullPrompt}
-              englishVersion={results.englishVersion}
-              showEnglishToggle={true}
-            />
+            <>
+              <ResultCard
+                title="전체 프롬프트 (복사용)"
+                content={results.fullPrompt}
+                englishVersion={results.englishVersion}
+                showEnglishToggle={true}
+              />
+              <div style={{ marginTop: '16px', marginBottom: '16px' }}>
+                <button
+                  onClick={async () => {
+                    setIsOptimizing(true)
+                    try {
+                      const optimized = await promptOptimizerAPI.optimize({
+                        prompt: results.fullPrompt || results.metaPrompt,
+                        category: 'video',
+                        model: model,
+                        options: {}
+                      })
+                      setOptimizedResult(optimized.data)
+                      showNotification('프롬프트가 최적화되었습니다!', 'success')
+                    } catch (err: any) {
+                      showNotification(err.message || '최적화에 실패했습니다', 'error')
+                    } finally {
+                      setIsOptimizing(false)
+                    }
+                  }}
+                  disabled={isOptimizing}
+                  className="optimize-button"
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: 'var(--color-black)',
+                    color: 'var(--color-white)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: isOptimizing ? 'not-allowed' : 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    opacity: isOptimizing ? 0.6 : 1
+                  }}
+                >
+                  {isOptimizing ? '⚡ 최적화 중...' : '⚡ AI 프롬프트 최적화'}
+                </button>
+              </div>
+              {optimizedResult && (
+                <div className="optimized-result-card" style={{
+                  marginTop: '16px',
+                  padding: '20px',
+                  backgroundColor: '#f8f9fa',
+                  borderRadius: '8px',
+                  border: '1px solid #e0e0e0'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                    <h3 style={{ margin: 0, fontSize: '18px', fontWeight: '600' }}>
+                      ✨ 최적화된 프롬프트
+                    </h3>
+                    <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <span style={{ fontSize: '14px', color: '#666' }}>
+                        품질 점수: <strong style={{ color: '#000' }}>{optimizedResult.quality_score.toFixed(0)}/100</strong>
+                      </span>
+                      <span style={{ fontSize: '14px', color: '#666' }}>
+                        신뢰도: <strong style={{ color: '#000' }}>{(optimizedResult.confidence * 100).toFixed(0)}%</strong>
+                      </span>
+                    </div>
+                  </div>
+                  <ResultCard
+                    title="최적화된 전체 프롬프트"
+                    content={optimizedResult.optimized_prompt}
+                    showEnglishToggle={false}
+                  />
+                  {optimizedResult.improvements.length > 0 && (
+                    <div style={{ marginTop: '16px' }}>
+                      <h4 style={{ fontSize: '14px', fontWeight: '600', marginBottom: '8px' }}>개선 사항:</h4>
+                      <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '14px', color: '#666' }}>
+                        {optimizedResult.improvements.map((improvement: string, idx: number) => (
+                          <li key={idx}>{improvement}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
+            </>
           )}
           {results.scenes && Array.isArray(results.scenes) && (
             <div className="hashtags-card">

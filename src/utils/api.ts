@@ -655,3 +655,53 @@ export const aiServicesAPI = {
     )
   },
 }
+
+// 프롬프트 최적화 API (Agent Lightning)
+export const promptOptimizerAPI = {
+  optimize: async (data: {
+    prompt: string
+    category: 'image' | 'video' | 'text' | 'IMAGE' | 'VIDEO' | 'TEXT'
+    model?: string
+    options?: Record<string, any>
+  }) => {
+    return apiRequest<{
+      success: boolean
+      data: {
+        original_prompt: string
+        optimized_prompt: string
+        improvements: string[]
+        quality_score: number
+        confidence: number
+        recommendations: string[]
+      }
+    }>('/api/prompt-optimizer/optimize', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+  recommendTemplates: async (data: {
+    user_input: string
+    category: 'image' | 'video' | 'text' | 'IMAGE' | 'VIDEO' | 'TEXT'
+    model?: string
+    context?: Record<string, any>
+  }) => {
+    return apiRequest<{
+      success: boolean
+      data: {
+        recommended_templates: Array<{
+          name: string
+          template: string
+          score: number
+          reason: string
+          match_score?: number
+          final_score?: number
+        }>
+        reasoning: string
+        confidence: number
+      }
+    }>('/api/prompt-optimizer/recommend-templates', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+}

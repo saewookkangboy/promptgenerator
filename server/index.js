@@ -763,6 +763,15 @@ try {
   app.use('/api/ai-services', aiServicesRouter)
   console.log('✅ AI 서비스 API 라우트 로드됨: /api/ai-services')
   
+  // 프롬프트 최적화 API (Agent Lightning)
+  try {
+    const promptOptimizerRouter = require('./routes/promptOptimizer')
+    app.use('/api/prompt-optimizer', promptOptimizerRouter)
+    console.log('✅ 프롬프트 최적화 API 라우트 로드됨: /api/prompt-optimizer')
+  } catch (error) {
+    console.warn('⚠️ 프롬프트 최적화 라우트 로드 실패:', error.message)
+  }
+  
   // 템플릿 라우트
   const finalTemplatesRouter = templatesRouter.default || templatesRouter
   if (finalTemplatesRouter) {
