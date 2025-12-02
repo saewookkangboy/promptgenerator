@@ -16,7 +16,7 @@
     "sync:models": "tsx scripts/sync-models.ts",
     "db:generate": "prisma generate",
     "db:generate:skip-validation": "DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" prisma generate",
-    "postinstall": "npm run db:generate:skip-validation || echo 'Prisma generate skipped (DATABASE_URL not set)'",
+    "postinstall": "export DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" && npm run db:generate:skip-validation || echo 'Prisma generate skipped'",
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:migrate:deploy": "prisma migrate deploy",

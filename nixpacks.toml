@@ -1,0 +1,19 @@
+# Nixpacks 빌드 설정
+# Railway에서 Prisma 빌드 오류 방지
+
+[phases.setup]
+nixPkgs = ["nodejs-20_x", "npm"]
+
+[phases.install]
+cmds = [
+  "DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npm ci"
+]
+
+[phases.build]
+cmds = [
+  "DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npm run build"
+]
+
+[start]
+cmd = "npm start"
+
