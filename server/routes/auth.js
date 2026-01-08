@@ -9,24 +9,16 @@ const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = require("../db/prisma");
 const auth_1 = require("../middleware/auth");
+const validation_1 = require("../middleware/validation");
 const router = (0, express_1.Router)();
 // JWT 토큰 생성
 function generateToken(userId, email) {
     return jsonwebtoken_1.default.sign({ userId, email }, process.env.JWT_SECRET || 'secret', { expiresIn: '7d' });
 }
 // 회원가입
-router.post('/register', async (req, res) => {
+router.post('/register', validation_1.validateRegisterInput, async (req, res) => {
     try {
         const { email, password, name } = req.body;
-        // 입력 검증
-        if (!email || !password) {
-            res.status(400).json({ error: '이메일과 비밀번호는 필수입니다' });
-            return;
-        }
-        if (password.length < 8) {
-            res.status(400).json({ error: '비밀번호는 최소 8자 이상이어야 합니다' });
-            return;
-        }
         // 이메일 중복 확인
         const existingUser = await prisma_1.prisma.user.findUnique({
             where: { email },
@@ -68,14 +60,9 @@ router.post('/register', async (req, res) => {
     }
 });
 // 로그인
-router.post('/login', async (req, res) => {
+router.post('/login', validation_1.validateLoginInput, async (req, res) => {
     try {
         const { email, password } = req.body;
-        // 입력 검증
-        if (!email || !password) {
-            res.status(400).json({ error: '이메일과 비밀번호를 입력해주세요' });
-            return;
-        }
         // 사용자 조회
         const user = await prisma_1.prisma.user.findUnique({
             where: { email },

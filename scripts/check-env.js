@@ -8,7 +8,6 @@ const requiredEnvVars = [
   'DATABASE_URL',
   'JWT_SECRET',
   'ADMIN_EMAIL',
-  'ADMIN_PASSWORD',
   'PORT',
   'GEMINI_API_KEY',
 ]
@@ -56,6 +55,55 @@ optionalEnvVars.forEach(varName => {
     console.log(`  ✅ ${varName}: ${value}`)
   }
 })
+
+// 환경 변수 타입 검증
+console.log('\n🔍 환경 변수 타입 검증:')
+
+// DATABASE_URL 형식 검증
+if (process.env.DATABASE_URL) {
+  const dbUrl = process.env.DATABASE_URL
+  if (!dbUrl.startsWith('postgresql://') && !dbUrl.startsWith('postgres://')) {
+    console.log(`  ❌ DATABASE_URL: 잘못된 형식 (postgresql:// 또는 postgres://로 시작해야 함)`)
+    hasErrors = true
+  } else {
+    console.log('  ✅ DATABASE_URL: 형식 확인됨')
+  }
+}
+
+// JWT_SECRET 강도 검증
+if (process.env.JWT_SECRET) {
+  const jwtSecret = process.env.JWT_SECRET
+  if (jwtSecret.length < 32) {
+    console.log(`  ⚠️  JWT_SECRET: 32자 이상 권장 (현재: ${jwtSecret.length}자)`)
+    hasWarnings = true
+  } else {
+    console.log('  ✅ JWT_SECRET: 강도 확인됨')
+  }
+}
+
+// PORT 숫자 검증
+if (process.env.PORT) {
+  const port = parseInt(process.env.PORT, 10)
+  if (isNaN(port) || port < 1 || port > 65535) {
+    console.log(`  ❌ PORT: 유효한 포트 번호가 아님 (1-65535)`)
+    hasErrors = true
+  } else {
+    console.log(`  ✅ PORT: ${port}`)
+  }
+}
+
+// ADMIN_EMAIL 형식 검증
+if (process.env.ADMIN_EMAIL) {
+  const emails = process.env.ADMIN_EMAIL.split(',').map(e => e.trim())
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  const invalidEmails = emails.filter(email => !emailRegex.test(email))
+  if (invalidEmails.length > 0) {
+    console.log(`  ❌ ADMIN_EMAIL: 잘못된 이메일 형식: ${invalidEmails.join(', ')}`)
+    hasErrors = true
+  } else {
+    console.log(`  ✅ ADMIN_EMAIL: ${emails.length}개 이메일 확인됨`)
+  }
+}
 
 // 데이터베이스 연결 확인
 if (process.env.DATABASE_URL) {

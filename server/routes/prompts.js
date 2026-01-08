@@ -4,6 +4,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = require("express");
 const prisma_1 = require("../db/prisma");
 const auth_1 = require("../middleware/auth");
+const validation_1 = require("../middleware/validation");
 const router = (0, express_1.Router)();
 // 모든 프롬프트 라우트는 인증 필요
 router.use(auth_1.authenticateToken);
@@ -116,7 +117,7 @@ router.get('/:id', async (req, res) => {
     }
 });
 // 프롬프트 생성
-router.post('/', async (req, res) => {
+router.post('/', validation_1.validatePromptInput, async (req, res) => {
     try {
         const { title, content, category, model, inputText, options, folderId, workspaceId, tagIds, } = req.body;
         // 워크스페이스 권한 확인 (Tier 2)

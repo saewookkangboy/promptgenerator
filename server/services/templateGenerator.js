@@ -3,9 +3,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.generateTemplateWithAI = generateTemplateWithAI;
 exports.generateTemplatesByCategory = generateTemplatesByCategory;
 // AI 기반 템플릿 자동 생성 서비스
-const generative_ai_1 = require("@google/generative-ai");
+const genai_1 = require("@google/genai");
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GEMINI_APIKEY || '';
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash-exp';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3-pro-preview';
 /**
  * AI를 사용하여 템플릿 생성
  */
@@ -13,8 +13,7 @@ async function generateTemplateWithAI(request) {
     if (!GEMINI_API_KEY) {
         throw new Error('Gemini API 키가 설정되지 않았습니다.');
     }
-    const genAI = new generative_ai_1.GoogleGenerativeAI(GEMINI_API_KEY);
-    const model = genAI.getGenerativeModel({ model: GEMINI_MODEL });
+    const ai = new genai_1.GoogleGenAI({});
     const categoryPrompts = {
         text: `다음 프롬프트 라이브러리 문서를 기반으로 실무에서 바로 사용할 수 있는 고품질 텍스트 프롬프트 템플릿을 생성하세요.
 
@@ -141,9 +140,16 @@ async function generateTemplateWithAI(request) {
         ? `기존 템플릿:\n${request.baseTemplate}\n\n위 템플릿을 개선하거나 확장하여 새로운 템플릿을 생성하세요.`
         : `실무에서 바로 사용할 수 있는 ${request.category} 카테고리의 프롬프트 템플릿을 생성하세요.`;
     try {
-        const result = await model.generateContent(`${systemPrompt}\n\n${userPrompt}`);
-        const response = await result.response;
-        const text = response.text();
+        const response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: `${systemPrompt}\n\n${userPrompt}`,
+            config: {
+                thinkingConfig: {
+                    thinkingLevel: 'low',
+                },
+            },
+        });
+        const text = response.text;
         // JSON 추출 (마크다운 코드 블록 제거)
         let jsonText = text.trim();
         if (jsonText.includes('```json')) {

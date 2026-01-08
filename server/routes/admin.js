@@ -33,6 +33,18 @@ async function logAdminAction(adminUserId, action, resourceType, resourceId, det
         console.error('감사 로그 기록 실패:', error);
     }
 }
+// DB 연결 정보 마스킹
+function maskDatabaseUrl(url) {
+    if (!url)
+        return null;
+    try {
+        const parsed = new URL(url);
+        return `${parsed.protocol}//${parsed.hostname}:${parsed.port || ''}/${parsed.pathname.replace('/', '')}`;
+    }
+    catch {
+        return 'masked';
+    }
+}
 function parseTemplateJSON(value) {
     if (!value)
         return null;
@@ -80,17 +92,7 @@ function serializeTemplate(template) {
         history: serializeHistory(template.history),
     };
 }
-function maskDatabaseUrl(url) {
-    if (!url)
-        return null;
-    try {
-        const parsed = new URL(url);
-        return `${parsed.protocol}//${parsed.hostname}:${parsed.port || ''}/${parsed.pathname.replace('/', '')}`;
-    }
-    catch (_a) {
-        return 'masked';
-    }
-}
+// DB 상태 체크
 router.get('/db/health', async (req, res) => {
     const startedAt = Date.now();
     let status = 'ok';
@@ -101,7 +103,7 @@ router.get('/db/health', async (req, res) => {
     }
     catch (error) {
         status = 'error';
-        message = (error?.message) || 'DB 연결 확인 중 오류가 발생했습니다.';
+        message = error?.message || 'DB 연결 확인 중 오류가 발생했습니다.';
         detail = {
             code: error?.code,
             meta: error?.meta,

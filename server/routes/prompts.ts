@@ -3,6 +3,7 @@ import { Router, Response } from 'express'
 import { Prisma } from '@prisma/client'
 import { prisma } from '../db/prisma'
 import { authenticateToken, requireTier, AuthRequest } from '../middleware/auth'
+import { validatePromptInput } from '../middleware/validation'
 
 const router = Router()
 
@@ -128,7 +129,7 @@ router.get('/:id', async (req: AuthRequest, res: Response) => {
 })
 
 // 프롬프트 생성
-router.post('/', async (req: AuthRequest, res: Response) => {
+router.post('/', validatePromptInput, async (req: AuthRequest, res: Response) => {
   try {
     const {
       title,

@@ -10,7 +10,13 @@ Microsoft의 Agent Lightning을 프롬프트 생성 시스템에 성공적으로
   - 프롬프트 최적화 API (`/optimize`)
   - 템플릿 추천 API (`/recommend-templates`)
   - 이미지/동영상/텍스트 프롬프트 최적화 로직
-  - Agent Lightning 이벤트 기록
+  - **Agent Lightning Span 추적** (모든 최적화 작업 기록)
+  - **보상 시스템** (사용자 피드백 기반 보상 계산 및 기록)
+  - **LightningStore 통합** (중앙 집중식 데이터 저장)
+  - **Trainer 통합** (자동 학습 루프 관리)
+  - **피드백 수집 API** (`/feedback`)
+  - **학습 상태 조회 API** (`/training/status`)
+  - **수동 학습 트리거 API** (`/training/trigger`)
 
 ### 2. Node.js 백엔드 연동
 - **위치**: `server/routes/promptOptimizer.js`
@@ -91,15 +97,58 @@ POST /api/prompt-optimizer/recommend-templates
 }
 ```
 
+## 강화학습 기능 (신규)
+
+### ✅ 구현 완료
+
+1. **Span 추적 시스템**: 모든 프롬프트 최적화 작업을 Span으로 추적
+2. **보상 시스템**: 사용자 피드백을 기반으로 보상 계산 및 기록
+3. **학습된 최적화 전략**: 과거 학습 데이터를 기반으로 최적화 전략 자동 개선
+4. **LightningStore 통합**: 중앙 집중식 데이터 저장 및 관리
+5. **Trainer 통합**: 자동 학습 루프 관리
+6. **피드백 API**: 사용자 피드백 수집 및 보상 기록
+7. **학습 상태 모니터링**: 학습 진행 상황 및 통계 조회
+
+### 새로운 API 엔드포인트
+
+#### 피드백 제출
+```typescript
+POST /feedback
+{
+  "task_id": "task_image_1234",
+  "span_id": "span_5678",
+  "reward": 0.8,
+  "feedback_text": "매우 만족합니다",
+  "metadata": {
+    "rating": 5,
+    "satisfied": true,
+    "used_result": true
+  }
+}
+```
+
+#### 학습 상태 조회
+```typescript
+GET /training/status
+```
+
+#### 수동 학습 트리거
+```typescript
+POST /training/trigger
+```
+
 ## 향후 개선 사항
 
-1. **강화학습 통합**: 사용자 피드백을 기반으로 자동 학습
-2. **템플릿 추천 UI**: 템플릿 추천 결과를 UI에 표시
-3. **배치 최적화**: 여러 프롬프트를 한 번에 최적화
-4. **히스토리 관리**: 최적화 이력 저장 및 비교
+1. **템플릿 추천 UI**: 템플릿 추천 결과를 UI에 표시
+2. **배치 최적화**: 여러 프롬프트를 한 번에 최적화
+3. **히스토리 관리**: 최적화 이력 저장 및 비교
+4. **실시간 학습 대시보드**: 학습 진행 상황을 시각화
+5. **A/B 테스팅**: 여러 최적화 전략 비교
 
 ## 참고 문서
 
 - [Agent Lightning 통합 가이드](./AGENT_LIGHTNING_INTEGRATION.md)
+- [강화학습 통합 가이드](./agent-lightning/REINFORCEMENT_LEARNING.md)
 - [Agent Lightning GitHub](https://github.com/microsoft/agent-lightning)
+- [Agent Lightning 문서](https://microsoft.github.io/agent-lightning/)
 

@@ -1,0 +1,12 @@
+node_modules
+dist
+*.config.js
+*.config.mts
+server/**/*.js
+server/**/*.d.ts
+server/**/*.js.map
+server/**/*.d.ts.map
+prisma
+*.log
+logs
+

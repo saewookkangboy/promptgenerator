@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../db/prisma'
 import { authenticateToken, AuthRequest } from '../middleware/auth'
+import { validateRegisterInput, validateLoginInput } from '../middleware/validation'
 
 const router = Router()
 
@@ -17,20 +18,9 @@ function generateToken(userId: string, email: string): string {
 }
 
 // 회원가입
-router.post('/register', async (req, res: Response) => {
+router.post('/register', validateRegisterInput, async (req, res: Response) => {
   try {
     const { email, password, name } = req.body
-
-    // 입력 검증
-    if (!email || !password) {
-      res.status(400).json({ error: '이메일과 비밀번호는 필수입니다' })
-      return
-    }
-
-    if (password.length < 8) {
-      res.status(400).json({ error: '비밀번호는 최소 8자 이상이어야 합니다' })
-      return
-    }
 
     // 이메일 중복 확인
     const existingUser = await prisma.user.findUnique({
@@ -78,15 +68,9 @@ router.post('/register', async (req, res: Response) => {
 })
 
 // 로그인
-router.post('/login', async (req, res: Response) => {
+router.post('/login', validateLoginInput, async (req, res: Response) => {
   try {
     const { email, password } = req.body
-
-    // 입력 검증
-    if (!email || !password) {
-      res.status(400).json({ error: '이메일과 비밀번호를 입력해주세요' })
-      return
-    }
 
     // 사용자 조회
     const user = await prisma.user.findUnique({

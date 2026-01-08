@@ -1,6 +1,16 @@
 // Express 서버 - 프롬프트 가이드 수집 API + 프리미엄 기능 API
 
 require('dotenv').config()
+
+// 로거 초기화 (가장 먼저)
+const { log } = require('./utils/logger')
+log.info({ type: 'server_startup' }, '서버 시작 중...')
+
+// 환경 변수 검증 (서버 시작 전)
+const { validateEnvironment } = require('./utils/envValidator')
+log.info({ type: 'env_validation' }, '환경 변수 검증 중...')
+validateEnvironment(true) // 에러 발생 시 프로세스 종료
+
 const express = require('express')
 const cors = require('cors')
 const cron = require('node-cron')
@@ -186,37 +196,36 @@ const corsOptions = {
     
     // 정확히 일치하는 도메인 확인
     if (allowedOrigins.includes(origin)) {
-      console.log(`[CORS] 허용된 도메인: ${origin}`)
+      log.debug({ type: 'cors', origin, action: 'allowed', reason: 'exact_match' }, 'CORS: 허용된 도메인')
       return callback(null, true)
     }
     
     // Vercel 도메인 패턴 확인 (*.vercel.app)
     if (origin.includes('.vercel.app')) {
-      console.log(`[CORS] Vercel 도메인 허용: ${origin}`)
+      log.debug({ type: 'cors', origin, action: 'allowed', reason: 'vercel_pattern' }, 'CORS: Vercel 도메인 허용')
       return callback(null, true)
     }
     
     // allrounder.im 도메인 패턴 확인
     if (origin.includes('allrounder.im')) {
-      console.log(`[CORS] allrounder.im 도메인 허용: ${origin}`)
+      log.debug({ type: 'cors', origin, action: 'allowed', reason: 'allrounder_pattern' }, 'CORS: allrounder.im 도메인 허용')
       return callback(null, true)
     }
     
     // 개발 환경에서는 모든 도메인 허용
     if (process.env.NODE_ENV !== 'production') {
-      console.log(`[CORS] 개발 환경 - 모든 도메인 허용: ${origin}`)
+      log.debug({ type: 'cors', origin, action: 'allowed', reason: 'development' }, 'CORS: 개발 환경 - 모든 도메인 허용')
       return callback(null, true)
     }
     
-    // 프로덕션에서도 일단 모든 도메인 허용 (보안은 나중에 강화)
-    // TODO: 프로덕션 환경에서 특정 도메인만 허용하도록 수정
-    console.log(`[CORS] 프로덕션 환경 - 임시로 모든 도메인 허용: ${origin}`)
-    return callback(null, true)
-    
-    // 아래 코드는 나중에 보안 강화 시 사용
-    // console.warn(`[CORS] 차단된 origin: ${origin}`)
-    // console.log(`[CORS] 허용된 도메인 목록:`, allowedOrigins)
-    // callback(new Error('CORS 정책에 의해 차단되었습니다'))
+    // 프로덕션 환경에서는 허용된 도메인만 허용
+    log.warn({ 
+      type: 'cors', 
+      origin, 
+      action: 'blocked',
+      allowedOrigins,
+    }, `CORS: 차단된 origin - ${origin}`)
+    callback(new Error('CORS 정책에 의해 차단되었습니다'))
   },
   credentials: true,
   optionsSuccessStatus: 200
@@ -960,33 +969,84 @@ app.get('/api/health', (req, res) => {
   })
 })
 
+// 전역 에러 핸들러 (모든 라우트 이후에 등록)
+const { errorHandler, notFoundHandler } = require('./middleware/errorHandler')
+app.use(notFoundHandler) // 404 에러 처리
+app.use(errorHandler) // 전역 에러 처리
+
+// HTTP 요청 로깅 미들웨어
+app.use((req, res, next) => {
+  const startTime = Date.now()
+  
+  // 응답 완료 시 로그 기록
+  res.on('finish', () => {
+    const responseTime = Date.now() - startTime
+    log.http(req, res, responseTime)
+  })
+  
+  next()
+})
+
 // 서버 시작
 app.listen(PORT, () => {
-  console.log(`🚀 프롬프트 가이드 수집 서버가 포트 ${PORT}에서 실행 중입니다`)
+  log.info({ 
+    type: 'server_started',
+    port: PORT,
+    env: process.env.NODE_ENV || 'development',
+  }, `🚀 프롬프트 가이드 수집 서버가 포트 ${PORT}에서 실행 중입니다`)
   
   // 스케줄러 초기화 (매일 새벽 3시에 수집)
   initializeScheduler()
+  log.info({ type: 'scheduler' }, '가이드 수집 스케줄러 초기화 완료')
   
   // 템플릿 스케줄러 초기화
   try {
     require('./scheduler/templateScheduler')
     require('./scheduler/seoScheduler')
     require('./scheduler/aiServiceScheduler')
-    console.log('✅ 템플릿 스케줄러 초기화 완료')
+    log.info({ type: 'scheduler' }, '템플릿 스케줄러 초기화 완료')
   } catch (error) {
-    console.warn('⚠️  템플릿 스케줄러 초기화 실패:', error.message)
+    log.warn({ 
+      type: 'scheduler',
+      error: error.message,
+    }, '템플릿 스케줄러 초기화 실패')
   }
 })
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM 신호 받음. 서버 종료 중...')
+  log.info({ type: 'server_shutdown', signal: 'SIGTERM' }, 'SIGTERM 신호 받음. 서버 종료 중...')
   process.exit(0)
 })
 
 process.on('SIGINT', () => {
-  console.log('SIGINT 신호 받음. 서버 종료 중...')
+  log.info({ type: 'server_shutdown', signal: 'SIGINT' }, 'SIGINT 신호 받음. 서버 종료 중...')
   process.exit(0)
+})
+
+// 처리되지 않은 예외 처리
+process.on('uncaughtException', (error) => {
+  log.fatal({ 
+    type: 'uncaught_exception',
+    error: {
+      name: error.name,
+      message: error.message,
+      stack: error.stack,
+    },
+  }, '처리되지 않은 예외 발생')
+  process.exit(1)
+})
+
+// 처리되지 않은 Promise 거부 처리
+process.on('unhandledRejection', (reason, promise) => {
+  log.error({ 
+    type: 'unhandled_rejection',
+    reason: reason instanceof Error ? {
+      name: reason.name,
+      message: reason.message,
+      stack: reason.stack,
+    } : reason,
+  }, '처리되지 않은 Promise 거부')
 })
 
 module.exports = app

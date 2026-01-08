@@ -678,6 +678,31 @@ src/                         # React/Vite 프론트엔드 (제너레이터, Admi
 
 ---
 
+## 📋 Spec-Kit 기반 개발 체크리스트
+
+이 프로젝트는 [GitHub Spec-Kit](https://github.com/github/spec-kit)의 명세 주도 개발 원칙을 따릅니다.
+
+### 관련 문서
+- **[SPEC_KIT_CHECKLIST.md](./SPEC_KIT_CHECKLIST.md)** - Spec-Kit 기반 개발 체크리스트 (이상적 목표)
+- **[IMPROVEMENT_CHECKLIST.md](./IMPROVEMENT_CHECKLIST.md)** - 시스템 개선 체크리스트 (현재 상태 기반)
+- **[IMPROVEMENT_TASKS.md](./IMPROVEMENT_TASKS.md)** - 구체적인 개선 작업 TASK 목록
+
+### 체크리스트 영역
+- 프로젝트 원칙 (Constitution): 코드 품질, 테스트, UX 일관성, 성능 기준
+- 명세서 작성 (Specification): 기능 명세, API 명세, 데이터베이스 스키마
+- 기술 구현 계획 (Planning): 기술 스택, 아키텍처, 라이브러리 선택
+- 작업 목록 생성 (Tasks): 우선순위별 작업 분류 및 세부 분해
+- 구현 및 테스트 (Implementation): 개발 워크플로우, 테스트 전략
+- 문서화 및 유지보수 (Documentation): 코드 문서화, API 문서, 유지보수 계획
+
+### 개선 작업 우선순위
+1. **P0 (Critical)**: 보안 강화, 에러 처리, 로깅 시스템
+2. **P1 (High)**: 테스트 인프라, 코드 품질 도구, 성능 최적화
+3. **P2 (Medium)**: 문서화, CI/CD, 모니터링
+4. **P3 (Low)**: 고급 기능, 분석 및 리포팅
+
+---
+
 ## 라이선스
 
 이 프로젝트는 개인 프로젝트입니다.

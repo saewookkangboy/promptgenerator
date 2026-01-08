@@ -1,6 +1,11 @@
 import { ContentType, PromptResult, DetailedOptions } from '../types'
 import { GuideContextSummary } from '../types/prompt-guide.types'
 import { PromptTemplate } from '../types/prompt.types'
+import { 
+  generateOptimizedBlogPrompt, 
+  BlogOptimizationOptions,
+  OptimizedBlogPrompt 
+} from './blogPromptOptimizer'
 
 const CONTENT_TYPE_INFO = {
   blog: {
@@ -61,6 +66,12 @@ export function generatePrompts(
   options?: DetailedOptions,
   guideContext?: GuideContextSummary | null,
 ): PromptResult {
+  // 블로그 콘텐츠인 경우 고급 SEO/GEO/AIO/AEO 최적화 사용
+  if (contentType === 'blog') {
+    return generateOptimizedBlogPrompts(userPrompt, options, guideContext)
+  }
+  
+  // 기존 로직 (다른 콘텐츠 타입)
   const typeInfo = CONTENT_TYPE_INFO[contentType]
   const goalInfo = options?.goal ? CONTENT_GOALS[options.goal] : undefined
   const guideNotes = buildGuideNotes(guideContext)
@@ -150,6 +161,111 @@ ${options?.conversational ? '- 대화체 사용 (구어체, 친근한 표현)' :
   }
 }
 
+/**
+ * 블로그 콘텐츠를 위한 최적화된 프롬프트 생성
+ */
+function generateOptimizedBlogPrompts(
+  userPrompt: string,
+  options?: DetailedOptions,
+  guideContext?: GuideContextSummary | null,
+): PromptResult {
+  const typeInfo = CONTENT_TYPE_INFO['blog']
+  const goalInfo = options?.goal ? CONTENT_GOALS[options.goal] : undefined
+  const guideNotes = buildGuideNotes(guideContext)
+  
+  // 타겟 독자 정보 구성
+  const targetAudience = buildTargetAudience(options)
+  
+  // 톤앤매너 설정
+  const toneAndStyle = buildToneAndStyle(options)
+  
+  // SEO/GEO/AIO/AEO 최적화 옵션 준비
+  const optimizationOptions: BlogOptimizationOptions = {
+    seoEnabled: true,
+    geoEnabled: true,
+    aioEnabled: true,
+    aeoEnabled: true,
+    targetPlatforms: ['all'],
+    includeSemanticKeywords: true,
+    includeLSIKeywords: true,
+    includeLongTailKeywords: true,
+    includeQuestionKeywords: true,
+    includeFAQ: true,
+    includeSchema: true,
+    includeFeaturedSnippet: true,
+    voiceSearchOptimized: true,
+    includeAuthorCredentials: true,
+    includeStatistics: true,
+    includeCitations: true,
+    contentFreshness: 'regular',
+    wordCount: 2500,
+  }
+  
+  // 최적화된 블로그 프롬프트 생성
+  const optimized = generateOptimizedBlogPrompt(userPrompt, optimizationOptions)
+  
+  // 기존 구조와 통합하기 위해 메타 프롬프트와 컨텍스트 프롬프트에 최적화 내용 추가
+  const enhancedMetaPrompt = `${optimized.metaPrompt}
+
+${targetAudience ? `타겟 독자: ${targetAudience}` : ''}
+${goalInfo ? `콘텐츠 목표: ${goalInfo.label}` : ''}
+${toneAndStyle ? `톤앤매너: ${toneAndStyle}` : ''}
+${guideNotes ? `\n[모델별 최신 가이드]\n${guideNotes}` : ''}`
+
+  const enhancedContextPrompt = `${optimized.contextPrompt}
+
+${targetAudience ? `\n타겟 독자 정보:\n${targetAudience}` : ''}
+${goalInfo ? `\n콘텐츠 목표:\n${goalInfo.label}\n${goalInfo.description}\n${goalInfo.checklist.map(item => `- ${item}`).join('\n')}` : ''}
+${toneAndStyle ? `\n톤앤매너 가이드:\n${toneAndStyle}` : ''}
+${guideNotes ? `\n\n[최신 가이드 참고]\n${guideNotes}` : ''}
+
+## 키워드 전략
+- Primary Keywords: ${optimized.keywordAnalysis.primary.join(', ')}
+${optimized.keywordAnalysis.semantic.length > 0 ? `- Semantic Keywords: ${optimized.keywordAnalysis.semantic.slice(0, 5).join(', ')}` : ''}
+${optimized.keywordAnalysis.lsi.length > 0 ? `- LSI Keywords: ${optimized.keywordAnalysis.lsi.slice(0, 5).join(', ')}` : ''}
+${optimized.keywordAnalysis.questions.length > 0 ? `- Question Keywords: ${optimized.keywordAnalysis.questions.slice(0, 5).join(', ')}` : ''}
+
+## 콘텐츠 구조
+${optimized.contentStructure.headings.map((h, i) => `${i + 1}. ${h}`).join('\n')}
+
+${optimized.contentStructure.faqQuestions.length > 0 ? `\n## FAQ 질문\n${optimized.contentStructure.faqQuestions.slice(0, 5).map((q, i) => `${i + 1}. ${q}`).join('\n')}` : ''}`
+
+  // 템플릿 빌드 (최적화 정보 포함)
+  const metaTemplate = buildMetaTemplate({
+    userPrompt,
+    contentType: 'blog',
+    typeName: typeInfo.name,
+    requirements: 'SEO, GEO, AIO, AEO 최적화된 블로그 콘텐츠',
+    targetAudience,
+    toneAndStyle,
+    goal: goalInfo?.label,
+    goalDescription: goalInfo?.description,
+  })
+  const contextTemplate = buildContextTemplate({
+    userPrompt,
+    typeName: typeInfo.name,
+    targetAudience,
+    toneAndStyle,
+  })
+
+  // 해시태그 생성 (키워드 분석 결과 활용)
+  const hashtags = [
+    ...optimized.keywordAnalysis.primary.map(k => `#${k}`),
+    ...optimized.keywordAnalysis.semantic.slice(0, 3).map(k => `#${k.replace(/\s+/g, '')}`),
+  ].slice(0, 10)
+
+  return {
+    metaPrompt: enhancedMetaPrompt,
+    contextPrompt: enhancedContextPrompt,
+    hashtags,
+    metaTemplate,
+    contextTemplate,
+    appliedGuide: guideContext ? { ...guideContext } : undefined,
+    // 최적화 결과를 추가 필드로 포함
+    blogOptimization: optimized,
+  }
+}
+
 function buildTargetAudience(options?: DetailedOptions): string {
   if (!options) return ''
   
@@ -217,11 +333,17 @@ function buildToneAndStyle(options?: DetailedOptions): string {
 function getContentGuidelines(contentType: ContentType): string {
   switch (contentType) {
     case 'blog':
-      return `- SEO 최적화: 관련 키워드 자연스럽게 포함
-- GEO 최적화: 지역 정보 및 지역 검색어 활용
-- AEO 최적화: 사용자 질문에 직접적으로 답변
-- 길이: 2000~3000자
-- 타겟 질문: 독자가 가질 수 있는 질문들을 예상하여 답변 포함`
+      return `- SEO 최적화: Primary/Semantic/LSI/Long-tail 키워드 자연스럽게 포함
+- GEO 최적화: 지역 정보 및 지역 검색어 활용 (LocalBusiness Schema)
+- AIO 최적화: AI 플랫폼별 최적화 (ChatGPT, Perplexity, Claude, Gemini)
+  * 통계 및 데이터 포함 (+41% 인용 증가)
+  * Primary Source 인용 (PubMed, arXiv 등)
+  * 작성자 자격증명 포함 (+40% 인용 확률)
+- AEO 최적화: FAQ 섹션, 질문 기반 구조, Featured Snippet (30-40단어)
+- 길이: 2000~3000자 (포괄적 커버리지)
+- 구조: H2→H3→불릿 포인트 (40% 더 많은 인용)
+- Voice Search: Speakable Schema, 자연어 질문 키워드
+- Schema 마크업: FAQPage, Article, HowTo, BreadcrumbList 등`
     case 'linkedin':
       return `- 전문적이고 신뢰할 수 있는 톤
 - 업계 인사이트와 전문 지식 공유
@@ -271,11 +393,16 @@ function buildGuideNotes(guide?: GuideContextSummary | null): string {
 function getStructureRequirements(contentType: ContentType): string {
   switch (contentType) {
     case 'blog':
-      return `1. 매력적인 제목
-2. 도입부 (독자의 관심 유도)
-3. 본문 (주요 내용, 섹션별 구분)
-4. 타겟 질문에 대한 답변
-5. 결론 및 행동 유도`
+      return `1. 매력적인 제목 (Primary Keyword 포함, 50-60자)
+2. Featured Snippet 답변 (30-40단어, 질문에 직접 답변)
+3. 도입부 (독자의 관심 유도, 문제 제시)
+4. 본문 (H2→H3→불릿 구조)
+   - H2: Primary Keyword 기반 섹션 제목
+   - H3: Semantic/LSI Keywords 활용
+   - 불릿: 핵심 정보 요약
+5. FAQ 섹션 (Question Keywords 활용, FAQPage Schema)
+6. 통계 및 데이터 (Primary Source 인용)
+7. 결론 및 행동 유도 (CTA 포함)`
     case 'linkedin':
       return `1. 강력한 오프닝
 2. 핵심 메시지
