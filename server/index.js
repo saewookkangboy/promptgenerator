@@ -13,6 +13,8 @@ validateEnvironment(true) // 에러 발생 시 프로세스 종료
 
 const express = require('express')
 const cors = require('cors')
+const helmet = require('helmet')
+const rateLimit = require('express-rate-limit')
 const cron = require('node-cron')
 const axios = require('axios')
 const fs = require('fs')
@@ -162,6 +164,65 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
+// 보안 헤더 설정 (Helmet)
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      scriptSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      upgradeInsecureRequests: process.env.NODE_ENV === 'production' ? [] : null,
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Vite 개발 서버와의 호환성
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
+}))
+
+// Rate Limiting 설정
+const limiter = rateLimit({
+  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15분
+  max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100, // 최대 100 요청
+  message: {
+    error: '너무 많은 요청이 발생했습니다. 잠시 후 다시 시도해주세요.',
+    retryAfter: '15분'
+  },
+  standardHeaders: true, // `RateLimit-*` 헤더 반환
+  legacyHeaders: false, // `X-RateLimit-*` 헤더 비활성화
+})
+
+// 인증 API에 대한 더 엄격한 Rate Limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15분
+  max: 5, // 최대 5회
+  message: {
+    error: '로그인 시도 횟수를 초과했습니다. 15분 후 다시 시도해주세요.',
+    retryAfter: '15분'
+  },
+  skipSuccessfulRequests: true, // 성공한 요청은 카운트에서 제외
+})
+
+// Admin API에 대한 Rate Limiting
+const adminLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15분
+  max: 50, // 최대 50회
+  message: {
+    error: 'Admin API 요청 한도를 초과했습니다. 잠시 후 다시 시도해주세요.',
+    retryAfter: '15분'
+  },
+})
+
+// 일반 API에 Rate Limiting 적용
+app.use('/api', limiter)
+
 // CORS 설정: 허용된 도메인 목록
 const getAllowedOrigins = () => {
   const origins = []
@@ -762,10 +823,12 @@ try {
     console.error('❌ Admin 라우터를 찾을 수 없거나 stack이 없습니다!')
   }
   
-  app.use('/api/auth', finalAuthRouter)
+  // 인증 라우트에 엄격한 Rate Limiting 적용
+  app.use('/api/auth', authLimiter, finalAuthRouter)
   app.use('/api/users', finalUsersRouter)
   app.use('/api/prompts', finalPromptsRouter)
-  app.use('/api/admin', finalAdminRouter)
+  // Admin 라우트에 Rate Limiting 적용
+  app.use('/api/admin', adminLimiter, finalAdminRouter)
   
   // AI 서비스 정보 API
   const aiServicesRouter = require('./routes/aiServices')

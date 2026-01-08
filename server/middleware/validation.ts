@@ -41,9 +41,9 @@ export function validateEmail(email: string): boolean {
 /**
  * 비밀번호 검증
  * - 최소 8자 이상
- * - 최소 1개의 숫자, 대문자, 소문자 포함 (선택)
+ * - 최소 1개의 대문자, 소문자, 숫자, 특수문자 포함 (기본적으로 strict 모드)
  */
-export function validatePassword(password: string, strict: boolean = false): { valid: boolean; message?: string } {
+export function validatePassword(password: string, strict: boolean = true): { valid: boolean; message?: string } {
   if (!password || typeof password !== 'string') {
     return { valid: false, message: '비밀번호는 필수입니다' }
   }
@@ -52,6 +52,7 @@ export function validatePassword(password: string, strict: boolean = false): { v
     return { valid: false, message: '비밀번호는 최소 8자 이상이어야 합니다' }
   }
 
+  // 기본적으로 strict 모드 적용 (보안 강화)
   if (strict) {
     if (!/[A-Z]/.test(password)) {
       return { valid: false, message: '비밀번호는 최소 1개의 대문자를 포함해야 합니다' }
@@ -61,6 +62,10 @@ export function validatePassword(password: string, strict: boolean = false): { v
     }
     if (!/[0-9]/.test(password)) {
       return { valid: false, message: '비밀번호는 최소 1개의 숫자를 포함해야 합니다' }
+    }
+    // 특수문자 검증 추가
+    if (!/[@$!%*?&]/.test(password)) {
+      return { valid: false, message: '비밀번호는 최소 1개의 특수문자(@$!%*?&)를 포함해야 합니다' }
     }
   }
 

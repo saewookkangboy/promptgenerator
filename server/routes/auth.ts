@@ -8,13 +8,27 @@ import { validateRegisterInput, validateLoginInput } from '../middleware/validat
 
 const router = Router()
 
-// JWT 토큰 생성
-function generateToken(userId: string, email: string): string {
+// Access Token 생성 (15분 만료)
+function generateAccessToken(userId: string, email: string): string {
   return jwt.sign(
-    { userId, email },
+    { userId, email, type: 'access' },
+    process.env.JWT_SECRET || 'secret',
+    { expiresIn: '15m' }
+  )
+}
+
+// Refresh Token 생성 (7일 만료)
+function generateRefreshToken(userId: string, email: string): string {
+  return jwt.sign(
+    { userId, email, type: 'refresh' },
     process.env.JWT_SECRET || 'secret',
     { expiresIn: '7d' }
   )
+}
+
+// 레거시 호환성을 위한 함수 (Access Token 반환)
+function generateToken(userId: string, email: string): string {
+  return generateAccessToken(userId, email)
 }
 
 // 회원가입
@@ -32,8 +46,17 @@ router.post('/register', validateRegisterInput, async (req, res: Response) => {
       return
     }
 
-    // 비밀번호 해시
-    const passwordHash = await bcrypt.hash(password, 10)
+    // 비밀번호 복잡도 검증 (최소 8자, 대소문자, 숫자, 특수문자)
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+    if (!passwordRegex.test(password)) {
+      res.status(400).json({
+        error: '비밀번호는 최소 8자 이상이며, 대문자, 소문자, 숫자, 특수문자(@$!%*?&)를 각각 1개 이상 포함해야 합니다',
+      })
+      return
+    }
+
+    // 비밀번호 해시 (bcrypt 라운드 수: 12 - 보안 강화)
+    const passwordHash = await bcrypt.hash(password, 12)
 
     // 사용자 생성
     const user = await prisma.user.create({
@@ -53,13 +76,20 @@ router.post('/register', validateRegisterInput, async (req, res: Response) => {
       },
     })
 
-    // JWT 토큰 생성
-    const token = generateToken(user.id, user.email)
+    // JWT 토큰 생성 (Access Token + Refresh Token)
+    const accessToken = generateAccessToken(user.id, user.email)
+    const refreshToken = generateRefreshToken(user.id, user.email)
+
+    // Refresh Token을 데이터베이스에 저장 (선택사항 - 향후 블랙리스트 관리용)
+    // 현재는 클라이언트에 반환만 함
 
     res.status(201).json({
       message: '회원가입이 완료되었습니다',
       user,
-      token,
+      accessToken,
+      refreshToken,
+      // 레거시 호환성
+      token: accessToken,
     })
   } catch (error: any) {
     console.error('회원가입 오류:', error)
@@ -105,8 +135,9 @@ router.post('/login', validateLoginInput, async (req, res: Response) => {
       data: { lastLoginAt: new Date() },
     })
 
-    // JWT 토큰 생성
-    const token = generateToken(user.id, user.email)
+    // JWT 토큰 생성 (Access Token + Refresh Token)
+    const accessToken = generateAccessToken(user.id, user.email)
+    const refreshToken = generateRefreshToken(user.id, user.email)
 
     res.json({
       message: '로그인 성공',
@@ -116,7 +147,10 @@ router.post('/login', validateLoginInput, async (req, res: Response) => {
         name: user.name,
         tier: user.tier,
       },
-      token,
+      accessToken,
+      refreshToken,
+      // 레거시 호환성
+      token: accessToken,
     })
   } catch (error: any) {
     console.error('로그인 오류:', error)
@@ -154,15 +188,61 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
   }
 })
 
-// 토큰 갱신
-router.post('/refresh', authenticateToken, async (req: AuthRequest, res: Response) => {
+// 토큰 갱신 (Refresh Token 사용)
+router.post('/refresh', async (req, res: Response) => {
   try {
-    const newToken = generateToken(req.user!.id, req.user!.email)
+    const { refreshToken } = req.body
 
-    res.json({
-      message: '토큰이 갱신되었습니다',
-      token: newToken,
-    })
+    if (!refreshToken) {
+      res.status(400).json({ error: 'Refresh Token이 필요합니다' })
+      return
+    }
+
+    try {
+      // Refresh Token 검증
+      const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET || 'secret') as {
+        userId: string
+        email: string
+        type: string
+      }
+
+      // Refresh Token 타입 확인
+      if (decoded.type !== 'refresh') {
+        res.status(401).json({ error: '유효하지 않은 Refresh Token입니다' })
+        return
+      }
+
+      // 사용자 확인
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.userId },
+        select: {
+          id: true,
+          email: true,
+          subscriptionStatus: true,
+        },
+      })
+
+      if (!user || user.subscriptionStatus !== 'ACTIVE') {
+        res.status(401).json({ error: '유효하지 않은 사용자입니다' })
+        return
+      }
+
+      // 새로운 Access Token 생성
+      const newAccessToken = generateAccessToken(user.id, user.email)
+
+      res.json({
+        message: '토큰이 갱신되었습니다',
+        accessToken: newAccessToken,
+        // 레거시 호환성
+        token: newAccessToken,
+      })
+    } catch (jwtError: any) {
+      if (jwtError.name === 'TokenExpiredError') {
+        res.status(401).json({ error: 'Refresh Token이 만료되었습니다. 다시 로그인해주세요' })
+      } else {
+        res.status(401).json({ error: '유효하지 않은 Refresh Token입니다' })
+      }
+    }
   } catch (error: any) {
     console.error('토큰 갱신 오류:', error)
     res.status(500).json({ error: '토큰 갱신에 실패했습니다' })
@@ -179,8 +259,12 @@ router.post('/change-password', authenticateToken, async (req: AuthRequest, res:
       return
     }
 
-    if (newPassword.length < 8) {
-      res.status(400).json({ error: '새 비밀번호는 최소 8자 이상이어야 합니다' })
+    // 새 비밀번호 복잡도 검증
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+    if (!passwordRegex.test(newPassword)) {
+      res.status(400).json({
+        error: '새 비밀번호는 최소 8자 이상이며, 대문자, 소문자, 숫자, 특수문자(@$!%*?&)를 각각 1개 이상 포함해야 합니다',
+      })
       return
     }
 
@@ -203,7 +287,8 @@ router.post('/change-password', authenticateToken, async (req: AuthRequest, res:
     }
 
     // 새 비밀번호 해시
-    const newPasswordHash = await bcrypt.hash(newPassword, 10)
+    // 비밀번호 해시 (bcrypt 라운드 수: 12 - 보안 강화)
+    const newPasswordHash = await bcrypt.hash(newPassword, 12)
 
     // 비밀번호 업데이트
     await prisma.user.update({
