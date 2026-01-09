@@ -1,6 +1,14 @@
 {
   "rewrites": [
     {
+      "source": "/api/:path*",
+      "destination": "https://promptgenerator-production.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/health",
+      "destination": "https://promptgenerator-production.up.railway.app/health"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }

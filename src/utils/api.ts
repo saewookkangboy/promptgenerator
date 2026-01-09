@@ -2,19 +2,25 @@
 
 // API 서버 주소를 환경 변수 → 현재 호스트 → 로컬호스트 순으로 해석
 const resolveApiBaseUrl = (): string => {
-  const envUrl = (import.meta.env?.VITE_API_BASE_URL as string | undefined)?.trim()
-  if (envUrl) {
-    return envUrl.replace(/\/+$/, '')
-  }
-
   if (typeof window !== 'undefined') {
     const origin = window.location.origin
     // 로컬 환경에서는 명시적으로 백엔드 포트로 연결
     if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      // 개발 환경에서는 환경 변수 또는 기본값 사용
+      const envUrl = (import.meta.env?.VITE_API_BASE_URL as string | undefined)?.trim()
+      if (envUrl) {
+        return envUrl.replace(/\/+$/, '')
+      }
       return 'http://localhost:3001'
     }
-    // 배포 환경에서는 동일 도메인으로 프록시된 API 사용
+    // 배포 환경에서는 항상 동일 도메인으로 프록시된 API 사용 (vercel.json의 rewrites 활용)
     return origin.replace(/\/+$/, '')
+  }
+
+  // 서버 사이드 렌더링 시
+  const envUrl = (import.meta.env?.VITE_API_BASE_URL as string | undefined)?.trim()
+  if (envUrl) {
+    return envUrl.replace(/\/+$/, '')
   }
 
   return 'http://localhost:3001'
