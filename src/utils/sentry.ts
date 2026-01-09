@@ -69,15 +69,16 @@ export function initSentry(): void {
     ],
     
     // 민감한 데이터 필터링
-    beforeSend(event, hint) {
+    beforeSend(event, _hint) {
       // 민감한 정보 제거
       if (event.request) {
         // 쿼리 파라미터에서 민감한 정보 제거
         if (event.request.query_string) {
           const sensitiveParams = ['password', 'token', 'apiKey', 'secret']
+          const queryString = event.request.query_string as Record<string, any>
           sensitiveParams.forEach(param => {
-            if (event.request?.query_string) {
-              delete event.request.query_string[param]
+            if (queryString && param in queryString) {
+              delete queryString[param]
             }
           })
         }
