@@ -5,7 +5,6 @@ import { apiRequest } from '../utils/api'
 import { 
   Template, 
   TemplateListResponse, 
-  ApplyTemplateRequest,
   ApplyTemplateResponse,
   RecordUsageRequest,
   TemplateFilterOptions 

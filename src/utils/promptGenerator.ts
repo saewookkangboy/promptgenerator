@@ -3,8 +3,7 @@ import { GuideContextSummary } from '../types/prompt-guide.types'
 import { PromptTemplate } from '../types/prompt.types'
 import { 
   generateOptimizedBlogPrompt, 
-  BlogOptimizationOptions,
-  OptimizedBlogPrompt 
+  BlogOptimizationOptions
 } from './blogPromptOptimizer'
 
 const CONTENT_TYPE_INFO = {
@@ -60,6 +59,24 @@ const CONTENT_GOALS: Record<
   },
 }
 
+/**
+ * 사용자 입력을 기반으로 프롬프트를 생성합니다.
+ * 
+ * @param userPrompt - 사용자가 입력한 프롬프트 텍스트
+ * @param contentType - 생성할 콘텐츠 타입 (blog, linkedin, facebook, instagram, youtube, general)
+ * @param options - 상세 옵션 (타겟 독자, 톤앤매너, 목표 등)
+ * @param guideContext - 프롬프트 가이드 컨텍스트 (선택사항)
+ * @returns 생성된 프롬프트 결과 (한국어 및 영어 버전 포함)
+ * 
+ * @example
+ * ```typescript
+ * const result = generatePrompts(
+ *   'AI의 미래',
+ *   'blog',
+ *   { goal: 'education', tone: 'professional' }
+ * )
+ * ```
+ */
 export function generatePrompts(
   userPrompt: string,
   contentType: ContentType,

@@ -53,7 +53,7 @@ export function removeToken(): void {
 }
 
 // API 요청 헬퍼
-async function apiRequest<T>(
+export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<T> {
@@ -103,13 +103,23 @@ async function apiRequest<T>(
         errorData = { error: errorData }
       }
 
-      const fallbackMessage = `HTTP ${response.status} ${response.statusText || ''}`.trim()
+      // 표준 에러 응답 형식 처리 (errorHandler.ts의 ErrorResponse 형식)
+      const standardError = errorData?.error
+      const errorCode = standardError?.code || `HTTP_${response.status}`
       const errorMessage =
+        standardError?.message ||
+        errorData?.error?.message ||
         errorData?.error ||
         errorData?.message ||
         errorData?.detail ||
-        fallbackMessage ||
+        `HTTP ${response.status} ${response.statusText || ''}`.trim() ||
         '알 수 없는 오류가 발생했습니다'
+
+      // 에러 코드와 메시지를 포함한 에러 객체 생성
+      const apiError = new Error(errorMessage) as Error & { code?: string; statusCode?: number; details?: any }
+      apiError.code = errorCode
+      apiError.statusCode = response.status
+      apiError.details = standardError?.details || errorData?.error?.details
       
       // 401 Unauthorized - 토큰 만료 또는 무효
       if (response.status === 401) {
@@ -125,10 +135,10 @@ async function apiRequest<T>(
           window.location.href = '/login'
         }
         // Admin 모드이거나 로그인 페이지에서는 에러만 throw (리다이렉트 안 함)
-        throw new Error(errorMessage || '인증이 만료되었습니다. 다시 로그인해주세요.')
+        throw apiError
       }
 
-      throw new Error(errorMessage)
+      throw apiError
     }
 
     const jsonData = await response.json()

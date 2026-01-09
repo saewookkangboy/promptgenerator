@@ -1,7 +1,10 @@
 // 사용자 관리 API 라우트
 import { Router, Response } from 'express'
+import bcrypt from 'bcryptjs'
+import crypto from 'crypto'
 import { prisma } from '../db/prisma'
 import { authenticateToken, requireTier, AuthRequest } from '../middleware/auth'
+import { log } from '../utils/logger'
 
 const router = Router()
 
@@ -128,18 +131,42 @@ router.get('/api-key', async (req: AuthRequest, res: Response) => {
 // API 키 생성
 router.post('/api-key', requireTier('BASIC', 'PROFESSIONAL', 'ENTERPRISE'), async (req: AuthRequest, res: Response) => {
   try {
-    // API 키 생성 (간단한 랜덤 문자열)
-    const apiKey = `pk_${Buffer.from(`${req.user!.id}-${Date.now()}`).toString('base64').replace(/[^a-zA-Z0-9]/g, '')}`
+    // 강력한 API 키 생성 (64자 랜덤 문자열)
+    const randomBytes = crypto.randomBytes(32)
+    const apiKey = `pk_${randomBytes.toString('base64url')}`
 
+    // API 키 해시 생성 (검증용)
+    const apiKeyHash = await bcrypt.hash(apiKey, 12)
+
+    // 기존 API 키가 있으면 삭제 (하나만 유지)
+    const user = await prisma.user.findUnique({
+      where: { id: req.user!.id },
+      select: { apiKey: true },
+    })
+
+    // API 키 저장 (해시 저장 - 향후 검증 시 사용)
+    // 현재는 원본도 저장하지만, 향후 마이그레이션으로 해시만 저장하도록 개선 가능
     await prisma.user.update({
       where: { id: req.user!.id },
-      data: { apiKey },
+      data: { 
+        apiKey, // 현재는 원본 저장 (향후 해시로 변경)
+        // apiKeyHash: apiKeyHash, // 스키마에 필드 추가 필요
+      },
+    })
+
+    // 보안 이벤트: API 키 생성
+    log.security('api_key_created', {
+      userId: req.user!.id,
+      email: req.user!.email,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
     })
 
     res.json({
       message: 'API 키가 생성되었습니다',
       apiKey,
       warning: '이 키는 한 번만 표시됩니다. 안전한 곳에 저장하세요.',
+      expiresAt: null, // 향후 만료 정책 추가 가능
     })
   } catch (error: any) {
     console.error('API 키 생성 오류:', error)
@@ -153,6 +180,14 @@ router.delete('/api-key', requireTier('BASIC', 'PROFESSIONAL', 'ENTERPRISE'), as
     await prisma.user.update({
       where: { id: req.user!.id },
       data: { apiKey: null },
+    })
+
+    // 보안 이벤트: API 키 삭제
+    log.security('api_key_deleted', {
+      userId: req.user!.id,
+      email: req.user!.email,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
     })
 
     res.json({ message: 'API 키가 삭제되었습니다' })

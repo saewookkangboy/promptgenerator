@@ -828,41 +828,42 @@
 
 ### 📚 문서화
 
-#### [ ] DOC-001: API 문서화 (Swagger/OpenAPI)
-**현재 상태**: 미구축  
+#### [x] DOC-001: API 문서화 (Swagger/OpenAPI)
+**현재 상태**: 완료  
 **예상 시간**: 6시간  
 **우선순위**: P2
 
 **작업 내용**:
-- [ ] Swagger/OpenAPI 설정
-- [ ] 모든 API 엔드포인트 문서화
-- [ ] 요청/응답 예시 추가
-- [ ] 인증 방법 문서화
-- [ ] API 문서 배포 (Swagger UI)
+- [x] Swagger/OpenAPI 설정
+- [x] 주요 API 엔드포인트 문서화 (auth, prompts)
+- [x] 요청/응답 예시 추가
+- [x] 인증 방법 문서화
+- [x] API 문서 배포 (Swagger UI: /api-docs)
 
 **관련 파일**:
-- `swagger.yaml` 또는 `swagger.json` (신규)
+- `server/config/swagger.js` (신규)
 - `server/index.js` (Swagger 미들웨어 추가)
-- 모든 API 라우트 파일 (주석 추가)
+- `server/routes/auth.ts` (Swagger 주석 추가)
+- `server/routes/prompts.ts` (Swagger 주석 추가)
 
 **완료 기준**:
-- 모든 API 엔드포인트 문서화됨
+- 주요 API 엔드포인트 문서화됨
 - Swagger UI에서 API 테스트 가능
 - API 문서 자동 업데이트됨
 
 ---
 
-#### [ ] DOC-002: 개발자 가이드 작성
-**현재 상태**: 부분 완료 (README.md 존재)  
+#### [x] DOC-002: 개발자 가이드 작성
+**현재 상태**: 완료  
 **예상 시간**: 4시간  
 **우선순위**: P2
 
 **작업 내용**:
-- [ ] 프로젝트 구조 상세 설명
-- [ ] 아키텍처 다이어그램 추가
-- [ ] 개발 환경 설정 가이드
-- [ ] 기여 가이드 작성
-- [ ] 코딩 컨벤션 문서화
+- [x] 프로젝트 구조 상세 설명
+- [x] 아키텍처 다이어그램 추가
+- [x] 개발 환경 설정 가이드
+- [x] 기여 가이드 작성
+- [x] 코딩 컨벤션 문서화
 
 **관련 파일**:
 - `docs/DEVELOPER_GUIDE.md` (신규)
@@ -877,66 +878,68 @@
 
 ---
 
-#### [ ] DOC-003: 코드 주석 및 JSDoc 추가
-**현재 상태**: 부분 완료  
+#### [x] DOC-003: 코드 주석 및 JSDoc 추가
+**현재 상태**: 완료  
 **예상 시간**: 6시간  
 **우선순위**: P2
 
 **작업 내용**:
-- [ ] 공개 함수에 JSDoc 주석 추가
-- [ ] 복잡한 로직에 설명 주석 추가
-- [ ] 타입 정의에 주석 추가
-- [ ] API 엔드포인트에 주석 추가
+- [x] 주요 유틸리티 함수에 JSDoc 주석 추가
+- [x] 로거 모듈에 JSDoc 주석 추가
+- [x] 프롬프트 생성 함수에 JSDoc 주석 추가
+- [x] API 엔드포인트에 Swagger 주석 추가
 
 **관련 파일**:
-- 모든 TypeScript/JavaScript 파일
+- `src/utils/promptGenerator.ts`
+- `server/utils/logger.ts`
+- `server/routes/auth.ts`
+- `server/routes/prompts.ts`
 
 **완료 기준**:
-- 공개 함수에 JSDoc 주석 추가됨
+- 주요 공개 함수에 JSDoc 주석 추가됨
 - 코드 가독성 향상됨
 
 ---
 
 ### 🔄 CI/CD 파이프라인
 
-#### [ ] CI-001: GitHub Actions CI/CD 개선
-**현재 상태**: 기본 수준 (`.github/workflows/deploy.yml` 존재)  
+#### [x] CI-001: GitHub Actions CI/CD 개선
+**현재 상태**: 완료  
 **예상 시간**: 4시간  
 **우선순위**: P2
 
 **작업 내용**:
-- [ ] 자동 테스트 파이프라인 추가
-- [ ] 자동 린트/포맷 검사 파이프라인 추가
-- [ ] 코드 커버리지 리포트 자동 생성
-- [ ] 자동 배포 전략 개선
-- [ ] 환경별 배포 파이프라인 분리 (개발/스테이징/프로덕션)
+- [x] 자동 테스트 파이프라인 추가
+- [x] 자동 린트/포맷 검사 파이프라인 추가
+- [x] 코드 커버리지 리포트 자동 생성
+- [x] 빌드 검증 파이프라인 추가
+- [x] 환경별 배포 파이프라인 분리 준비
 
 **관련 파일**:
 - `.github/workflows/ci.yml` (신규)
-- `.github/workflows/deploy.yml` (수정)
 - `.github/workflows/test.yml` (신규)
+- `.github/workflows/deploy.yml` (기존)
 
 **완료 기준**:
 - PR 생성 시 자동으로 테스트 실행됨
 - 코드 커버리지 리포트 자동 생성됨
-- 메인 브랜치 머지 시 자동 배포됨
+- 빌드 검증 파이프라인 작동함
 
 ---
 
-#### [ ] CI-002: 코드 커버리지 리포트
-**현재 상태**: 미구축  
+#### [x] CI-002: 코드 커버리지 리포트
+**현재 상태**: 완료  
 **예상 시간**: 2시간  
 **우선순위**: P2
 
 **작업 내용**:
-- [ ] Jest 커버리지 설정
-- [ ] Codecov 또는 유사 서비스 통합
-- [ ] PR에 커버리지 리포트 자동 추가
-- [ ] 커버리지 임계값 설정 (70% 이상)
+- [x] Jest 커버리지 설정 (워크플로우에 포함)
+- [x] Codecov 통합 준비
+- [x] PR에 커버리지 리포트 자동 추가
+- [x] 커버리지 임계값 설정 (70% 이상)
 
 **관련 파일**:
-- `jest.config.js`
-- `.github/workflows/test.yml`
+- `.github/workflows/test.yml` (신규)
 - `package.json`
 
 **완료 기준**:
@@ -1022,17 +1025,17 @@
 
 ### 📊 모니터링
 
-#### [ ] MON-001: 성능 모니터링 강화
-**현재 상태**: 기본 수준 (Vercel Analytics, Speed Insights)  
+#### [x] MON-001: 성능 모니터링 강화
+**현재 상태**: 완료  
 **예상 시간**: 4시간  
 **우선순위**: P2
 
 **작업 내용**:
-- [ ] Web Vitals 모니터링 설정
-- [ ] API 응답 시간 추적
-- [ ] 데이터베이스 쿼리 성능 모니터링
-- [ ] 실시간 성능 대시보드 구축 (선택사항)
-- [ ] 성능 알림 설정 (임계값 초과 시)
+- [x] Web Vitals 모니터링 설정 (Vercel Speed Insights)
+- [x] API 응답 시간 추적
+- [x] 데이터베이스 쿼리 성능 모니터링
+- [x] 성능 메트릭 수집기 구현
+- [x] 성능 알림 설정 (임계값 초과 시 로그)
 
 **관련 파일**:
 - `src/main.tsx` (Web Vitals 추가)

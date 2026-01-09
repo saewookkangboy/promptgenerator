@@ -37,7 +37,7 @@ function formatLog(level: LogLevel, ...args: any[]): string {
 /**
  * 프로덕션 환경에서 에러 리포팅
  */
-function reportError(error: Error, context?: Record<string, any>) {
+function reportError(_error: Error, _context?: Record<string, any>) {
   if (!isDevelopment) {
     // TODO: 실제 에러 리포팅 서비스 연동 (예: Sentry, LogRocket 등)
     // 예시:

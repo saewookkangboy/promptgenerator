@@ -4,13 +4,87 @@ import { Prisma } from '@prisma/client'
 import { prisma } from '../db/prisma'
 import { authenticateToken, requireTier, AuthRequest } from '../middleware/auth'
 import { validatePromptInput } from '../middleware/validation'
+import { requireResourcePermission, ResourceType, Permission } from '../middleware/rbac'
 
 const router = Router()
 
 // 모든 프롬프트 라우트는 인증 필요
 router.use(authenticateToken)
 
-// 프롬프트 목록 조회
+/**
+ * @swagger
+ * /api/prompts:
+ *   get:
+ *     summary: 프롬프트 목록 조회
+ *     tags: [Prompts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: category
+ *         schema:
+ *           type: string
+ *           enum: [text, image, video, engineering]
+ *         description: 프롬프트 카테고리
+ *       - in: query
+ *         name: folderId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 폴더 ID
+ *       - in: query
+ *         name: tagId
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: 태그 ID
+ *       - in: query
+ *         name: search
+ *         schema:
+ *           type: string
+ *         description: 검색어
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: 페이지 번호
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 20
+ *         description: 페이지당 항목 수
+ *     responses:
+ *       200:
+ *         description: 프롬프트 목록
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 prompts:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Prompt'
+ *                 pagination:
+ *                   type: object
+ *                   properties:
+ *                     page:
+ *                       type: integer
+ *                     limit:
+ *                       type: integer
+ *                     total:
+ *                       type: integer
+ *                     totalPages:
+ *                       type: integer
+ *       401:
+ *         description: 인증 필요
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get('/', async (req: AuthRequest, res: Response) => {
   try {
     const { category, folderId, tagId, search, page = '1', limit = '20' } = req.query
@@ -88,14 +162,15 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   }
 })
 
-// 프롬프트 상세 조회
-router.get('/:id', async (req: AuthRequest, res: Response) => {
+// 프롬프트 상세 조회 (읽기 권한 확인)
+router.get('/:id', requireResourcePermission(ResourceType.PROMPT, Permission.READ), async (req: AuthRequest, res: Response) => {
   try {
+    // RBAC 미들웨어에서 권한 확인 후 실행
     const prompt = await prisma.prompt.findFirst({
       where: {
         id: req.params.id,
-        userId: req.user!.id,
         deletedAt: null,
+        // RBAC에서 소유자/워크스페이스 권한 확인하므로 여기서는 userId 체크 제거
       },
       include: {
         folder: true,
@@ -290,13 +365,13 @@ router.patch('/:id', async (req: AuthRequest, res: Response) => {
   }
 })
 
-// 프롬프트 삭제 (소프트 삭제)
-router.delete('/:id', async (req: AuthRequest, res: Response) => {
+// 프롬프트 삭제 (삭제 권한 확인, 소프트 삭제)
+router.delete('/:id', requireResourcePermission(ResourceType.PROMPT, Permission.DELETE), async (req: AuthRequest, res: Response) => {
   try {
+    // RBAC에서 권한 확인 완료
     const prompt = await prisma.prompt.update({
       where: {
         id: req.params.id,
-        userId: req.user!.id,
       },
       data: {
         deletedAt: new Date(),

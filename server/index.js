@@ -15,6 +15,8 @@ const express = require('express')
 const cors = require('cors')
 const helmet = require('helmet')
 const rateLimit = require('express-rate-limit')
+const swaggerUi = require('swagger-ui-express')
+const swaggerSpec = require('./config/swagger')
 const cron = require('node-cron')
 const axios = require('axios')
 const fs = require('fs')
@@ -164,6 +166,21 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
+// 프로덕션 환경에서 HTTPS 강제
+if (process.env.NODE_ENV === 'production') {
+  app.use((req, res, next) => {
+    // X-Forwarded-Proto 헤더 확인 (프록시 뒤에서 실행되는 경우)
+    if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] !== 'https') {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`)
+    }
+    // 직접 연결인 경우 (개발 환경에서는 비활성화)
+    if (req.secure === false && req.headers.host) {
+      return res.redirect(301, `https://${req.headers.host}${req.url}`)
+    }
+    next()
+  })
+}
+
 // 보안 헤더 설정 (Helmet)
 app.use(helmet({
   contentSecurityPolicy: {
@@ -1023,6 +1040,18 @@ try {
   }
 }
 
+// Swagger API 문서
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: '프롬프트 생성기 API 문서',
+}))
+
+// Swagger JSON 엔드포인트
+app.get('/api-docs.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json')
+  res.send(swaggerSpec)
+})
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ 
@@ -1037,13 +1066,14 @@ const { errorHandler, notFoundHandler } = require('./middleware/errorHandler')
 app.use(notFoundHandler) // 404 에러 처리
 app.use(errorHandler) // 전역 에러 처리
 
-// HTTP 요청 로깅 미들웨어
+// 성능 모니터링 미들웨어 (응답 시간 추적)
 app.use((req, res, next) => {
   const startTime = Date.now()
   
-  // 응답 완료 시 로그 기록
+  // 응답 완료 시 성능 추적 및 로그 기록
   res.on('finish', () => {
     const responseTime = Date.now() - startTime
+    trackResponseTime(req.path, req.method, responseTime, res.statusCode)
     log.http(req, res, responseTime)
   })
   

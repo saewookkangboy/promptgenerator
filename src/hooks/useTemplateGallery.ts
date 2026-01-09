@@ -6,7 +6,7 @@ import { templateService } from '../services/templateService'
 import { Template } from '../types/template.types'
 import { logger } from '../utils/logger'
 import { handleTemplateError } from '../utils/errorHandler'
-import { TEMPLATE_CONSTANTS, TEMPLATE_SORT_PRIORITY } from '../constants/template.constants'
+import { TEMPLATE_CONSTANTS } from '../constants/template.constants'
 
 interface UseTemplateGalleryOptions {
   initialCategory?: string

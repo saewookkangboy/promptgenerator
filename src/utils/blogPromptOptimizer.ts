@@ -245,7 +245,7 @@ function generateLongTailKeywords(primary: string[], context: string): string[] 
 /**
  * Question Keywords 생성
  */
-function generateQuestionKeywords(primary: string[], context: string): string[] {
+function generateQuestionKeywords(primary: string[], _context: string): string[] {
   const questions: string[] = []
   const questionWords = ['무엇', '어떻게', '왜', '언제', '어디서', '누가', '어떤']
   
@@ -265,8 +265,8 @@ function generateQuestionKeywords(primary: string[], context: string): string[] 
  * 플랫폼별 최적화 가이드 생성
  */
 function generatePlatformOptimizations(
-  userPrompt: string,
-  keywordAnalysis: KeywordAnalysis,
+  _userPrompt: string,
+  _keywordAnalysis: KeywordAnalysis,
   options?: BlogOptimizationOptions
 ): PlatformOptimization {
   const platforms = options?.targetPlatforms || ['all']
@@ -327,7 +327,7 @@ function generatePlatformOptimizations(
  * Schema 요구사항 생성
  */
 function generateSchemaRequirements(
-  userPrompt: string,
+  _userPrompt: string,
   options?: BlogOptimizationOptions
 ): SchemaRequirements {
   const schemas: SchemaRequirements = {}
@@ -600,7 +600,7 @@ ${keywordAnalysis.longTail.length > 0 ? `- Long-tail: ${keywordAnalysis.longTail
  * 컨텍스트 프롬프트 빌드
  */
 function buildContextPrompt(
-  userPrompt: string,
+  _userPrompt: string,
   keywordAnalysis: KeywordAnalysis,
   platformOptimizations: PlatformOptimization,
   schemaRequirements: SchemaRequirements,

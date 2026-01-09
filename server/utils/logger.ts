@@ -1,4 +1,18 @@
-// 구조화된 로깅 시스템 (Pino 기반)
+/**
+ * 구조화된 로깅 시스템 (Pino 기반)
+ * 
+ * 이 모듈은 애플리케이션 전반에서 사용되는 로깅 시스템을 제공합니다.
+ * 개발 환경에서는 pretty print를 사용하고, 프로덕션 환경에서는 파일 로깅을 사용합니다.
+ * 
+ * @module logger
+ * @example
+ * ```typescript
+ * import { log } from './utils/logger'
+ * 
+ * log.info({ userId: '123' }, 'User logged in')
+ * log.error({ error }, 'Failed to process request')
+ * ```
+ */
 import pino from 'pino'
 import path from 'path'
 import fs from 'fs'
@@ -157,6 +171,18 @@ export const log = {
       },
       ...context,
     }, 'API Error')
+  },
+
+  /**
+   * 보안 이벤트 로그 (로그인 실패, 권한 거부 등)
+   */
+  security: (event: string, details: object) => {
+    logger.warn({
+      type: 'security_event',
+      event,
+      ...details,
+      timestamp: new Date().toISOString(),
+    }, `Security Event: ${event}`)
   },
 }
 

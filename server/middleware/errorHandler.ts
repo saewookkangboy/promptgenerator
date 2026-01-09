@@ -127,36 +127,142 @@ function handleJWTError(error: any): { code: string; message: string; statusCode
 }
 
 /**
- * 에러 로깅
+ * 에러 분류 및 우선순위
+ */
+enum ErrorSeverity {
+  LOW = 'low',
+  MEDIUM = 'medium',
+  HIGH = 'high',
+  CRITICAL = 'critical',
+}
+
+/**
+ * 에러 분류 함수
+ */
+function classifyError(error: any): ErrorSeverity {
+  // 인증/권한 에러는 보안 관련이므로 HIGH
+  if (error.name === 'JsonWebTokenError' || error.name === 'TokenExpiredError') {
+    return ErrorSeverity.HIGH
+  }
+
+  // 데이터베이스 연결 에러는 CRITICAL
+  if (error instanceof Prisma.PrismaClientInitializationError) {
+    return ErrorSeverity.CRITICAL
+  }
+
+  // Prisma 에러는 MEDIUM
+  if (error instanceof Prisma.PrismaClientKnownRequestError ||
+      error instanceof Prisma.PrismaClientValidationError) {
+    return ErrorSeverity.MEDIUM
+  }
+
+  // Validation 에러는 LOW
+  if (error instanceof ValidationError) {
+    return ErrorSeverity.LOW
+  }
+
+  // 5xx 에러는 HIGH 이상
+  if (error.statusCode >= 500) {
+    return ErrorSeverity.HIGH
+  }
+
+  // 4xx 에러는 MEDIUM
+  if (error.statusCode >= 400) {
+    return ErrorSeverity.MEDIUM
+  }
+
+  return ErrorSeverity.MEDIUM
+}
+
+/**
+ * 민감한 정보 마스킹
+ */
+function maskSensitiveData(data: any): any {
+  if (typeof data !== 'object' || data === null) {
+    return data
+  }
+
+  // 배열 처리
+  if (Array.isArray(data)) {
+    return data.map(item => maskSensitiveData(item))
+  }
+
+  const sensitiveFields = ['password', 'passwordHash', 'token', 'apiKey', 'secret', 'authorization']
+  const masked = { ...data }
+
+  for (const key in masked) {
+    if (sensitiveFields.some(field => key.toLowerCase().includes(field.toLowerCase()))) {
+      masked[key] = '***MASKED***'
+    } else if (typeof masked[key] === 'object') {
+      masked[key] = maskSensitiveData(masked[key])
+    }
+  }
+
+  return masked
+}
+
+/**
+ * 에러 로깅 (구조화된 로깅)
  */
 function logError(error: any, req: Request) {
   const isDevelopment = process.env.NODE_ENV === 'development'
+  const severity = classifyError(error)
+  
+  // Pino 로거 사용 (이미 설정됨)
+  const { log } = require('../utils/logger')
+  
+  // 민감한 정보 제거
+  const sanitizedBody = req.body ? maskSensitiveData(req.body) : undefined
+  const sanitizedQuery = req.query ? maskSensitiveData(req.query) : undefined
   
   const errorInfo = {
+    type: 'error',
+    severity,
     timestamp: new Date().toISOString(),
-    method: req.method,
-    path: req.path,
-    ip: req.ip,
-    userAgent: req.get('user-agent'),
+    request: {
+      method: req.method,
+      path: req.path,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+      body: isDevelopment ? sanitizedBody : undefined,
+      query: isDevelopment ? sanitizedQuery : undefined,
+    },
     error: {
       name: error.name,
       message: error.message,
-      stack: isDevelopment ? error.stack : undefined,
+      code: error.code,
+      statusCode: error.statusCode || error.status,
+      stack: isDevelopment && severity === ErrorSeverity.CRITICAL ? error.stack : undefined,
     },
   }
 
-  // 개발 환경에서는 콘솔에 상세 정보 출력
-  if (isDevelopment) {
-    console.error('❌ 에러 발생:', errorInfo)
-  } else {
-    // 프로덕션 환경에서는 간단한 로그만 출력
-    console.error(`[${errorInfo.timestamp}] ${errorInfo.method} ${errorInfo.path} - ${error.message}`)
+  // 심각도에 따라 로그 레벨 결정
+  switch (severity) {
+    case ErrorSeverity.CRITICAL:
+      log.fatal(errorInfo, `[CRITICAL] ${error.message}`)
+      // TODO: 외부 알림 서비스에 전송 (예: Slack, Email)
+      break
+    case ErrorSeverity.HIGH:
+      log.error(errorInfo, `[HIGH] ${error.message}`)
+      break
+    case ErrorSeverity.MEDIUM:
+      log.warn(errorInfo, `[MEDIUM] ${error.message}`)
+      break
+    case ErrorSeverity.LOW:
+      log.info(errorInfo, `[LOW] ${error.message}`)
+      break
   }
 
-  // TODO: 외부 로깅 서비스 (Sentry 등)에 전송
+  // 외부 로깅 서비스 통합 (Sentry 등)
   // if (process.env.SENTRY_DSN) {
+  //   const Sentry = require('@sentry/node')
   //   Sentry.captureException(error, {
-  //     extra: errorInfo
+  //     level: severity === ErrorSeverity.CRITICAL ? 'fatal' : severity,
+  //     extra: errorInfo,
+  //     tags: {
+  //       path: req.path,
+  //       method: req.method,
+  //     },
   //   })
   // }
 }

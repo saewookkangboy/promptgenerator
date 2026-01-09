@@ -1,0 +1,67 @@
+# 보안 테스트 워크플로우
+name: Security Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  schedule:
+    # 매주 월요일 오전 9시 (KST)에 자동 실행
+    - cron: '0 0 * * 1'
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Run npm audit (informational)
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+      
+      - name: Check for known vulnerabilities
+        run: |
+          if npm audit --audit-level=high --json | jq -e '.metadata.vulnerabilities.high > 0' > /dev/null; then
+            echo "❌ High severity vulnerabilities found!"
+            npm audit --audit-level=high
+            exit 1
+          else
+            echo "✅ No high severity vulnerabilities found"
+          fi
+      
+      - name: Check for security issues in dependencies (informational)
+        run: |
+          # 의존성 보안 검사 (정보 제공용, 실패해도 워크플로우 중단 안 함)
+          npm audit --production --audit-level=moderate || true
+      
+      - name: Security scan summary
+        run: |
+          echo "## Security Scan Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### npm audit results" >> $GITHUB_STEP_SUMMARY
+          npm audit --audit-level=moderate --json | jq -r '.metadata.vulnerabilities | "| Severity | Count |\n|---------|-------|\n| Low | \(.low) |\n| Moderate | \(.moderate) |\n| High | \(.high) |\n| Critical | \(.critical) |"' >> $GITHUB_STEP_SUMMARY || echo "No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: moderate

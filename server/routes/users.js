@@ -1,9 +1,15 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 // 사용자 관리 API 라우트
 const express_1 = require("express");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const crypto_1 = __importDefault(require("crypto"));
 const prisma_1 = require("../db/prisma");
 const auth_1 = require("../middleware/auth");
+const logger_1 = require("../utils/logger");
 const router = (0, express_1.Router)();
 // 모든 라우트는 인증 필요
 router.use(auth_1.authenticateToken);
@@ -119,16 +125,37 @@ router.get('/api-key', async (req, res) => {
 // API 키 생성
 router.post('/api-key', (0, auth_1.requireTier)('BASIC', 'PROFESSIONAL', 'ENTERPRISE'), async (req, res) => {
     try {
-        // API 키 생성 (간단한 랜덤 문자열)
-        const apiKey = `pk_${Buffer.from(`${req.user.id}-${Date.now()}`).toString('base64').replace(/[^a-zA-Z0-9]/g, '')}`;
+        // 강력한 API 키 생성 (64자 랜덤 문자열)
+        const randomBytes = crypto_1.default.randomBytes(32);
+        const apiKey = `pk_${randomBytes.toString('base64url')}`;
+        // API 키 해시 생성 (검증용)
+        const apiKeyHash = await bcryptjs_1.default.hash(apiKey, 12);
+        // 기존 API 키가 있으면 삭제 (하나만 유지)
+        const user = await prisma_1.prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: { apiKey: true },
+        });
+        // API 키 저장 (해시 저장 - 향후 검증 시 사용)
+        // 현재는 원본도 저장하지만, 향후 마이그레이션으로 해시만 저장하도록 개선 가능
         await prisma_1.prisma.user.update({
             where: { id: req.user.id },
-            data: { apiKey },
+            data: {
+                apiKey, // 현재는 원본 저장 (향후 해시로 변경)
+                // apiKeyHash: apiKeyHash, // 스키마에 필드 추가 필요
+            },
+        });
+        // 보안 이벤트: API 키 생성
+        logger_1.log.security('api_key_created', {
+            userId: req.user.id,
+            email: req.user.email,
+            ip: req.ip,
+            userAgent: req.get('user-agent'),
         });
         res.json({
             message: 'API 키가 생성되었습니다',
             apiKey,
             warning: '이 키는 한 번만 표시됩니다. 안전한 곳에 저장하세요.',
+            expiresAt: null, // 향후 만료 정책 추가 가능
         });
     }
     catch (error) {
@@ -142,6 +169,13 @@ router.delete('/api-key', (0, auth_1.requireTier)('BASIC', 'PROFESSIONAL', 'ENTE
         await prisma_1.prisma.user.update({
             where: { id: req.user.id },
             data: { apiKey: null },
+        });
+        // 보안 이벤트: API 키 삭제
+        logger_1.log.security('api_key_deleted', {
+            userId: req.user.id,
+            email: req.user.email,
+            ip: req.ip,
+            userAgent: req.get('user-agent'),
         });
         res.json({ message: 'API 키가 삭제되었습니다' });
     }

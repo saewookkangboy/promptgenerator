@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 import { prisma } from '../db/prisma'
 import { authenticateToken, AuthRequest } from '../middleware/auth'
 import { validateRegisterInput, validateLoginInput } from '../middleware/validation'
+import { log } from '../utils/logger'
 
 const router = Router()
 
@@ -31,7 +32,67 @@ function generateToken(userId: string, email: string): string {
   return generateAccessToken(userId, email)
 }
 
-// 회원가입
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: 회원가입
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 minLength: 8
+ *                 description: 최소 8자, 대소문자, 숫자, 특수문자(@$!%*?&) 각각 1개 이상 포함
+ *                 example: Password123!
+ *               name:
+ *                 type: string
+ *                 nullable: true
+ *                 example: 홍길동
+ *     responses:
+ *       201:
+ *         description: 회원가입 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 회원가입이 완료되었습니다
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 accessToken:
+ *                   type: string
+ *                   description: Access Token (15분 만료)
+ *                 refreshToken:
+ *                   type: string
+ *                   description: Refresh Token (7일 만료)
+ *       400:
+ *         description: 잘못된 요청
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       409:
+ *         description: 이미 사용 중인 이메일
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/register', validateRegisterInput, async (req, res: Response) => {
   try {
     const { email, password, name } = req.body
@@ -97,7 +158,55 @@ router.post('/register', validateRegisterInput, async (req, res: Response) => {
   }
 })
 
-// 로그인
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: 로그인
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *                 example: user@example.com
+ *               password:
+ *                 type: string
+ *                 example: Password123!
+ *     responses:
+ *       200:
+ *         description: 로그인 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 로그인 성공
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *                 accessToken:
+ *                   type: string
+ *                   description: Access Token (15분 만료)
+ *                 refreshToken:
+ *                   type: string
+ *                   description: Refresh Token (7일 만료)
+ *       401:
+ *         description: 인증 실패
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/login', validateLoginInput, async (req, res: Response) => {
   try {
     const { email, password } = req.body
@@ -108,6 +217,13 @@ router.post('/login', validateLoginInput, async (req, res: Response) => {
     })
 
     if (!user) {
+      // 보안 이벤트: 로그인 실패 (존재하지 않는 사용자)
+      log.security('login_failed', {
+        reason: 'user_not_found',
+        email: email,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      })
       res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다' })
       return
     }
@@ -116,6 +232,14 @@ router.post('/login', validateLoginInput, async (req, res: Response) => {
     const isValidPassword = await bcrypt.compare(password, user.passwordHash)
 
     if (!isValidPassword) {
+      // 보안 이벤트: 로그인 실패 (잘못된 비밀번호)
+      log.security('login_failed', {
+        reason: 'invalid_password',
+        userId: user.id,
+        email: email,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      })
       res.status(401).json({ error: '이메일 또는 비밀번호가 올바르지 않습니다' })
       return
     }
@@ -139,6 +263,23 @@ router.post('/login', validateLoginInput, async (req, res: Response) => {
     const accessToken = generateAccessToken(user.id, user.email)
     const refreshToken = generateRefreshToken(user.id, user.email)
 
+    // 보안 이벤트: 로그인 성공
+    log.security('login_success', {
+      userId: user.id,
+      email: user.email,
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    })
+
+    // 쿠키 설정 (Refresh Token을 HttpOnly Cookie로 저장 - 선택사항)
+    // 현재는 클라이언트에 반환만 하며, 향후 HttpOnly Cookie 사용 고려
+    // res.cookie('refreshToken', refreshToken, {
+    //   httpOnly: true,
+    //   secure: process.env.NODE_ENV === 'production',
+    //   sameSite: 'strict',
+    //   maxAge: 7 * 24 * 60 * 60 * 1000, // 7일
+    // })
+
     res.json({
       message: '로그인 성공',
       user: {
@@ -158,7 +299,31 @@ router.post('/login', validateLoginInput, async (req, res: Response) => {
   }
 })
 
-// 현재 사용자 정보 조회
+/**
+ * @swagger
+ * /api/auth/me:
+ *   get:
+ *     summary: 현재 사용자 정보 조회
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: 사용자 정보
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: 인증 필요
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => {
   try {
     const user = await prisma.user.findUnique({
@@ -188,7 +353,45 @@ router.get('/me', authenticateToken, async (req: AuthRequest, res: Response) => 
   }
 })
 
-// 토큰 갱신 (Refresh Token 사용)
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: 토큰 갱신 (Refresh Token 사용)
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - refreshToken
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh Token
+ *     responses:
+ *       200:
+ *         description: 토큰 갱신 성공
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                   example: 토큰이 갱신되었습니다
+ *                 accessToken:
+ *                   type: string
+ *                   description: 새로운 Access Token
+ *       401:
+ *         description: Refresh Token이 유효하지 않음
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/refresh', async (req, res: Response) => {
   try {
     const { refreshToken } = req.body

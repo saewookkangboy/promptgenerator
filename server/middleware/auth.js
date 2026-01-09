@@ -8,6 +8,7 @@ exports.requireAdmin = requireAdmin;
 exports.requireTier = requireTier;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = require("../db/prisma");
+const logger_1 = require("../utils/logger");
 // JWT 토큰 검증
 async function authenticateToken(req, res, next) {
     try {
@@ -29,6 +30,13 @@ async function authenticateToken(req, res, next) {
             },
         });
         if (!user || user.subscriptionStatus !== 'ACTIVE') {
+            // 보안 이벤트: 인증 실패 (비활성 사용자)
+            logger_1.log.security('authentication_failed', {
+                reason: 'inactive_user',
+                userId: decoded.userId,
+                ip: req.ip,
+                userAgent: req.get('user-agent'),
+            });
             res.status(401).json({ error: '유효하지 않은 사용자입니다' });
             return;
         }
@@ -40,6 +48,12 @@ async function authenticateToken(req, res, next) {
         next();
     }
     catch (error) {
+        // 보안 이벤트: 토큰 검증 실패
+        logger_1.log.security('token_verification_failed', {
+            reason: error.name || 'unknown',
+            ip: req.ip,
+            userAgent: req.get('user-agent'),
+        });
         res.status(403).json({ error: '유효하지 않은 토큰입니다' });
     }
 }
@@ -90,6 +104,15 @@ async function requireAdmin(req, res, next) {
         }
     }
     if (!isAdmin) {
+        // 보안 이벤트: 권한 거부 (Admin 접근 시도)
+        logger_1.log.security('permission_denied', {
+            reason: 'admin_access_denied',
+            userId: req.user?.id,
+            email: req.user?.email,
+            ip: req.ip,
+            path: req.path,
+            userAgent: req.get('user-agent'),
+        });
         res.status(403).json({
             error: 'Admin 권한이 필요합니다',
             hint: process.env.ADMIN_EMAIL

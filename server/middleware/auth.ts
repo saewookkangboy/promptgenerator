@@ -2,6 +2,7 @@
 import { Request, Response, NextFunction } from 'express'
 import jwt from 'jsonwebtoken'
 import { prisma } from '../db/prisma'
+import { log } from '../utils/logger'
 
 export interface AuthRequest extends Request {
   user?: {
@@ -43,6 +44,13 @@ export async function authenticateToken(
     })
 
     if (!user || user.subscriptionStatus !== 'ACTIVE') {
+      // 보안 이벤트: 인증 실패 (비활성 사용자)
+      log.security('authentication_failed', {
+        reason: 'inactive_user',
+        userId: decoded.userId,
+        ip: req.ip,
+        userAgent: req.get('user-agent'),
+      })
       res.status(401).json({ error: '유효하지 않은 사용자입니다' })
       return
     }
@@ -54,7 +62,13 @@ export async function authenticateToken(
     }
 
     next()
-  } catch (error) {
+  } catch (error: any) {
+    // 보안 이벤트: 토큰 검증 실패
+    log.security('token_verification_failed', {
+      reason: error.name || 'unknown',
+      ip: req.ip,
+      userAgent: req.get('user-agent'),
+    })
     res.status(403).json({ error: '유효하지 않은 토큰입니다' })
   }
 }
@@ -115,6 +129,15 @@ export async function requireAdmin(
   }
 
   if (!isAdmin) {
+    // 보안 이벤트: 권한 거부 (Admin 접근 시도)
+    log.security('permission_denied', {
+      reason: 'admin_access_denied',
+      userId: req.user?.id,
+      email: req.user?.email,
+      ip: req.ip,
+      path: req.path,
+      userAgent: req.get('user-agent'),
+    })
     res.status(403).json({ 
       error: 'Admin 권한이 필요합니다',
       hint: process.env.ADMIN_EMAIL 
