@@ -69,26 +69,27 @@ export function initSentry(): void {
     ],
     
     // 민감한 데이터 필터링
-    beforeSend(event, _hint) {
+    beforeSend(event) {
       // 민감한 정보 제거
       if (event.request) {
         // 쿼리 파라미터에서 민감한 정보 제거
-        if (event.request.query_string) {
+        if (event.request.query_string && typeof event.request.query_string === 'object') {
           const sensitiveParams = ['password', 'token', 'apiKey', 'secret']
-          const queryString = event.request.query_string as Record<string, any>
+          const queryString = event.request.query_string as Record<string, unknown>
           sensitiveParams.forEach(param => {
-            if (queryString && param in queryString) {
+            if (param in queryString) {
               delete queryString[param]
             }
           })
         }
         
         // 헤더에서 민감한 정보 제거
-        if (event.request.headers) {
+        if (event.request.headers && typeof event.request.headers === 'object') {
           const sensitiveHeaders = ['authorization', 'cookie', 'x-api-key']
+          const headers = event.request.headers as Record<string, unknown>
           sensitiveHeaders.forEach(header => {
-            if (event.request?.headers) {
-              delete event.request.headers[header]
+            if (header in headers) {
+              delete headers[header]
             }
           })
         }
