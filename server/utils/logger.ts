@@ -87,12 +87,14 @@ const pinoConfig: pino.LoggerOptions = {
   // 타임스탬프 형식
   timestamp: pino.stdTimeFunctions.isoTime,
 
-  // 로그 포맷 (JSON)
-  formatters: {
-    level: (label) => {
-      return { level: label }
+  // 로그 포맷 (JSON) - transport.targets와 함께 사용할 수 없으므로 개발 환경에서만 사용
+  ...(isDevelopment && {
+    formatters: {
+      level: (label) => {
+        return { level: label }
+      },
     },
-  },
+  }),
 }
 
 // 로거 인스턴스 생성
