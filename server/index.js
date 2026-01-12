@@ -166,24 +166,9 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
-// 프로덕션 환경에서 HTTPS 강제 (OPTIONS 요청 제외 - CORS 프리플라이트 요청은 리다이렉트 불가)
-if (process.env.NODE_ENV === 'production') {
-  app.use((req, res, next) => {
-    // OPTIONS 요청은 리다이렉트하지 않음 (CORS 프리플라이트 요청)
-    if (req.method === 'OPTIONS') {
-      return next()
-    }
-    // X-Forwarded-Proto 헤더 확인 (프록시 뒤에서 실행되는 경우)
-    if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] !== 'https') {
-      return res.redirect(301, `https://${req.headers.host}${req.url}`)
-    }
-    // 직접 연결인 경우 (개발 환경에서는 비활성화)
-    if (req.secure === false && req.headers.host) {
-      return res.redirect(301, `https://${req.headers.host}${req.url}`)
-    }
-    next()
-  })
-}
+// Railway는 프록시 뒤에서 실행되며 자동으로 HTTPS를 제공하므로
+// Express 애플리케이션 내에서 HTTPS 강제 리다이렉트가 필요하지 않음
+// (리다이렉트는 CORS 프리플라이트 요청과 CORS 헤더를 방해할 수 있음)
 
 // 보안 헤더 설정 (Helmet)
 app.use(helmet({
