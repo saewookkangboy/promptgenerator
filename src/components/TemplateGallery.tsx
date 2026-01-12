@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { templateAPI } from '../utils/api'
 import { PromptTemplate } from '../types/prompt.types'
 import { Template, TemplateListResponse } from '../types/template.types'
@@ -15,6 +15,14 @@ const DEFAULT_PAGINATION = {
   page: 1,
   limit: 100,
 } as const
+
+// 캐시 및 업데이트 상수
+const CACHE_KEY = 'template_gallery_cache'
+const CACHE_EXPIRY_MS = 5 * 60 * 1000 // 5분
+const AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1000 // 5분마다 자동 새로고침
+const MAX_RETRY_ATTEMPTS = 3
+const RETRY_DELAY_MS = 1000 // 초기 재시도 지연
+const SEARCH_DEBOUNCE_MS = 300 // 검색 디바운스
 
 // 유틸리티 함수
 const isAITemplate = (name: string | undefined): boolean => 
@@ -45,6 +53,78 @@ const devWarn = (...args: unknown[]) => {
   }
 }
 
+// 캐시 유틸리티
+interface CacheData {
+  templates: Template[]
+  timestamp: number
+}
+
+const getCachedTemplates = (): Template[] | null => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (!cached) return null
+    
+    const data: CacheData = JSON.parse(cached)
+    const now = Date.now()
+    
+    // 캐시가 만료되지 않았으면 반환
+    if (now - data.timestamp < CACHE_EXPIRY_MS) {
+      devLog('[TemplateGallery] 캐시에서 템플릿 로드:', data.templates.length)
+      return data.templates
+    }
+    
+    // 만료된 캐시 삭제
+    localStorage.removeItem(CACHE_KEY)
+    return null
+  } catch (error) {
+    devError('[TemplateGallery] 캐시 읽기 실패:', error)
+    return null
+  }
+}
+
+const setCachedTemplates = (templates: Template[]): void => {
+  try {
+    const data: CacheData = {
+      templates,
+      timestamp: Date.now(),
+    }
+    localStorage.setItem(CACHE_KEY, JSON.stringify(data))
+    devLog('[TemplateGallery] 템플릿 캐시 저장:', templates.length)
+  } catch (error) {
+    devError('[TemplateGallery] 캐시 저장 실패:', error)
+  }
+}
+
+// 재시도 로직 (exponential backoff)
+const sleep = (ms: number): Promise<void> => 
+  new Promise(resolve => setTimeout(resolve, ms))
+
+const retryWithBackoff = async <T,>(
+  fn: () => Promise<T>,
+  maxAttempts: number = MAX_RETRY_ATTEMPTS,
+  delay: number = RETRY_DELAY_MS
+): Promise<T> => {
+  let lastError: Error | null = null
+  
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      return await fn()
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error))
+      
+      // 마지막 시도가 아니면 재시도
+      if (attempt < maxAttempts) {
+        const backoffDelay = delay * Math.pow(2, attempt - 1)
+        devWarn(`[TemplateGallery] 재시도 ${attempt}/${maxAttempts} (${backoffDelay}ms 후)`)
+        await sleep(backoffDelay)
+      }
+    }
+  }
+  
+  throw lastError || new Error('알 수 없는 오류')
+}
+
+
 interface TemplateGalleryProps {
   onClose?: () => void
   showCloseButton?: boolean
@@ -54,13 +134,24 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
   const [templates, setTemplates] = useState<Template[]>([])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
+  
+  // AbortController와 인터벌을 위한 ref
+  const abortControllerRef = useRef<AbortController | null>(null)
+  const refreshIntervalRef = useRef<number | null>(null)
+  const isMountedRef = useRef(true)
 
+  // 검색 쿼리 디바운싱
   useEffect(() => {
-    loadTemplates()
-  }, [])
+    const timer = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery)
+    }, SEARCH_DEBOUNCE_MS)
+
+    return () => clearTimeout(timer)
+  }, [searchQuery])
 
   const filteredTemplates = useMemo(() => {
     let filtered = [...templates]
@@ -69,8 +160,8 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
       filtered = filtered.filter(t => t.category === selectedCategory)
     }
 
-    if (searchQuery) {
-      const query = searchQuery.toLowerCase()
+    if (debouncedSearchQuery) {
+      const query = debouncedSearchQuery.toLowerCase()
       filtered = filtered.filter(t =>
         t.name.toLowerCase().includes(query) ||
         t.description?.toLowerCase().includes(query)
@@ -97,38 +188,65 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
     })
 
     return filtered
-  }, [templates, selectedCategory, searchQuery])
+  }, [templates, selectedCategory, debouncedSearchQuery])
 
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async (background: boolean = false) => {
+    // 이전 요청 취소
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort()
+    }
+
+    // 새로운 AbortController 생성
+    const abortController = new AbortController()
+    abortControllerRef.current = abortController
+
     try {
-      devLog('[TemplateGallery] 템플릿 로드 시작...')
+      if (!background) {
+        devLog('[TemplateGallery] 템플릿 로드 시작...')
+        setLoading(true)
+        setError(null)
+      }
       
-      const data: TemplateListResponse = await templateAPI.getPublic({
-        page: DEFAULT_PAGINATION.page,
-        limit: DEFAULT_PAGINATION.limit,
+      // 재시도 로직과 함께 API 호출
+      const data: TemplateListResponse = await retryWithBackoff(async () => {
+        return await templateAPI.getPublic({
+          page: DEFAULT_PAGINATION.page,
+          limit: DEFAULT_PAGINATION.limit,
+        })
       })
+      
+      // 요청이 취소되었으면 중단
+      if (abortController.signal.aborted || !isMountedRef.current) {
+        return
+      }
       
       devLog('[TemplateGallery] 템플릿 데이터 수신:', data)
       devLog('[TemplateGallery] 템플릿 개수:', data?.templates?.length || 0)
       
       if (!data) {
         devError('[TemplateGallery] 데이터가 null 또는 undefined입니다')
-        setTemplates([])
-        setLoading(false)
+        if (!background) {
+          setTemplates([])
+          setLoading(false)
+        }
         return
       }
       
       if (!data.templates) {
         devWarn('[TemplateGallery] templates 속성이 없습니다. 전체 데이터:', data)
-        setTemplates([])
-        setLoading(false)
+        if (!background) {
+          setTemplates([])
+          setLoading(false)
+        }
         return
       }
 
       if (!Array.isArray(data.templates)) {
         devError('[TemplateGallery] templates가 배열이 아닙니다:', typeof data.templates, data.templates)
-        setTemplates([])
-        setLoading(false)
+        if (!background) {
+          setTemplates([])
+          setLoading(false)
+        }
         return
       }
 
@@ -142,9 +260,9 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
             return {
               ...t,
               content: parsedContent,
-              isTop5: isTop5Template(t.name),
-              isAI: isAITemplate(t.name),
-            }
+              isTop5: isTop5Template(t.name) ?? false,
+              isAI: isAITemplate(t.name) ?? false,
+            } as Template
           } catch (parseError) {
             devError('[TemplateGallery] 템플릿 파싱 오류:', parseError, t)
             return null
@@ -152,10 +270,21 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
         })
         .filter((t): t is Template => t !== null)
       
+      // 요청이 취소되었으면 중단
+      if (abortController.signal.aborted || !isMountedRef.current) {
+        return
+      }
+
       devLog('[TemplateGallery] 처리된 템플릿 수:', templatesWithContent.length)
       setTemplates(templatesWithContent)
+      setCachedTemplates(templatesWithContent) // 캐시 저장
       setError(null)
     } catch (error: unknown) {
+      // 요청이 취소되었으면 에러 처리 안 함
+      if (abortController.signal.aborted || !isMountedRef.current) {
+        return
+      }
+
       devError('[TemplateGallery] 템플릿 로드 실패:', error)
       
       // 에러 타입별 처리
@@ -174,12 +303,85 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
         }
       }
       
-      setError(errorMessage)
-      setTemplates([])
+      // 백그라운드 업데이트 실패 시 에러 표시 안 함
+      if (!background) {
+        setError(errorMessage)
+        setTemplates([])
+      }
     } finally {
+      if (abortController.signal.aborted || !isMountedRef.current) {
+        return
+      }
+
+      if (!background) {
+        setLoading(false)
+      }
+    }
+  }, [])
+
+  // 초기 로드: 캐시 확인 후 로드
+  useEffect(() => {
+    isMountedRef.current = true
+    
+    // 캐시에서 먼저 로드
+    const cachedTemplates = getCachedTemplates()
+    if (cachedTemplates && cachedTemplates.length > 0) {
+      devLog('[TemplateGallery] 캐시된 템플릿 사용:', cachedTemplates.length)
+      setTemplates(cachedTemplates)
       setLoading(false)
     }
-  }
+
+    // 백그라운드에서 최신 데이터 로드
+    loadTemplates(true)
+
+    return () => {
+      isMountedRef.current = false
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+      }
+    }
+  }, [loadTemplates])
+
+  // 정기적인 자동 새로고침
+  useEffect(() => {
+    // 페이지가 포커스를 받을 때만 새로고침
+    const handleFocus = () => {
+      const cachedTemplates = getCachedTemplates()
+      if (cachedTemplates) {
+        const cacheData = localStorage.getItem(CACHE_KEY)
+        if (cacheData) {
+          try {
+            const parsed = JSON.parse(cacheData) as CacheData
+            const cacheAge = Date.now() - parsed.timestamp
+            // 캐시가 5분 이상 오래되었으면 새로고침
+            if (cacheAge > CACHE_EXPIRY_MS) {
+              devLog('[TemplateGallery] 포커스 시 오래된 캐시 새로고침')
+              loadTemplates(true)
+            }
+          } catch (e) {
+            // 캐시 파싱 실패 시 무시
+          }
+        }
+      }
+    }
+
+    // 인터벌 기반 자동 새로고침 (백그라운드에서 조용히)
+    refreshIntervalRef.current = window.setInterval(() => {
+      if (document.hasFocus()) {
+        devLog('[TemplateGallery] 정기 자동 새로고침')
+        loadTemplates(true)
+      }
+    }, AUTO_REFRESH_INTERVAL_MS)
+
+    window.addEventListener('focus', handleFocus)
+
+    return () => {
+      if (refreshIntervalRef.current !== null) {
+        clearInterval(refreshIntervalRef.current)
+      }
+      window.removeEventListener('focus', handleFocus)
+    }
+  }, [loadTemplates])
 
 
   if (loading) {
@@ -217,8 +419,7 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
             className="template-gallery-error-button"
             onClick={() => {
               setError(null)
-              setLoading(true)
-              loadTemplates()
+              loadTemplates(false)
             }}
           >
             다시 시도
@@ -302,7 +503,13 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
 
       {selectedTemplate && (
         <TemplatePreviewModal
-          template={selectedTemplate}
+          template={{
+            id: selectedTemplate.id,
+            name: selectedTemplate.name,
+            description: selectedTemplate.description ?? undefined,
+            content: selectedTemplate.content,
+            variables: selectedTemplate.variables,
+          }}
           onClose={() => setSelectedTemplate(null)}
         />
       )}
