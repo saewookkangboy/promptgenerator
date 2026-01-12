@@ -5,6 +5,7 @@ import {
   generateOptimizedBlogPrompt, 
   BlogOptimizationOptions
 } from './blogPromptOptimizer'
+import { applyModelSpecificOptimization, getSystemPrompt, ModelName } from '../config/model-specific-prompts'
 
 const CONTENT_TYPE_INFO = {
   blog: {

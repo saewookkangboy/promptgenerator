@@ -2,6 +2,7 @@
 import { useState } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { showNotification } from '../utils/notifications'
+import SocialLogin from './SocialLogin'
 import './Login.css'
 
 interface LoginProps {
@@ -77,6 +78,8 @@ function Login({ onSwitchToRegister, onSuccess }: LoginProps) {
             {isLoading ? '로그인 중...' : '로그인'}
           </button>
         </form>
+
+        <SocialLogin onSuccess={onSuccess} />
 
         <div className="auth-switch">
           <p>
