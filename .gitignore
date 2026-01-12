@@ -45,6 +45,7 @@ server/**/*.d.ts.map
 !server/index.js
 !server/utils/seoMetaGenerator.js
 !server/utils/envValidator.js
+!server/config/swagger.js
 !server/scheduler/seoScheduler.js
 !server/routes/aiServices.js
 !server/scheduler/aiServiceScheduler.js
