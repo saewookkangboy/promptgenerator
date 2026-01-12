@@ -166,9 +166,13 @@ const app = express()
 const PORT = process.env.PORT || 3001
 
 // Middleware
-// 프로덕션 환경에서 HTTPS 강제
+// 프로덕션 환경에서 HTTPS 강제 (OPTIONS 요청 제외 - CORS 프리플라이트 요청은 리다이렉트 불가)
 if (process.env.NODE_ENV === 'production') {
   app.use((req, res, next) => {
+    // OPTIONS 요청은 리다이렉트하지 않음 (CORS 프리플라이트 요청)
+    if (req.method === 'OPTIONS') {
+      return next()
+    }
     // X-Forwarded-Proto 헤더 확인 (프록시 뒤에서 실행되는 경우)
     if (req.headers['x-forwarded-proto'] && req.headers['x-forwarded-proto'] !== 'https') {
       return res.redirect(301, `https://${req.headers.host}${req.url}`)
