@@ -25,7 +25,10 @@ export function initSentry(): void {
     : parsed
 
   if (!dsn) {
-    console.warn('⚠️  Sentry DSN이 설정되지 않았습니다. 에러 추적이 비활성화됩니다.')
+    // 개발 환경에서는 경고를 표시하지 않음 (프로덕션 환경에서만 로그)
+    if (environment === 'production') {
+      console.warn('⚠️  Sentry DSN이 설정되지 않았습니다. 에러 추적이 비활성화됩니다.')
+    }
     return
   }
 
