@@ -254,6 +254,7 @@ const getAllowedOrigins = () => {
   const defaultOrigins = [
     'https://www.allrounder.im',
     'https://allrounder.im',
+    'https://prompt.allrounder.im',
     'http://localhost:5173',
     'http://localhost:3000',
     'http://localhost:5174',
