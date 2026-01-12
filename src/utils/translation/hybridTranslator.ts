@@ -161,7 +161,7 @@ function selectBestTranslation(results: TranslationResult[]): TranslationResult 
 function evaluateTranslationQuality(
   original: string,
   translated: string,
-  context?: string
+  _context?: string
 ): {
   fluency: number
   accuracy: number

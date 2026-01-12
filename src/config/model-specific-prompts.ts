@@ -41,7 +41,6 @@ export const MODEL_SPECIFIC_TEMPLATES: Record<ModelName, ModelSpecificConfig> = 
   },
   'gemini-2.0': {
     systemPrompt: 'You are a professional content strategist. Create well-structured prompts that maximize AI model performance and output quality.',
-    systemInstruction: 'You are a professional content strategist. Create well-structured prompts that maximize AI model performance and output quality.',
     safetySettings: {
       harassment: 'BLOCK_NONE',
       hate_speech: 'BLOCK_NONE',
