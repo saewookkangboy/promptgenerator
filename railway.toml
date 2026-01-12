@@ -2,7 +2,7 @@
 
 [build]
 builder = "railpack"
-buildCommand = "npm run build"
+buildCommand = "npm run build:server && npm run build"
 
 [deploy]
 startCommand = "npm start"

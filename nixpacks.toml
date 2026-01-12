@@ -11,6 +11,7 @@ cmds = [
 
 [phases.build]
 cmds = [
+  "DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npm run build:server",
   "DATABASE_URL=\"postgresql://dummy:dummy@localhost:5432/dummy\" npm run build"
 ]
 
