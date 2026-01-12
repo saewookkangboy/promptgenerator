@@ -144,6 +144,18 @@ export async function apiRequest<T>(
         throw apiError
       }
 
+      // 502 Bad Gateway / 503 Service Unavailable - 서버가 응답하지 않음
+      if (response.status === 502 || response.status === 503) {
+        const serverError = new Error('서버가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해주세요.') as Error & { code?: string; statusCode?: number; details?: any }
+        serverError.code = `HTTP_${response.status}`
+        serverError.statusCode = response.status
+        serverError.details = { 
+          originalMessage: errorMessage,
+          endpoint: normalizedEndpoint 
+        }
+        throw serverError
+      }
+
       throw apiError
     }
 
@@ -157,6 +169,17 @@ export async function apiRequest<T>(
       console.error('[API Error] 시도한 URL:', `${API_BASE_URL}${normalizedEndpoint}`)
       throw new Error(`서버에 연결할 수 없습니다. API 서버(${API_BASE_URL})가 실행 중인지 확인해주세요.`)
     }
+    
+    // "Application failed to respond" 메시지 처리 (Vercel 등에서 발생)
+    if (error?.message?.includes('Application failed to respond') || error?.message?.includes('failed to respond')) {
+      console.error('[API Error] 서버 응답 실패:', error)
+      console.error('[API Error] 시도한 URL:', `${API_BASE_URL}${normalizedEndpoint}`)
+      const serverError = new Error('서버가 일시적으로 응답하지 않습니다. 잠시 후 다시 시도해주세요.') as Error & { code?: string; statusCode?: number }
+      serverError.code = 'SERVER_UNAVAILABLE'
+      serverError.statusCode = 502
+      throw serverError
+    }
+    
     console.error('[API Error] 기타 오류:', error)
     console.error('[API Error] 에러 상세:', {
       name: error?.name,
