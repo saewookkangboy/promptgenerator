@@ -234,6 +234,49 @@
   font-size: 16px;
 }
 
+.template-gallery-error {
+  padding: 40px;
+  text-align: center;
+}
+
+.template-gallery-error-title {
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: #c33;
+}
+
+.template-gallery-error-message {
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 16px;
+}
+
+.template-gallery-error-button {
+  padding: 8px 16px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.template-gallery-error-button:hover {
+  background: #333;
+}
+
+.template-gallery-error-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 16px;
+}
+
+.template-gallery-header-hint {
+  font-size: 13px;
+  color: #999;
+  margin-top: 8px;
+}
+
 @media (max-width: 768px) {
   .template-grid {
     grid-template-columns: 1fr;
