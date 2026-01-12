@@ -170,6 +170,17 @@ const PORT = process.env.PORT || 3001
 // Express 애플리케이션 내에서 HTTPS 강제 리다이렉트가 필요하지 않음
 // (리다이렉트는 CORS 프리플라이트 요청과 CORS 헤더를 방해할 수 있음)
 
+// 보안 미들웨어 통합 (새로운 보안 기능)
+const {
+  securityHeadersMiddleware,
+  ipFilterMiddleware,
+  requestSizeLimiter,
+  injectionPreventionMiddleware,
+  apiVersionMiddleware,
+  requestTimeoutMiddleware,
+  suspiciousActivityDetection,
+} = require('./middleware/security')
+
 // 보안 헤더 설정 (Helmet)
 app.use(helmet({
   contentSecurityPolicy: {
@@ -192,6 +203,27 @@ app.use(helmet({
     preload: true
   }
 }))
+
+// 추가 보안 헤더
+app.use(securityHeadersMiddleware)
+
+// IP 필터링
+app.use(ipFilterMiddleware)
+
+// 요청 크기 제한 (10MB)
+app.use(requestSizeLimiter(10 * 1024 * 1024))
+
+// Injection 방지
+app.use(injectionPreventionMiddleware)
+
+// API 버전 검증
+app.use(apiVersionMiddleware)
+
+// 요청 타임아웃 (30초)
+app.use(requestTimeoutMiddleware(30000))
+
+// 의심스러운 활동 감지
+app.use(suspiciousActivityDetection)
 
 // Rate Limiting 설정
 const limiter = rateLimit({
@@ -300,6 +332,10 @@ const corsOptions = {
 }
 app.use(cors(corsOptions))
 app.use(express.json())
+
+// CSRF 토큰 발급 엔드포인트
+const { getCSRFTokenEnhanced } = require('./middleware/csrfEnhanced')
+app.get('/api/csrf-token', getCSRFTokenEnhanced)
 
 // Health check endpoints
 app.get('/health', (req, res) => {

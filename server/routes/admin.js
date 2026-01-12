@@ -1,4 +1,7 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 // Admin 관리 API 라우트
 const express_1 = require("express");
@@ -734,5 +737,8 @@ router.get('/audit-logs', async (req, res) => {
         res.status(500).json({ error: '감사 로그를 가져오는데 실패했습니다' });
     }
 });
+// 보안 관련 라우트
+const security_1 = __importDefault(require("./security"));
+router.use('/security', security_1.default);
 exports.default = router;
 //# sourceMappingURL=admin.js.map

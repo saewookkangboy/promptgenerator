@@ -186,7 +186,7 @@ const SQL_INJECTION_PATTERNS = [
   /(\b(OR|AND)\s+['"]\w+['"]\s*=\s*['"]\w+['"])/i,
   /(\bUNION\s+SELECT\b)/i,
   /(\bDROP\s+TABLE\b)/i,
-  /(\bEXEC\s*\(/i,
+  /(\bEXEC\s*\()/i,
   /(\bxp_\w+)/i,
 ]
 

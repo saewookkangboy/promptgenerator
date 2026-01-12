@@ -926,4 +926,8 @@ router.get('/audit-logs', async (req: AuthRequest, res: Response) => {
   }
 })
 
+// 보안 관련 라우트
+import securityRouter from './security'
+router.use('/security', securityRouter)
+
 export default router
