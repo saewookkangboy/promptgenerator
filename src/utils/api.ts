@@ -2,27 +2,23 @@
 
 // API 서버 주소를 환경 변수 → 현재 호스트 → 로컬호스트 순으로 해석
 const resolveApiBaseUrl = (): string => {
-  if (typeof window !== 'undefined') {
-    const origin = window.location.origin
-    // 로컬 환경에서는 명시적으로 백엔드 포트로 연결
-    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
-      // 개발 환경에서는 환경 변수 또는 기본값 사용
-      const envUrl = (import.meta.env?.VITE_API_BASE_URL as string | undefined)?.trim()
-      if (envUrl) {
-        return envUrl.replace(/\/+$/, '')
-      }
-      return 'http://localhost:3001'
-    }
-    // 배포 환경에서는 항상 동일 도메인으로 프록시된 API 사용 (vercel.json의 rewrites 활용)
-    return origin.replace(/\/+$/, '')
-  }
-
-  // 서버 사이드 렌더링 시
+  // 환경 변수가 설정되어 있으면 우선 사용 (프로덕션에서 직접 Railway URL 사용)
   const envUrl = (import.meta.env?.VITE_API_BASE_URL as string | undefined)?.trim()
   if (envUrl) {
     return envUrl.replace(/\/+$/, '')
   }
+  
+  if (typeof window !== 'undefined') {
+    const origin = window.location.origin
+    // 로컬 환경에서는 명시적으로 백엔드 포트로 연결
+    if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+      return 'http://localhost:3001'
+    }
+    // 프로덕션 환경에서 환경 변수가 없으면 기본 Railway URL 사용 (Vercel rewrites는 OPTIONS 요청 처리 불가)
+    return 'https://promptgenerator-production.up.railway.app'
+  }
 
+  // 서버 사이드 렌더링 시
   return 'http://localhost:3001'
 }
 
