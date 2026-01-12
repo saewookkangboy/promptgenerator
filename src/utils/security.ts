@@ -32,8 +32,7 @@ export function stripHtml(html: string): string {
  */
 export function sanitizeHtml(html: string): string {
   // 기본적인 XSS 방지 (프로덕션에서는 DOMPurify 라이브러리 사용 권장)
-  const allowedTags = ['p', 'br', 'strong', 'em', 'u', 'ul', 'ol', 'li', 'a']
-  const allowedAttributes = ['href', 'target', 'rel']
+  // 참고: DOMPurify 사용 시 allowedTags와 allowedAttributes 옵션 활용 가능
   
   // 간단한 태그 제거 (실제로는 DOMPurify 같은 라이브러리 사용)
   const div = document.createElement('div')
