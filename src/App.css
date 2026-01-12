@@ -66,14 +66,26 @@
 
 @media (max-width: 768px) {
   .tabs {
-    border-radius: 8px;
-    padding: var(--spacing-xs);
-    margin-bottom: var(--spacing-xl);
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    border-radius: 0;
+    border-top: 1px solid #e5e5e5;
+    margin-bottom: 0;
+    padding: 8px;
+    background: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
   }
   
   /* 스크롤 가능할 때 힌트 표시 */
   .tabs.scrollable::after {
     opacity: 1;
+  }
+  
+  .tab-content {
+    padding-bottom: 80px; /* 하단 네비게이션 공간 확보 */
   }
 }
 

@@ -1,6 +1,7 @@
 import { translationAPI } from './api'
 import { convertToNativeEnglish } from './englishTranslator'
 import { PromptResult } from '../types'
+import { checkTranslationQuality, getQualityGrade } from './translation/qualityChecker'
 
 type TextMap = Record<string, string | undefined | null>
 
@@ -24,7 +25,22 @@ export async function translateTextMap(
   const result: Record<string, string> = {}
   entries.forEach(([key], index) => {
     if (translations[index]) {
-      result[key] = translations[index]
+      const translated = translations[index]
+      const original = entries[index][1] as string
+      
+      // 번역 품질 검증
+      const qualityCheck = checkTranslationQuality(original, translated, options.context)
+      
+      // 품질이 낮으면 경고 로그 (프로덕션에서는 사용자에게 알리지 않음)
+      if (qualityCheck.quality.overall < 0.7) {
+        console.warn(`[Translation Quality] Low quality translation for key "${key}":`, {
+          grade: getQualityGrade(qualityCheck.quality.overall),
+          overall: qualityCheck.quality.overall,
+          issues: qualityCheck.issues
+        })
+      }
+      
+      result[key] = translated
     }
   })
 
