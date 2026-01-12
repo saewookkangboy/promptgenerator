@@ -250,7 +250,7 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
         return
       }
 
-      const templatesWithContent: Template[] = data.templates
+      const templatesWithContent = data.templates
         .map((t: Template) => {
           try {
             const parsedContent: PromptTemplate = typeof t.content === 'string' 
@@ -268,7 +268,7 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
             return null
           }
         })
-        .filter((t): t is Template => t !== null)
+        .filter((t): t is Template => t !== null) as Template[]
       
       // 요청이 취소되었으면 중단
       if (abortController.signal.aborted || !isMountedRef.current) {
