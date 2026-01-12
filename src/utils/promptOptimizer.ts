@@ -101,8 +101,9 @@ function generateRecommendations(
 
   // 성공률이 낮으면 다른 기법 시도 권장
   if (best.successRate !== undefined && best.successRate < 0.7) {
+    const bestSuccessRate = best.successRate
     const betterAlternative = alternatives.find(
-      alt => alt.successRate !== undefined && alt.successRate > best.successRate
+      alt => alt.successRate !== undefined && alt.successRate > bestSuccessRate
     )
     if (betterAlternative) {
       recommendations.push(
