@@ -26,11 +26,21 @@ exports.prisma.$connect()
         }
     }, '데이터베이스 연결 실패');
 });
-// 데이터베이스 연결 종료 시 정리
-process.on('beforeExit', async () => {
-    await exports.prisma.$disconnect();
-    logger_1.log.info({ type: 'database', event: 'disconnected' }, '데이터베이스 연결 종료');
-});
+// 데이터베이스 연결 종료 시 정리 (Graceful shutdown)
+async function gracefulShutdown(signal) {
+    logger_1.log.info({ type: 'database', event: 'disconnecting', signal }, '데이터베이스 연결 종료 시작');
+    try {
+        await exports.prisma.$disconnect();
+        logger_1.log.info({ type: 'database', event: 'disconnected' }, '데이터베이스 연결 종료 완료');
+        process.exit(0);
+    }
+    catch (error) {
+        logger_1.log.error({ type: 'database', event: 'disconnect_error', error }, '데이터베이스 연결 종료 실패');
+        process.exit(1);
+    }
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));
 if (process.env.NODE_ENV !== 'production')
     globalForPrisma.prisma = exports.prisma;
 exports.default = exports.prisma;

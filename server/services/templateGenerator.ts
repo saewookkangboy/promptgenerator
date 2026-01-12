@@ -167,12 +167,16 @@ export async function generateTemplateWithAI(
       contents: `${systemPrompt}\n\n${userPrompt}`,
       config: {
         thinkingConfig: {
-          thinkingLevel: 'low',
+          thinkingLevel: 'low' as any,
         },
       },
     })
 
-    const text = response.text
+    const text = typeof response.text === 'string' ? response.text : (response as any).text || ''
+
+    if (!text) {
+      throw new Error('템플릿 생성 응답이 비어 있습니다')
+    }
 
     // JSON 추출 (마크다운 코드 블록 제거)
     let jsonText = text.trim()

@@ -60,7 +60,7 @@ JSON만 응답하고 다른 설명은 포함하지 마세요.`
       contents: prompt,
       config: {
         thinkingConfig: {
-          thinkingLevel: 'low',
+          thinkingLevel: 'low' as any,
         },
       },
     })
@@ -69,15 +69,17 @@ JSON만 응답하고 다른 설명은 포함하지 마세요.`
     let text = ''
     if (typeof response.text === 'string') {
       text = response.text
-    } else if (response.text?.toString) {
-      text = response.text.toString()
     } else if (response.candidates?.[0]?.content?.parts?.[0]?.text) {
       text = response.candidates[0].content.parts[0].text
-    } else if (response.response?.text) {
-      text = response.response.text
     } else {
-      console.warn('[KeywordExtractor] 응답 형식을 인식할 수 없습니다:', JSON.stringify(response).substring(0, 200))
-      throw new Error('응답 형식을 인식할 수 없습니다')
+      // response.text가 메서드일 수도 있음
+      const responseAny = response as any
+      if (typeof responseAny.text === 'string') {
+        text = responseAny.text
+      } else {
+        console.warn('[KeywordExtractor] 응답 형식을 인식할 수 없습니다:', JSON.stringify(response).substring(0, 200))
+        throw new Error('응답 형식을 인식할 수 없습니다')
+      }
     }
 
     // JSON 추출
