@@ -279,7 +279,7 @@ button:disabled {
 .btn-primary:hover:not(:disabled) {
   background: var(--bg-hover);
   border-color: var(--bg-hover);
-  color: var(--text-inverse);
+  color: var(--text-primary);
   opacity: 0.9;
 }
 

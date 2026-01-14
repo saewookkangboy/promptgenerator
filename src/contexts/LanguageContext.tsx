@@ -25,6 +25,7 @@ const defaultTranslations: Translations = {
   'app.tab.templates': '템플릿 갤러리',
   'app.tab.about': 'About',
   'app.admin': 'Admin',
+  'app.adminTitle': '관리자 페이지로 이동',
   'app.footer.copyright': '© 2025 chunghyo park. Built to move the market. All rights reserved.',
   'app.footer.about': 'About',
   
@@ -63,6 +64,7 @@ const enTranslations: Translations = {
   'app.tab.engineering': 'Prompt Engineering',
   'app.tab.templates': 'Template Gallery',
   'app.tab.about': 'About',
+  'app.adminTitle': 'Go to admin page',
   'app.footer.copyright': '© 2025 chunghyo park. Built to move the market. All rights reserved.',
   'common.select': 'None',
   'common.submit': 'Submit',
@@ -94,6 +96,7 @@ const jaTranslations: Translations = {
   'app.tab.engineering': 'プロンプトエンジニアリング',
   'app.tab.templates': 'テンプレートギャラリー',
   'app.tab.about': 'About',
+  'app.adminTitle': '管理者ページに移動',
   'app.footer.copyright': '© 2025 chunghyo park. Built to move the market. All rights reserved.',
   'common.select': '選択なし',
   'common.submit': '送信',

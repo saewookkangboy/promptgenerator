@@ -216,7 +216,7 @@ function AppContent({
                 setIsAdmin(true)
               }}
               className="admin-toggle-button"
-              title="관리자 페이지로 이동"
+              title={t('app.adminTitle')}
             >
               {t('app.admin')}
             </button>
