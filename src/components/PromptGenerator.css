@@ -249,10 +249,10 @@
   border-radius: 8px;
   font-size: var(--font-size-base);
   font-family: inherit;
-  background: #ffffff;
-  color: #000000;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   resize: vertical;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   line-height: var(--line-height-relaxed);
   min-height: 120px;
   -webkit-appearance: none;
@@ -261,14 +261,18 @@
 }
 
 .prompt-input:hover {
-  border-color: #d0d0d0;
+  border-color: var(--border-hover);
 }
 
 .prompt-input:focus {
   outline: none;
-  background: #ffffff;
-  border-color: #000000;
+  background: var(--bg-secondary);
+  border-color: var(--bg-primary);
   box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
+}
+
+.dark .prompt-input:focus {
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
 }
 
 /* 모바일에서 텍스트 입력 최적화 */
@@ -335,10 +339,11 @@
 }
 
 .generate-button:hover:not(:disabled) {
-  background: #0a0a0a;
-  border-color: #0a0a0a;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  background: var(--bg-hover);
+  border-color: var(--bg-hover);
+  box-shadow: var(--shadow-lg);
   transform: translateY(-1px);
+  opacity: 0.9;
 }
 
 .generate-button:active:not(:disabled) {
@@ -349,9 +354,9 @@
 .generate-button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-  background: #eaeaea;
-  color: #8a8a8a;
-  border-color: #dcdcdc;
+  background: var(--bg-active);
+  color: var(--text-tertiary);
+  border-color: var(--border-secondary);
   box-shadow: none;
   transform: none;
 }
@@ -365,8 +370,9 @@
 .helper-text {
   margin-top: var(--spacing-xs);
   font-size: var(--font-size-xs);
-  color: #666;
+  color: var(--text-secondary);
   line-height: var(--line-height-normal);
+  transition: color 0.3s ease;
 }
 
 .wizard-toggle {
