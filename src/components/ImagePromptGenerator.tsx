@@ -26,25 +26,25 @@ type ImageServiceOption = {
 
 const IMAGE_MODEL_PRIORITY: ImageModel[] = [
   'midjourney',
-  'imagen-3',
-  'dalle',
-  'firefly',
-  'stable-diffusion',
-  'leonardo',
   'flux',
+  'dalle',
+  'imagen-3',
+  'stable-diffusion',
   'ideogram',
+  'firefly',
+  'leonardo',
   'comfyui',
 ]
 
 const DEFAULT_IMAGE_SERVICE_OPTIONS: ImageServiceOption[] = [
-  { id: 'image-midjourney', label: 'Midjourney', baseModel: 'midjourney' },
-  { id: 'image-imagen', label: 'Google Imagen 3', baseModel: 'imagen-3' },
+  { id: 'image-midjourney', label: 'Midjourney v6', baseModel: 'midjourney' },
+  { id: 'image-flux', label: 'Flux Pro', baseModel: 'flux' },
   { id: 'image-dalle', label: 'OpenAI DALL-E 3', baseModel: 'dalle' },
+  { id: 'image-imagen', label: 'Google Imagen 3 (Gemini 2.5 Flash)', baseModel: 'imagen-3' },
+  { id: 'image-stable-diffusion', label: 'Stable Diffusion 3.5 Large', baseModel: 'stable-diffusion' },
+  { id: 'image-ideogram', label: 'Ideogram 2.0', baseModel: 'ideogram' },
   { id: 'image-firefly', label: 'Adobe Firefly', baseModel: 'firefly' },
-  { id: 'image-stable-diffusion', label: 'Stability Stable Diffusion', baseModel: 'stable-diffusion' },
   { id: 'image-leonardo', label: 'Leonardo AI', baseModel: 'leonardo' },
-  { id: 'image-flux', label: 'Flux', baseModel: 'flux' },
-  { id: 'image-ideogram', label: 'Ideogram', baseModel: 'ideogram' },
   { id: 'image-comfyui', label: 'ComfyUI', baseModel: 'comfyui' },
 ]
 

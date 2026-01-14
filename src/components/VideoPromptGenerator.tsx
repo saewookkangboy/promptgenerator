@@ -74,20 +74,27 @@ type VideoServiceOption = {
 }
 
 const VIDEO_MODEL_PRIORITY: VideoModel[] = [
+  'sora-2',
   'sora',
+  'veo-3',
+  'veo-2',
   'veo',
+  'kling',
+  'runway-gen3',
   'runway',
+  'pika-2',
   'pika',
   'stable-video',
-  'kling',
   'luma',
 ]
 
 const DEFAULT_VIDEO_SERVICE_OPTIONS: VideoServiceOption[] = [
   { id: 'video-sora', label: 'OpenAI Sora 2', baseModel: 'sora' },
-  { id: 'video-veo', label: 'Google Veo 3', baseModel: 'veo' },
-  { id: 'video-runway', label: 'Runway Gen-3', baseModel: 'runway' },
-  { id: 'video-pika', label: 'Pika Labs', baseModel: 'pika' },
+  { id: 'video-veo-3', label: 'Google Veo 3', baseModel: 'veo-3' },
+  { id: 'video-veo-2', label: 'Google Veo 2', baseModel: 'veo-2' },
+  { id: 'video-kling', label: 'Kling AI v1.6', baseModel: 'kling' },
+  { id: 'video-runway', label: 'Runway Gen-3', baseModel: 'runway-gen3' },
+  { id: 'video-pika', label: 'Pika Labs 2.0', baseModel: 'pika' },
   { id: 'video-stable', label: 'Stable Video Diffusion', baseModel: 'stable-video' },
 ]
 
@@ -103,16 +110,21 @@ const slugify = (value: string) =>
 // 서비스명을 모델 코드로 매핑하는 함수
 function mapServiceNameToVideoModel(serviceName: string): VideoModel {
   const lowerName = serviceName.toLowerCase()
+  if (lowerName.includes('sora-2') || (lowerName.includes('sora') && lowerName.includes('2'))) return 'sora-2'
   if (lowerName.includes('sora') || lowerName.includes('video api')) return 'sora'
+  if (lowerName.includes('veo-3') || (lowerName.includes('veo') && lowerName.includes('3'))) return 'veo-3'
+  if (lowerName.includes('veo-2') || (lowerName.includes('veo') && lowerName.includes('2'))) return 'veo-2'
   if (lowerName.includes('veo') || lowerName.includes('vertex')) return 'veo'
+  if (lowerName.includes('kling')) return 'kling'
+  if (lowerName.includes('runway-gen3') || (lowerName.includes('runway') && lowerName.includes('gen-3'))) return 'runway-gen3'
   if (lowerName.includes('runway')) return 'runway'
+  if (lowerName.includes('pika-2') || (lowerName.includes('pika') && lowerName.includes('2'))) return 'pika-2'
   if (lowerName.includes('pika')) return 'pika'
   if (lowerName.includes('stable') || lowerName.includes('fal') || lowerName.includes('replicate') || lowerName.includes('bedrock') || lowerName.includes('leonardo'))
     return 'stable-video'
-  if (lowerName.includes('kling')) return 'kling'
   if (lowerName.includes('luma')) return 'luma'
   if (lowerName.includes('firefly') || lowerName.includes('adobe')) return 'runway'
-  return 'sora'
+  return 'sora-2'
 }
 
 const GENRES = [
@@ -715,6 +727,7 @@ function VideoPromptGenerator() {
         sora: modelSpecific.sora || { maxDuration: technical.totalDuration, consistency: 'high' },
         sora2: modelSpecific.sora2 || { consistency: 'high', motionControl: 'moderate', promptStructure: 'detailed' },
         veo: modelSpecific.veo || { quality: 'high', extendedDuration: false },
+        veo2: modelSpecific.veo2 || { quality: 'high', motionControl: 'natural', promptStructure: 'structured' },
         veo3: modelSpecific.veo3 || { quality: 'high', motionControl: 'natural', promptStructure: 'structured' },
         runway: modelSpecific.runway || { style: 'cinematic', motion: 50 },
         runwayGen3: modelSpecific.runwayGen3 || { style: 'cinematic', motion: 50, interpolation: false },
@@ -1318,8 +1331,76 @@ function VideoPromptGenerator() {
                 </div>
               )}
 
+              {/* Veo 2 옵션 */}
+              {model === 'veo-2' && (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #000' }}>
+                  <h4 style={{ marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>Veo 2 프롬프트 엔지니어링 옵션</h4>
+                  <div className="form-group">
+                    <label htmlFor="veo2-quality">품질</label>
+                    <select
+                      id="veo2-quality"
+                      value={modelSpecific.veo2?.quality || 'high'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        veo2: { ...modelSpecific.veo2, quality: e.target.value },
+                      })}
+                      className="option-select"
+                    >
+                      <option value="standard">Standard</option>
+                      <option value="high">High</option>
+                      <option value="ultra">Ultra</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="veo2-motion">모션 제어</label>
+                    <select
+                      id="veo2-motion"
+                      value={modelSpecific.veo2?.motionControl || 'natural'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        veo2: { ...modelSpecific.veo2, motionControl: e.target.value },
+                      })}
+                      className="option-select"
+                    >
+                      <option value="precise">Precise (정밀한)</option>
+                      <option value="natural">Natural (자연스러운)</option>
+                      <option value="dynamic">Dynamic (역동적)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label htmlFor="veo2-structure">프롬프트 구조</label>
+                    <select
+                      id="veo2-structure"
+                      value={modelSpecific.veo2?.promptStructure || 'structured'}
+                      onChange={(e) => setModelSpecific({
+                        ...modelSpecific,
+                        veo2: { ...modelSpecific.veo2, promptStructure: e.target.value },
+                      })}
+                      className="option-select"
+                    >
+                      <option value="simple">Simple (간단)</option>
+                      <option value="structured">Structured (구조화)</option>
+                      <option value="detailed">Detailed (상세)</option>
+                    </select>
+                  </div>
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        checked={modelSpecific.veo2?.extendedDuration || false}
+                        onChange={(e) => setModelSpecific({
+                          ...modelSpecific,
+                          veo2: { ...modelSpecific.veo2, extendedDuration: e.target.checked },
+                        })}
+                      />
+                      {' '}Extended Duration (최대 60초)
+                    </label>
+                  </div>
+                </div>
+              )}
+
               {/* Veo 3 옵션 */}
-              {(model === 'veo-3' || model === 'veo') && (
+              {model === 'veo-3' && (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '24px', paddingBottom: '24px', borderBottom: '1px solid #000' }}>
                   <h4 style={{ marginBottom: '8px', fontSize: '16px', fontWeight: '600' }}>Veo 3 프롬프트 엔지니어링 옵션</h4>
                   <div className="form-group">

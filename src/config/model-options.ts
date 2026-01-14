@@ -20,11 +20,18 @@ export const MODEL_OPTIONS: ModelOption[] = [
   // Image
   { value: 'midjourney', label: 'Midjourney v6', category: 'image', vendor: 'midjourney' },
   { value: 'dalle-3', label: 'DALL·E 3', category: 'image', vendor: 'openai' },
-  { value: 'stable-diffusion', label: 'Stable Diffusion 3', category: 'image', vendor: 'stability' },
+  { value: 'stable-diffusion', label: 'Stable Diffusion 3.5 Large', category: 'image', vendor: 'stability' },
+  { value: 'flux', label: 'Flux Pro', category: 'image', vendor: 'blackforestlabs' },
+  { value: 'imagen-3', label: 'Google Imagen 3 (Gemini 2.5 Flash)', category: 'image', vendor: 'google' },
+  { value: 'ideogram', label: 'Ideogram 2.0', category: 'image', vendor: 'ideogram' },
 
   // Video
-  { value: 'sora', label: 'OpenAI Sora', category: 'video', vendor: 'openai' },
+  { value: 'sora-2', label: 'OpenAI Sora 2', category: 'video', vendor: 'openai' },
+  { value: 'veo-2', label: 'Google Veo 2', category: 'video', vendor: 'google' },
   { value: 'veo-3', label: 'Google Veo 3', category: 'video', vendor: 'google' },
+  { value: 'kling', label: 'Kling AI v1.6', category: 'video', vendor: 'kling' },
+  { value: 'runway-gen3', label: 'Runway Gen-3', category: 'video', vendor: 'runway' },
+  { value: 'pika', label: 'Pika Labs 2.0', category: 'video', vendor: 'pika' },
 ]
 
 export const getCategoryByModel = (modelName: string): ModelCategory => {

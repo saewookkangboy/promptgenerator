@@ -6,13 +6,14 @@ export type VideoModel =
   | 'sora' 
   | 'sora-2' // OpenAI Sora 2
   | 'veo' 
+  | 'veo-2' // Google Veo 2
   | 'veo-3' // Google Veo 3
   | 'runway' 
   | 'runway-gen3' // Runway Gen-3
   | 'pika' 
   | 'pika-2' // Pika Labs 2.0
   | 'stable-video'
-  | 'kling' // Kling AI
+  | 'kling' // Kling AI v1.6
   | 'luma' // Luma Dream Machine
 
 export interface VideoPromptOptions extends BasePromptOptions {
@@ -89,6 +90,17 @@ export interface VideoModelSpecificOptions {
   veo?: {
     quality: 'standard' | 'high'
     extendedDuration?: boolean
+  }
+  veo2?: {
+    // Google Veo 2 프롬프트 엔지니어링 옵션
+    quality: 'standard' | 'high' | 'ultra'
+    extendedDuration?: boolean // 최대 60초
+    aspectRatio?: '16:9' | '9:16' | '1:1' | '21:9'
+    promptStructure?: 'simple' | 'structured' | 'detailed'
+    styleReference?: string
+    motionControl?: 'precise' | 'natural' | 'dynamic'
+    frameConsistency?: number // 0-1
+    seed?: number
   }
   veo3?: {
     // Google Veo 3 프롬프트 엔지니어링 옵션
