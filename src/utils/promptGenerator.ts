@@ -57,6 +57,56 @@ const CONTENT_GOALS: Record<
     description: '체계적인 정보 전달과 예시로 전문성을 구축합니다.',
     checklist: ['핵심 개념 정의', '사례 또는 데이터 제공'],
   },
+  'lead-generation': {
+    label: '리드 생성/수집',
+    description: '잠재 고객의 관심을 유도하고 연락처 수집을 목표로 합니다.',
+    checklist: ['가치 있는 리소스 제공', '명확한 양식/다운로드 유도'],
+  },
+  retention: {
+    label: '고객 유지/리텐션',
+    description: '기존 고객과의 관계를 강화하고 재구매를 유도합니다.',
+    checklist: ['고객 성공 사례 강조', '충성도 프로그램/혜택 안내'],
+  },
+  'product-promotion': {
+    label: '제품/서비스 홍보',
+    description: '특정 제품이나 서비스의 특징과 장점을 효과적으로 전달합니다.',
+    checklist: ['핵심 기능/혜택 명확히 설명', '사용 사례/데모 제공'],
+  },
+  traffic: {
+    label: '웹사이트 트래픽 유도',
+    description: '웹사이트나 특정 페이지로의 방문을 증가시킵니다.',
+    checklist: ['관련 링크 자연스럽게 포함', '호기심 유발 제목/내용'],
+  },
+  authority: {
+    label: '권위/전문성 구축',
+    description: '업계 전문가로서의 신뢰도와 영향력을 높입니다.',
+    checklist: ['데이터/통계 인용', '깊이 있는 분석/의견 제시'],
+  },
+  'customer-support': {
+    label: '고객 지원/FAQ',
+    description: '고객의 질문에 답하고 문제 해결을 돕습니다.',
+    checklist: ['명확한 단계별 설명', '예상 질문 선제적 답변'],
+  },
+  'event-promotion': {
+    label: '이벤트/프로모션 안내',
+    description: '이벤트 참여나 프로모션 이용을 유도합니다.',
+    checklist: ['이벤트 핵심 정보 명시', '참여 동기 부여'],
+  },
+  'news-announcement': {
+    label: '뉴스/공지사항',
+    description: '중요한 소식이나 업데이트를 효과적으로 전달합니다.',
+    checklist: ['핵심 정보 명확히 전달', '관련 배경/맥락 제공'],
+  },
+  'community-building': {
+    label: '커뮤니티 구축',
+    description: '공통 관심사를 가진 사람들을 연결하고 커뮤니티를 성장시킵니다.',
+    checklist: ['공통 관심사 강조', '참여/소속감 유도'],
+  },
+  'thought-leadership': {
+    label: '사고 리더십 발휘',
+    description: '업계 트렌드를 선도하는 혁신적인 관점을 제시합니다.',
+    checklist: ['미래 전망/트렌드 분석', '독창적인 시각/의견 제시'],
+  },
 }
 
 /**

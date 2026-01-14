@@ -78,6 +78,16 @@ const GOAL_OPTIONS = [
   { value: 'conversion', label: '전환/구매 유도' },
   { value: 'engagement', label: '참여/소통 활성화' },
   { value: 'education', label: '교육/인사이트 제공' },
+  { value: 'lead-generation', label: '리드 생성/수집' },
+  { value: 'retention', label: '고객 유지/리텐션' },
+  { value: 'product-promotion', label: '제품/서비스 홍보' },
+  { value: 'traffic', label: '웹사이트 트래픽 유도' },
+  { value: 'authority', label: '권위/전문성 구축' },
+  { value: 'customer-support', label: '고객 지원/FAQ' },
+  { value: 'event-promotion', label: '이벤트/프로모션 안내' },
+  { value: 'news-announcement', label: '뉴스/공지사항' },
+  { value: 'community-building', label: '커뮤니티 구축' },
+  { value: 'thought-leadership', label: '사고 리더십 발휘' },
 ]
 
 const GUIDELINE_CHIPS: Record<ContentType, string[]> = {

@@ -174,26 +174,22 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
-          <div style={{ flex: 1 }}>
-            <h1>프롬프트 메이커</h1>
-            <p>텍스트, 이미지, 동영상 생성용 프롬프트를 생성합니다</p>
-          </div>
-          <div className="header-actions">
-            <button
-              onClick={(e) => {
-                e.preventDefault()
-                e.stopPropagation()
-                console.log('[Admin] Admin 버튼 클릭, Admin 모드 활성화')
-                setIsAdmin(true)
-              }}
-              className="admin-toggle-button"
-              title="관리자 페이지로 이동"
-            >
-              Admin
-            </button>
-          </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
+          <h1 style={{ margin: 0, marginRight: 'auto' }}>프롬프트 메이커</h1>
+          <button
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              console.log('[Admin] Admin 버튼 클릭, Admin 모드 활성화')
+              setIsAdmin(true)
+            }}
+            className="admin-toggle-button"
+            title="관리자 페이지로 이동"
+          >
+            Admin
+          </button>
         </div>
+        <p style={{ marginTop: '8px', marginBottom: 0 }}>텍스트, 이미지, 동영상 생성용 프롬프트를 생성합니다</p>
       </header>
       
       <div className="tabs">

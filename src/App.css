@@ -3,7 +3,7 @@
 }
 
 .app-header {
-  text-align: center;
+  text-align: left;
   color: #000000;
   margin-bottom: var(--spacing-2xl);
   padding: var(--spacing-2xl) var(--spacing-lg);

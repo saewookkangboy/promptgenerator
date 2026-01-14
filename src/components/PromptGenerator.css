@@ -41,6 +41,9 @@
   .form-group label {
     font-size: var(--font-size-sm);
     margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    min-height: var(--touch-target-min);
   }
 }
 
@@ -52,6 +55,9 @@
   .form-group label {
     font-size: var(--font-size-xs);
     margin-bottom: var(--spacing-sm);
+    display: flex;
+    align-items: center;
+    min-height: var(--touch-target-min);
   }
 }
 
