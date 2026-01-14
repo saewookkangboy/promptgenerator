@@ -34,32 +34,32 @@ function AboutPage() {
     {
       title: '텍스트 콘텐츠 생성',
       description: '블로그, 소셜 미디어(LinkedIn, Facebook, Instagram), YouTube용 텍스트 프롬프트 생성. SEO, GEO, AEO 최적화 및 타겟 독자 맞춤형 콘텐츠 제공.',
-      icon: '📝',
+      icon: '▤',
     },
     {
       title: '이미지 생성',
       description: 'Midjourney, DALL-E, Stable Diffusion 등 다양한 AI 이미지 생성 모델 지원. 구도, 조명, 색상 등 상세한 스타일 설정 가능.',
-      icon: '🎨',
+      icon: '▦',
     },
     {
       title: '동영상 생성',
       description: 'Sora, Veo, Runway 등 동영상 생성 AI 모델 지원. 스토리보드 기능으로 여러 장면을 구성하고 카메라 움직임, 샷 타입 설정 가능.',
-      icon: '🎬',
+      icon: '▶',
     },
     {
       title: '프롬프트 엔지니어링',
       description: 'Zero-shot, Chain of Thought, Few-shot Learning, Role-based Prompting 등 고급 프롬프트 기법 지원. 자동 최적화 및 점수화 기능 제공.',
-      icon: '⚙️',
+      icon: '◉',
     },
     {
       title: 'Native English 변환',
       description: '모든 프롬프트에 대해 자연스러운 영어 버전 자동 생성. AI 모델에 최적화된 표현으로 변환하여 글로벌 사용자 지원.',
-      icon: '🌐',
+      icon: '◯',
     },
     {
       title: '템플릿 갤러리',
       description: '다양한 프롬프트 템플릿을 카테고리별로 탐색하고 재사용 가능. 마케팅, 커머스 등 다양한 분야별 최적화된 템플릿 제공.',
-      icon: '📚',
+      icon: '▣',
     },
   ]
 

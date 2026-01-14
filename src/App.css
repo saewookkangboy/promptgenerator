@@ -162,19 +162,38 @@
 /* 반응형 개선 */
 @media (max-width: 768px) {
   .app-header {
-    padding: var(--spacing-xl) var(--spacing-lg);
-    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-lg) var(--spacing-md);
+    margin-bottom: var(--spacing-lg);
     border-radius: 8px;
   }
 
+  .app-header-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--spacing-md);
+  }
+
+  .app-header-text {
+    order: 1;
+  }
+
   .app-header h1 {
-    font-size: var(--font-size-3xl);
+    font-size: var(--font-size-2xl);
     line-height: var(--line-height-tight);
+    margin-bottom: var(--spacing-xs);
   }
 
   .app-header p {
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-xs);
     line-height: var(--line-height-normal);
+    margin: 0;
+  }
+
+  .header-actions {
+    order: 2;
+    align-self: flex-end;
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .tabs {
@@ -198,22 +217,41 @@
 
 @media (max-width: 480px) {
   .app-header {
-    padding: var(--spacing-lg) var(--spacing-md);
-    margin-bottom: var(--spacing-lg);
+    padding: var(--spacing-md) var(--spacing-sm);
+    margin-bottom: var(--spacing-md);
   }
 
   .app-header-content {
     gap: var(--spacing-sm);
   }
 
+  .app-header-text {
+    order: 1;
+  }
+
   .app-header h1 {
-    font-size: var(--font-size-2xl);
+    font-size: var(--font-size-xl);
     line-height: var(--line-height-tight);
+    margin-bottom: var(--spacing-xs);
   }
 
   .app-header p {
     font-size: var(--font-size-xs);
-    line-height: var(--line-height-normal);
+    line-height: 1.4;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .header-actions {
+    order: 2;
+    align-self: flex-end;
+    width: 100%;
+    justify-content: flex-end;
   }
 
   .admin-toggle-button {
@@ -228,8 +266,25 @@
 }
 
 @media (max-width: 375px) {
+  .app-header {
+    padding: var(--spacing-sm);
+    margin-bottom: var(--spacing-sm);
+  }
+
   .app-header h1 {
-    font-size: var(--font-size-xl);
+    font-size: var(--font-size-lg);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .app-header p {
+    font-size: 10px;
+    line-height: 1.3;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+  }
+
+  .header-actions {
+    gap: var(--spacing-xs);
   }
   
   .tab-button {
