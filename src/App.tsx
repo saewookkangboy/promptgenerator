@@ -7,9 +7,12 @@ import TemplateGallery from './components/TemplateGallery'
 import AboutPage from './components/AboutPage'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
+import ThemeToggle from './components/ThemeToggle'
+import LanguageToggle from './components/LanguageToggle'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import { templateAPI } from './utils/api'
+import { useLanguage } from './contexts/LanguageContext'
 import './App.css'
 
 type TabType = 'text' | 'image' | 'video' | 'engineering' | 'templates' | 'about'
@@ -173,25 +176,51 @@ function App() {
   }
 
   return (
+    <AppContent 
+      activeTab={activeTab}
+      setActiveTab={setActiveTab}
+      setIsAdmin={setIsAdmin}
+    />
+  )
+}
+
+function AppContent({
+  activeTab,
+  setActiveTab,
+  setIsAdmin,
+}: {
+  activeTab: TabType
+  setActiveTab: (tab: TabType) => void
+  setIsAdmin: (admin: boolean) => void
+}) {
+  const { t } = useLanguage()
+
+  return (
     <div className="app">
       <header className="app-header">
         <div className="app-header-content">
           <div className="app-header-text">
-            <h1>프롬프트 메이커</h1>
-            <p>텍스트, 이미지, 동영상 생성용 프롬프트를 생성합니다</p>
+            <h1>{t('app.title')}</h1>
+            <p>{t('app.subtitle')}</p>
           </div>
-          <button
-            onClick={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-              console.log('[Admin] Admin 버튼 클릭, Admin 모드 활성화')
-              setIsAdmin(true)
-            }}
-            className="admin-toggle-button"
-            title="관리자 페이지로 이동"
-          >
-            Admin
-          </button>
+          <div className="header-actions">
+            <div className="header-controls">
+              <ThemeToggle />
+              <LanguageToggle />
+            </div>
+            <button
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                console.log('[Admin] Admin 버튼 클릭, Admin 모드 활성화')
+                setIsAdmin(true)
+              }}
+              className="admin-toggle-button"
+              title="관리자 페이지로 이동"
+            >
+              {t('app.admin')}
+            </button>
+          </div>
         </div>
       </header>
       
@@ -200,37 +229,37 @@ function App() {
           className={`tab-button ${activeTab === 'text' ? 'active' : ''}`}
           onClick={() => setActiveTab('text')}
         >
-          텍스트 콘텐츠
+          {t('app.tab.text')}
         </button>
         <button
           className={`tab-button ${activeTab === 'image' ? 'active' : ''}`}
           onClick={() => setActiveTab('image')}
         >
-          이미지 생성
+          {t('app.tab.image')}
         </button>
         <button
           className={`tab-button ${activeTab === 'video' ? 'active' : ''}`}
           onClick={() => setActiveTab('video')}
         >
-          동영상 생성
+          {t('app.tab.video')}
         </button>
         <button
           className={`tab-button ${activeTab === 'engineering' ? 'active' : ''}`}
           onClick={() => setActiveTab('engineering')}
         >
-          프롬프트 엔지니어링
+          {t('app.tab.engineering')}
         </button>
         <button
           className={`tab-button ${activeTab === 'templates' ? 'active' : ''}`}
           onClick={() => setActiveTab('templates')}
         >
-          템플릿 갤러리
+          {t('app.tab.templates')}
         </button>
         <button
           className={`tab-button ${activeTab === 'about' ? 'active' : ''}`}
           onClick={() => setActiveTab('about')}
         >
-          About
+          {t('app.tab.about')}
         </button>
       </div>
 
@@ -248,7 +277,7 @@ function App() {
       <footer className="app-footer">
         <div className="footer-content">
           <p>
-            © 2025 chunghyo park. Built to move the market. All rights reserved. |{' '}
+            {t('app.footer.copyright')} |{' '}
             <a href="mailto:chunghyo@troe.kr" className="footer-link">chunghyo@troe.kr</a>
           </p>
           <button
@@ -256,7 +285,7 @@ function App() {
             className="footer-about-button"
             title="About 페이지로 이동"
           >
-            About
+            {t('app.footer.about')}
           </button>
         </div>
       </footer>

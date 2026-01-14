@@ -46,17 +46,65 @@
   --btn-padding-x: 18px;
 }
 
+/* 테마 변수: 라이트 모드 (기본) */
+:root,
+:root[data-theme="light"],
+.light {
+  --bg-primary: #000000;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #fafafa;
+  --bg-hover: #f5f5f5;
+  --bg-active: #e5e5e5;
+  
+  --text-primary: #000000;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --text-inverse: #ffffff;
+  
+  --border-primary: #e5e5e5;
+  --border-secondary: #dcdcdc;
+  --border-hover: #000000;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* 테마 변수: 다크 모드 */
+:root[data-theme="dark"],
+.dark {
+  --bg-primary: #ffffff;
+  --bg-secondary: #1a1a1a;
+  --bg-tertiary: #2a2a2a;
+  --bg-hover: #333333;
+  --bg-active: #404040;
+  
+  --text-primary: #ffffff;
+  --text-secondary: #b3b3b3;
+  --text-tertiary: #808080;
+  --text-inverse: #000000;
+  
+  --border-primary: #404040;
+  --border-secondary: #333333;
+  --border-hover: #ffffff;
+  
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
 body {
   font-family: "IBM Plex Sans KR", sans-serif;
   font-weight: 300;
   font-size: var(--font-size-base);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: #fafafa;
+  background: var(--bg-tertiary);
   min-height: 100vh;
   padding: 0;
-  color: #000000;
+  color: var(--text-primary);
   line-height: var(--line-height-normal);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* IBM Plex Sans KR 폰트 클래스 */
@@ -189,9 +237,9 @@ textarea:focus-visible {
 /* 공통 버튼 스타일 (DB 새로고침 디자인) */
 button {
   padding: var(--btn-padding-y) var(--btn-padding-x);
-  background: var(--btn-bg);
-  color: var(--btn-text);
-  border: 1px solid var(--btn-border);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
   border-radius: var(--btn-radius);
   font-weight: 500;
   font-size: var(--font-size-sm);
@@ -210,9 +258,9 @@ button {
 }
 
 button:hover:not(:disabled) {
-  background: var(--btn-hover-bg);
-  color: var(--btn-hover-text);
-  border-color: var(--btn-hover-border);
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
 }
 
 button:disabled {
@@ -222,16 +270,17 @@ button:disabled {
 
 /* 프라이머리 액션 버튼 */
 .btn-primary {
-  background: var(--btn-hover-bg);
-  color: var(--btn-hover-text);
-  border-color: var(--btn-hover-border);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  background: var(--bg-primary);
+  color: var(--text-inverse);
+  border-color: var(--bg-primary);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-primary:hover:not(:disabled) {
-  background: #0a0a0a;
-  border-color: #0a0a0a;
-  color: #ffffff;
+  background: var(--bg-hover);
+  border-color: var(--bg-hover);
+  color: var(--text-inverse);
+  opacity: 0.9;
 }
 
 /* 스킵 링크 (스크린 리더용) */
