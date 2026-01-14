@@ -174,8 +174,11 @@ function App() {
   return (
     <div className="app">
       <header className="app-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', width: '100%' }}>
-          <h1 style={{ margin: 0, marginRight: 'auto' }}>프롬프트 메이커</h1>
+        <div className="app-header-content">
+          <div className="app-header-text">
+            <h1>프롬프트 메이커</h1>
+            <p>텍스트, 이미지, 동영상 생성용 프롬프트를 생성합니다</p>
+          </div>
           <button
             onClick={(e) => {
               e.preventDefault()
@@ -189,7 +192,6 @@ function App() {
             Admin
           </button>
         </div>
-        <p style={{ marginTop: '8px', marginBottom: 0 }}>텍스트, 이미지, 동영상 생성용 프롬프트를 생성합니다</p>
       </header>
       
       <div className="tabs">

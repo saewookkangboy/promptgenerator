@@ -506,6 +506,18 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
           >
             엔지니어링
           </button>
+          <button
+            className={selectedCategory === 'marketing' ? 'active' : ''}
+            onClick={() => setSelectedCategory('marketing')}
+          >
+            마케팅
+          </button>
+          <button
+            className={selectedCategory === 'commerce' ? 'active' : ''}
+            onClick={() => setSelectedCategory('commerce')}
+          >
+            커머스
+          </button>
         </div>
 
         <div className="search-box">

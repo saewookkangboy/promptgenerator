@@ -3,7 +3,6 @@
 }
 
 .app-header {
-  text-align: left;
   color: #000000;
   margin-bottom: var(--spacing-2xl);
   padding: var(--spacing-2xl) var(--spacing-lg);
@@ -12,9 +11,22 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+.app-header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--spacing-lg);
+  width: 100%;
+}
+
+.app-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
 .app-header h1 {
   font-size: var(--font-size-4xl);
-  margin-bottom: var(--spacing-sm);
+  margin: 0 0 var(--spacing-sm) 0;
   font-weight: 400;
   letter-spacing: -0.02em;
   line-height: var(--line-height-tight);
@@ -188,6 +200,10 @@
     margin-bottom: var(--spacing-lg);
   }
 
+  .app-header-content {
+    gap: var(--spacing-sm);
+  }
+
   .app-header h1 {
     font-size: var(--font-size-2xl);
     line-height: var(--line-height-tight);
@@ -196,6 +212,10 @@
   .app-header p {
     font-size: var(--font-size-xs);
     line-height: var(--line-height-normal);
+  }
+
+  .admin-toggle-button {
+    align-self: flex-end;
   }
 
   .tab-button {
@@ -377,12 +397,6 @@
 }
 
 @media (max-width: 768px) {
-  .app-header > div {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--spacing-lg);
-  }
-
   .header-actions {
     align-self: stretch;
     justify-content: flex-end;
