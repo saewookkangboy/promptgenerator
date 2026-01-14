@@ -280,13 +280,6 @@ function AppContent({
             {t('app.footer.copyright')} |{' '}
             <a href="mailto:chunghyo@troe.kr" className="footer-link">chunghyo@troe.kr</a>
           </p>
-          <button
-            onClick={() => setActiveTab('about')}
-            className="footer-about-button"
-            title="About 페이지로 이동"
-          >
-            {t('app.footer.about')}
-          </button>
         </div>
       </footer>
     </div>

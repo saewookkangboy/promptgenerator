@@ -94,7 +94,7 @@ function AboutPage() {
     <div className="about-page">
       {/* Hero Section */}
       <section className="about-hero fade-in-section">
-        <h1 className="hero-title">자연어 텍스트를 입력하면 텍스트, 이미지, 동영상 생성용 프롬프트를 생성하는 통합 웹 애플리케이션입니다.</h1>
+        <h1 className="hero-title">자연어 입력으로 AI 프롬프트를 생성하는 통합 플랫폼입니다.</h1>
       </section>
 
       {/* 주요 기능 Section */}
