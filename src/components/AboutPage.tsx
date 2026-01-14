@@ -63,29 +63,6 @@ function AboutPage() {
     },
   ]
 
-  const techStack = [
-    {
-      category: 'Frontend',
-      items: ['React 18', 'TypeScript', 'Vite'],
-      description: '모던한 UI/UX와 빠른 개발 환경',
-    },
-    {
-      category: 'Backend',
-      items: ['Express 5', 'Node.js 20', 'Prisma ORM'],
-      description: '안정적이고 확장 가능한 API 서버',
-    },
-    {
-      category: 'Database',
-      items: ['PostgreSQL 15+', 'JWT 인증', '워크스페이스 관리'],
-      description: '강력한 데이터 관리 및 보안',
-    },
-    {
-      category: 'Design',
-      items: ['Black/White 미니멀', 'IBM Plex Sans KR', '반응형 디자인'],
-      description: '깔끔하고 일관된 디자인 시스템',
-    },
-  ]
-
   const targetUsers = [
     {
       title: '콘텐츠 크리에이터',
@@ -133,27 +110,6 @@ function AboutPage() {
               <div className="card-icon">{feature.icon}</div>
               <h3 className="card-title">{feature.title}</h3>
               <p className="card-description">{feature.description}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* 기술 스택 Section */}
-      <section className="about-section fade-in-section">
-        <h2 className="section-title">기술 스택</h2>
-        <p className="section-description">
-          최신 웹 기술과 모범 사례를 활용하여 안정적이고 확장 가능한 서비스를 제공합니다.
-        </p>
-        <div className="cards-grid">
-          {techStack.map((tech, index) => (
-            <div key={index} className="tech-card">
-              <h3 className="card-title">{tech.category}</h3>
-              <ul className="tech-list">
-                {tech.items.map((item, itemIndex) => (
-                  <li key={itemIndex} className="tech-item">{item}</li>
-                ))}
-              </ul>
-              <p className="card-description">{tech.description}</p>
             </div>
           ))}
         </div>
