@@ -96,24 +96,20 @@ function calculateCompleteness(original: string, translated: string): number {
  */
 function calculateFluency(text: string): number {
   let score = 1.0
-  const issues: string[] = []
 
   // 1. 연속된 대문자 검사 (일반적으로 부자연스러움)
   if (/[A-Z]{3,}/.test(text)) {
     score -= 0.1
-    issues.push('과도한 대문자 사용')
   }
 
   // 2. 연속된 특수문자 검사
   if (/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]{3,}/.test(text)) {
     score -= 0.1
-    issues.push('과도한 특수문자 사용')
   }
 
   // 3. 공백 문제 검사
-  if (/\s{3,}/.test(text)) {
+  if (/\s{2,}/.test(text)) {
     score -= 0.05
-    issues.push('과도한 공백')
   }
 
   // 4. 문장 끝 마침표 검사
@@ -178,14 +174,25 @@ function checkGrammar(text: string): string[] {
 
   // 1. 연속된 공백
   if (/\s{2,}/.test(text)) {
-    issues.push('연속된 공백이 있습니다.')
+    issues.push('과도한 공백')
   }
 
   // 2. 문장 시작 대문자 검사
   const sentences = text.split(/[.!?]+\s+/).filter(s => s.trim().length > 0)
   const incorrectStarts = sentences.filter(s => {
     const firstChar = s.trim()[0]
-    return firstChar && firstChar !== firstChar.toUpperCase()
+    if (!firstChar) return false
+    
+    // Check if the character is cased (has different lowercase and uppercase forms)
+    const isCased = firstChar.toLowerCase() !== firstChar.toUpperCase()
+    
+    // Only check capitalization for cased letters; skip uncased characters
+    if (isCased) {
+      return firstChar !== firstChar.toUpperCase()
+    }
+    
+    // Skip uncased characters (numbers, symbols, Korean, etc.)
+    return false
   })
   if (incorrectStarts.length > sentences.length * 0.3) {
     issues.push('일부 문장이 대문자로 시작하지 않습니다.')

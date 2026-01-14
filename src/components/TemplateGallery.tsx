@@ -18,8 +18,9 @@ const DEFAULT_PAGINATION = {
 
 // 캐시 및 업데이트 상수
 const CACHE_KEY = 'template_gallery_cache'
-const CACHE_EXPIRY_MS = 5 * 60 * 1000 // 5분
-const AUTO_REFRESH_INTERVAL_MS = 5 * 60 * 1000 // 5분마다 자동 새로고침
+const CACHE_EXPIRY_MS = 30 * 60 * 1000 // 30분 (캐시 시간 증가)
+const STALE_CACHE_EXPIRY_MS = 24 * 60 * 60 * 1000 // 24시간 (만료된 캐시도 최대 24시간까지 사용)
+const AUTO_REFRESH_INTERVAL_MS = 10 * 60 * 1000 // 10분마다 자동 새로고침
 const MAX_RETRY_ATTEMPTS = 3
 const RETRY_DELAY_MS = 1000 // 초기 재시도 지연
 const SEARCH_DEBOUNCE_MS = 300 // 검색 디바운스
@@ -66,19 +67,40 @@ const getCachedTemplates = (): Template[] | null => {
     
     const data: CacheData = JSON.parse(cached)
     const now = Date.now()
+    const cacheAge = now - data.timestamp
     
-    // 캐시가 만료되지 않았으면 반환
-    if (now - data.timestamp < CACHE_EXPIRY_MS) {
-      devLog('[TemplateGallery] 캐시에서 템플릿 로드:', data.templates.length)
+    // 캐시가 완전히 만료되지 않았으면 반환 (최대 24시간까지)
+    if (cacheAge < STALE_CACHE_EXPIRY_MS) {
+      if (cacheAge < CACHE_EXPIRY_MS) {
+        devLog('[TemplateGallery] 신선한 캐시에서 템플릿 로드:', data.templates.length)
+      } else {
+        devLog('[TemplateGallery] 만료된 캐시에서 템플릿 로드 (백그라운드 업데이트 예정):', data.templates.length)
+      }
       return data.templates
     }
     
-    // 만료된 캐시 삭제
+    // 완전히 오래된 캐시 삭제
     localStorage.removeItem(CACHE_KEY)
     return null
   } catch (error) {
     devError('[TemplateGallery] 캐시 읽기 실패:', error)
     return null
+  }
+}
+
+// 캐시가 오래되었는지 확인 (백그라운드 업데이트 필요 여부)
+const isCacheStale = (): boolean => {
+  try {
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (!cached) return true
+    
+    const data: CacheData = JSON.parse(cached)
+    const now = Date.now()
+    const cacheAge = now - data.timestamp
+    
+    return cacheAge >= CACHE_EXPIRY_MS
+  } catch {
+    return true
   }
 }
 
@@ -131,11 +153,14 @@ interface TemplateGalleryProps {
 }
 
 export default function TemplateGallery({ onClose, showCloseButton = false }: TemplateGalleryProps) {
-  const [templates, setTemplates] = useState<Template[]>([])
+  // 캐시에서 즉시 로드하여 초기 상태 설정
+  const initialCachedTemplates = getCachedTemplates()
+  const [templates, setTemplates] = useState<Template[]>(initialCachedTemplates || [])
   const [selectedCategory, setSelectedCategory] = useState<string>('all')
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('')
-  const [loading, setLoading] = useState(true)
+  // 캐시가 있으면 loading을 false로 시작 (즉시 표시)
+  const [loading, setLoading] = useState(!initialCachedTemplates || initialCachedTemplates.length === 0)
   const [error, setError] = useState<string | null>(null)
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(null)
   
@@ -319,20 +344,21 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
     }
   }, [])
 
-  // 초기 로드: 캐시 확인 후 로드
+  // 초기 로드: 캐시가 있으면 즉시 표시, 없거나 오래되었으면 로드
   useEffect(() => {
     isMountedRef.current = true
     
-    // 캐시에서 먼저 로드
-    const cachedTemplates = getCachedTemplates()
-    if (cachedTemplates && cachedTemplates.length > 0) {
-      devLog('[TemplateGallery] 캐시된 템플릿 사용:', cachedTemplates.length)
-      setTemplates(cachedTemplates)
-      setLoading(false)
+    // 캐시가 있고 신선하면 백그라운드에서만 업데이트
+    // 캐시가 없거나 오래되었으면 즉시 로드
+    const needsImmediateLoad = !initialCachedTemplates || initialCachedTemplates.length === 0 || isCacheStale()
+    
+    if (needsImmediateLoad) {
+      // 캐시가 없거나 오래되었으면 즉시 로드
+      loadTemplates(false)
+    } else {
+      // 캐시가 신선하면 백그라운드에서만 업데이트 (사용자 경험 방해 안 함)
+      loadTemplates(true)
     }
-
-    // 백그라운드에서 최신 데이터 로드
-    loadTemplates(true)
 
     return () => {
       isMountedRef.current = false
@@ -340,7 +366,8 @@ export default function TemplateGallery({ onClose, showCloseButton = false }: Te
         abortControllerRef.current.abort()
       }
     }
-  }, [loadTemplates])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // 정기적인 자동 새로고침
   useEffect(() => {

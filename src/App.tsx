@@ -8,6 +8,7 @@ import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
+import { templateAPI } from './utils/api'
 import './App.css'
 
 type TabType = 'text' | 'image' | 'video' | 'engineering' | 'templates'
@@ -28,6 +29,45 @@ function App() {
     
     // 프롬프트 가이드 스케줄러 초기화
     initializeScheduler()
+    
+    // 템플릿 갤러리 데이터 백그라운드 prefetch (캐시 확인 후 필요시만)
+    const prefetchTemplates = async () => {
+      try {
+        const CACHE_KEY = 'template_gallery_cache'
+        const CACHE_EXPIRY_MS = 30 * 60 * 1000 // 30분
+        
+        // 캐시 확인
+        const cached = localStorage.getItem(CACHE_KEY)
+        if (cached) {
+          try {
+            const data = JSON.parse(cached)
+            const cacheAge = Date.now() - (data.timestamp || 0)
+            // 캐시가 신선하면 prefetch 불필요
+            if (cacheAge < CACHE_EXPIRY_MS) {
+              return
+            }
+          } catch {
+            // 캐시 파싱 실패 시 prefetch 진행
+          }
+        }
+        
+        // 캐시가 없거나 오래되었으면 백그라운드에서 prefetch
+        const result = await templateAPI.getPublic({ page: 1, limit: 100 })
+        if (result?.templates) {
+          const cacheData = {
+            templates: result.templates,
+            timestamp: Date.now(),
+          }
+          localStorage.setItem(CACHE_KEY, JSON.stringify(cacheData))
+        }
+      } catch (error) {
+        // prefetch 실패는 무시 (사용자 경험에 영향 없음)
+        console.debug('[App] 템플릿 prefetch 실패 (무시됨):', error)
+      }
+    }
+    
+    // 지연된 prefetch (메인 스레드 블로킹 방지)
+    setTimeout(prefetchTemplates, 1000)
     
     // Chrome 확장 프로그램의 Firebase 오류 무시 (개발 환경에서만)
     if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
