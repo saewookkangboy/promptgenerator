@@ -10,7 +10,6 @@ import { showNotification } from '../utils/notifications'
 import { hasPromptSaveAuth, reportPromptSaveFailure } from '../utils/promptSaveReporter'
 import { PromptGuide, ModelName } from '../types/prompt-guide.types'
 import { MODEL_OPTIONS, getCategoryByModel } from '../config/model-options'
-import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 import { evaluateQuality, QualityReport } from '../utils/qualityRules'
 // import { applyTemplate } from '../utils/templateUtils' // 템플릿 적용은 서버에서 처리
 import ResultCard from './ResultCard'
@@ -229,61 +228,7 @@ function PromptGenerator() {
 
         const generated = generatePrompts(userPrompt, contentType, options, appliedGuideContext)
 
-        let enrichedResults = generated
-        try {
-          const translationPayload: Record<string, string> = {
-            englishMetaPrompt: generated.metaPrompt,
-            englishContextPrompt: generated.contextPrompt,
-          }
-
-          if (generated.metaTemplate) {
-            generated.metaTemplate.sections.forEach((section) => {
-              translationPayload[`metaTemplate_${section.key}`] = section.content
-            })
-          }
-
-          if (generated.contextTemplate) {
-            generated.contextTemplate.sections.forEach((section) => {
-              translationPayload[`contextTemplate_${section.key}`] = section.content
-            })
-          }
-
-          const translations = await translateTextMap(translationPayload, { compress: true, context: 'TEXT' })
-
-          if (Object.keys(translations).length > 0) {
-            const { englishMetaPrompt, englishContextPrompt, ...templateTranslations } = translations
-            enrichedResults = {
-              ...generated,
-              englishMetaPrompt,
-              englishContextPrompt,
-            }
-
-            if (generated.metaTemplate) {
-              enrichedResults.englishMetaTemplate = {
-                ...generated.metaTemplate,
-                sections: generated.metaTemplate.sections.map((section) => ({
-                  ...section,
-                  content: templateTranslations[`metaTemplate_${section.key}`] || section.content,
-                })),
-              }
-            }
-
-            if (generated.contextTemplate) {
-              enrichedResults.englishContextTemplate = {
-                ...generated.contextTemplate,
-                sections: generated.contextTemplate.sections.map((section) => ({
-                  ...section,
-                  content: templateTranslations[`contextTemplate_${section.key}`] || section.content,
-                })),
-              }
-            }
-          }
-        } catch (translationError) {
-          console.warn('Gemini translation failed:', translationError)
-          showNotification('영문 번역에 실패하여 기본 버전을 표시합니다.', 'warning')
-          const fallback = buildNativeEnglishFallback(generated)
-          enrichedResults = { ...generated, ...fallback }
-        }
+        const enrichedResults = generated
 
         // AI 키워드 추출 (비동기, 실패해도 계속 진행)
         try {
@@ -955,27 +900,21 @@ function PromptGenerator() {
             <StructuredPromptCard
               title="표준 메타 프롬프트 템플릿"
               template={results.metaTemplate}
-              englishTemplate={results.englishMetaTemplate}
             />
           )}
           <ResultCard
             title="메타 프롬프트"
             content={results.metaPrompt}
-            englishVersion={results.englishMetaPrompt}
-            showEnglishToggle={true}
           />
           {results.contextTemplate && (
             <StructuredPromptCard
               title="컨텍스트 프롬프트 템플릿"
               template={results.contextTemplate}
-              englishTemplate={results.englishContextTemplate}
             />
           )}
           <ResultCard
             title="컨텍스트 프롬프트"
             content={results.contextPrompt}
-            englishVersion={results.englishContextPrompt}
-            showEnglishToggle={true}
           />
           <div className="hashtags-card">
             <h3>해시태그</h3>

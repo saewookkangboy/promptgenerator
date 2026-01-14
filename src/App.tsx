@@ -4,6 +4,7 @@ import ImagePromptGenerator from './components/ImagePromptGenerator'
 import VideoPromptGenerator from './components/VideoPromptGenerator'
 import EngineeringPromptGenerator from './components/EngineeringPromptGenerator'
 import TemplateGallery from './components/TemplateGallery'
+import AboutPage from './components/AboutPage'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
@@ -11,7 +12,7 @@ import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import { templateAPI } from './utils/api'
 import './App.css'
 
-type TabType = 'text' | 'image' | 'video' | 'engineering' | 'templates'
+type TabType = 'text' | 'image' | 'video' | 'engineering' | 'templates' | 'about'
 
 function App() {
   const [activeTab, setActiveTab] = useState<TabType>('text')
@@ -225,6 +226,12 @@ function App() {
         >
           템플릿 갤러리
         </button>
+        <button
+          className={`tab-button ${activeTab === 'about' ? 'active' : ''}`}
+          onClick={() => setActiveTab('about')}
+        >
+          About
+        </button>
       </div>
 
       <div className="tab-content">
@@ -235,6 +242,7 @@ function App() {
         {activeTab === 'templates' && (
           <TemplateGalleryWrapper />
         )}
+        {activeTab === 'about' && <AboutPage />}
       </div>
 
       <footer className="app-footer">
@@ -243,6 +251,13 @@ function App() {
             © 2025 chunghyo park. Built to move the market. All rights reserved. |{' '}
             <a href="mailto:chunghyo@troe.kr" className="footer-link">chunghyo@troe.kr</a>
           </p>
+          <button
+            onClick={() => setActiveTab('about')}
+            className="footer-about-button"
+            title="About 페이지로 이동"
+          >
+            About
+          </button>
         </div>
       </footer>
     </div>

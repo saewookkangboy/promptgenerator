@@ -1,0 +1,359 @@
+.about-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0;
+  color: #000000;
+}
+
+/* Hero Section */
+.about-hero {
+  padding: var(--spacing-3xl) var(--spacing-lg);
+  text-align: center;
+  margin-bottom: var(--spacing-3xl);
+}
+
+.hero-title {
+  font-size: var(--font-size-3xl);
+  font-weight: 400;
+  line-height: var(--line-height-tight);
+  letter-spacing: -0.02em;
+  margin: 0;
+  color: #000000;
+  max-width: 900px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Section 공통 스타일 */
+.about-section {
+  padding: var(--spacing-3xl) var(--spacing-lg);
+  margin-bottom: var(--spacing-2xl);
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.about-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.section-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 500;
+  margin: 0 0 var(--spacing-lg) 0;
+  text-align: center;
+  color: #000000;
+  letter-spacing: -0.01em;
+}
+
+.section-description {
+  font-size: var(--font-size-base);
+  font-weight: 300;
+  color: #666666;
+  text-align: center;
+  max-width: 700px;
+  margin: 0 auto var(--spacing-2xl);
+  line-height: var(--line-height-relaxed);
+}
+
+/* Cards Grid */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-2xl);
+}
+
+/* Feature Card */
+.feature-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: var(--spacing-2xl);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.card-icon {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-md);
+  line-height: 1;
+}
+
+.card-title {
+  font-size: var(--font-size-xl);
+  font-weight: 500;
+  margin: 0 0 var(--spacing-md) 0;
+  color: #000000;
+  letter-spacing: -0.01em;
+}
+
+.card-description {
+  font-size: var(--font-size-sm);
+  font-weight: 300;
+  color: #666666;
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+/* Tech Card */
+.tech-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: var(--spacing-2xl);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.tech-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.tech-list {
+  list-style: none;
+  padding: 0;
+  margin: var(--spacing-md) 0 var(--spacing-lg);
+}
+
+.tech-item {
+  font-size: var(--font-size-sm);
+  font-weight: 400;
+  color: #000000;
+  padding: var(--spacing-xs) 0;
+  padding-left: var(--spacing-md);
+  position: relative;
+}
+
+.tech-item::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: #000000;
+  font-weight: 600;
+}
+
+/* Target Card */
+.target-card {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: var(--spacing-2xl);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  border: 1px solid #f0f0f0;
+}
+
+.target-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Values Grid */
+.values-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: var(--spacing-xl);
+  margin-top: var(--spacing-2xl);
+}
+
+.value-item {
+  text-align: center;
+  padding: var(--spacing-xl);
+}
+
+.value-title {
+  font-size: var(--font-size-xl);
+  font-weight: 500;
+  margin: 0 0 var(--spacing-md) 0;
+  color: #000000;
+  letter-spacing: -0.01em;
+}
+
+.value-description {
+  font-size: var(--font-size-sm);
+  font-weight: 300;
+  color: #666666;
+  line-height: var(--line-height-relaxed);
+  margin: 0;
+}
+
+/* CTA Section */
+.about-cta {
+  padding: var(--spacing-3xl) var(--spacing-lg);
+  text-align: center;
+  background: #000000;
+  color: #ffffff;
+  border-radius: 12px;
+  margin-bottom: var(--spacing-3xl);
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.about-cta.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cta-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 500;
+  margin: 0 0 var(--spacing-md) 0;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.cta-description {
+  font-size: var(--font-size-base);
+  font-weight: 300;
+  color: #e5e5e5;
+  margin: 0;
+  line-height: var(--line-height-relaxed);
+}
+
+/* Fade-in Animation */
+.fade-in-section {
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+}
+
+.fade-in-section.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+  .about-hero {
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .hero-title {
+    font-size: var(--font-size-2xl);
+    line-height: var(--line-height-normal);
+  }
+
+  .about-section {
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .section-title {
+    font-size: var(--font-size-xl);
+    margin-bottom: var(--spacing-md);
+  }
+
+  .section-description {
+    font-size: var(--font-size-sm);
+    margin-bottom: var(--spacing-xl);
+  }
+
+  .cards-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+  }
+
+  .feature-card,
+  .tech-card,
+  .target-card {
+    padding: var(--spacing-xl);
+  }
+
+  .card-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .values-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-lg);
+    margin-top: var(--spacing-xl);
+  }
+
+  .value-item {
+    padding: var(--spacing-lg);
+  }
+
+  .about-cta {
+    padding: var(--spacing-2xl) var(--spacing-lg);
+    margin-bottom: var(--spacing-2xl);
+  }
+
+  .cta-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .cta-description {
+    font-size: var(--font-size-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .about-hero {
+    padding: var(--spacing-xl) var(--spacing-md);
+  }
+
+  .hero-title {
+    font-size: var(--font-size-xl);
+  }
+
+  .about-section {
+    padding: var(--spacing-xl) var(--spacing-md);
+  }
+
+  .section-title {
+    font-size: var(--font-size-lg);
+  }
+
+  .section-description {
+    font-size: var(--font-size-xs);
+  }
+
+  .cards-grid {
+    gap: var(--spacing-md);
+  }
+
+  .feature-card,
+  .tech-card,
+  .target-card {
+    padding: var(--spacing-lg);
+  }
+
+  .card-icon {
+    font-size: 2rem;
+  }
+
+  .card-title {
+    font-size: var(--font-size-base);
+  }
+
+  .card-description,
+  .tech-item,
+  .value-description {
+    font-size: var(--font-size-xs);
+  }
+
+  .about-cta {
+    padding: var(--spacing-xl) var(--spacing-md);
+  }
+
+  .cta-title {
+    font-size: var(--font-size-lg);
+  }
+}
+
+/* 부드러운 스크롤 */
+@media (prefers-reduced-motion: no-preference) {
+  .about-page {
+    scroll-behavior: smooth;
+  }
+}

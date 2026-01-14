@@ -484,6 +484,16 @@
   color: #388e3c;
 }
 
+.category-badge.category-marketing {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.category-badge.category-commerce {
+  background: #fce4ec;
+  color: #c2185b;
+}
+
 @media (max-width: 1024px) {
   .template-manager {
     grid-template-columns: 1fr;
