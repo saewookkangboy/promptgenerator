@@ -446,9 +446,12 @@
 @media (max-width: 768px) {
   .app-footer {
     margin-top: var(--spacing-3xl);
+    margin-bottom: 80px; /* 하단 고정 탭 공간 확보 */
     padding: var(--spacing-xl) var(--spacing-lg);
     border-radius: 8px;
     text-align: center;
+    position: relative;
+    z-index: 1;
   }
 
   .footer-content {
@@ -480,9 +483,12 @@
 @media (max-width: 480px) {
   .app-footer {
     margin-top: var(--spacing-2xl);
+    margin-bottom: 80px; /* 하단 고정 탭 공간 확보 */
     padding: var(--spacing-lg) var(--spacing-md);
     border-radius: 8px;
     text-align: center;
+    position: relative;
+    z-index: 1;
   }
 
   .footer-content {
