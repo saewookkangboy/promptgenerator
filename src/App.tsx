@@ -7,7 +7,6 @@ import TemplateGallery from './components/TemplateGallery'
 import AboutPage from './components/AboutPage'
 import AdminLogin from './components/AdminLogin'
 import AdminDashboard from './components/AdminDashboard'
-import ThemeToggle from './components/ThemeToggle'
 import LanguageToggle from './components/LanguageToggle'
 import { getAdminAuth, incrementVisitCount } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
@@ -205,7 +204,6 @@ function AppContent({
           </div>
           <div className="header-actions">
             <div className="header-controls">
-              <ThemeToggle />
               <LanguageToggle />
             </div>
             <button
