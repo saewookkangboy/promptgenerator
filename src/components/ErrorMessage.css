@@ -8,8 +8,14 @@
   border-radius: 8px;
   margin-bottom: var(--spacing-xl);
   gap: var(--spacing-md);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
   flex-wrap: wrap;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .error-message {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: rgba(220, 38, 38, 0.3);
 }
 
 .error-content {
@@ -36,10 +42,14 @@
   word-break: break-word;
 }
 
+.dark .error-text {
+  color: #f87171;
+}
+
 .error-dismiss {
   background: transparent;
   border: none;
-  color: #666666;
+  color: var(--text-secondary);
   font-size: var(--font-size-xl);
   line-height: 1;
   cursor: pointer;
@@ -51,7 +61,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, color 0.3s ease;
   border-radius: 4px;
   flex-shrink: 0;
 }
@@ -89,12 +99,17 @@
 }
 
 .error-dismiss:hover {
-  background: #fee2e2;
+  background: rgba(220, 38, 38, 0.1);
   color: #dc2626;
 }
 
+.dark .error-dismiss:hover {
+  background: rgba(220, 38, 38, 0.2);
+  color: #f87171;
+}
+
 .error-dismiss:focus {
-  outline: 2px solid #000000;
+  outline: 2px solid var(--bg-primary);
   outline-offset: 2px;
 }
 

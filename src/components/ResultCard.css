@@ -324,9 +324,9 @@
 }
 
 .hashtag-low:hover {
-  background: #e0e0e0;
-  color: #000000;
-  border-color: #bdbdbd;
+  background: var(--bg-active);
+  color: var(--text-primary);
+  border-color: var(--border-secondary);
 }
 
 .hashtags-card .copy-button {

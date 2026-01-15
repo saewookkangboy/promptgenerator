@@ -146,18 +146,20 @@
 .admin-header h1 {
   font-size: var(--font-size-4xl);
   font-weight: 400;
-  color: #000000;
+  color: var(--text-primary);
   margin: 0 0 var(--spacing-sm) 0;
   letter-spacing: -0.02em;
   line-height: var(--line-height-tight);
+  transition: color 0.3s ease;
 }
 
 .admin-subtitle {
   font-size: var(--font-size-base);
   font-weight: 300;
-  color: #666666;
+  color: var(--text-secondary);
   margin: 0;
   line-height: var(--line-height-normal);
+  transition: color 0.3s ease;
 }
 
 .admin-stats-grid {
@@ -168,19 +170,19 @@
 }
 
 .stat-card {
-  background: #ffffff;
-  border: 1px solid #e5e5e5;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
   border-radius: 12px;
   padding: var(--spacing-xl);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: all 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
   will-change: transform, box-shadow;
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
 }
 
 .stat-card:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
   transform: translateY(-2px) translateZ(0);
 }
 
@@ -197,47 +199,50 @@
 }
 
 .stat-card-clickable:hover {
-  background: #fafafa;
+  background: var(--bg-hover);
 }
 
 .stat-hint {
   font-size: var(--font-size-xs);
-  color: #999999;
+  color: var(--text-tertiary);
   margin-top: var(--spacing-sm);
   font-weight: 300;
   font-family: "IBM Plex Sans KR", sans-serif;
   line-height: var(--line-height-normal);
+  transition: color 0.3s ease;
 }
 
 .stat-label {
   font-size: var(--font-size-sm);
-  color: #666666;
+  color: var(--text-secondary);
   margin-bottom: var(--spacing-sm);
   font-weight: 500;
   font-family: "IBM Plex Sans KR", sans-serif;
   line-height: var(--line-height-normal);
+  transition: color 0.3s ease;
 }
 
 .stat-value {
   font-size: var(--font-size-3xl);
   font-weight: 400;
-  color: #000000;
+  color: var(--text-primary);
   line-height: var(--line-height-tight);
   font-family: "IBM Plex Sans KR", sans-serif;
   letter-spacing: -0.02em;
+  transition: color 0.3s ease;
 }
 
 .admin-section {
-  background: #ffffff;
-  border: 1px solid #e5e5e5;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
   border-radius: 12px;
   padding: var(--spacing-2xl);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.2s ease;
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .admin-section:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
 }
 
 .lab-grid {

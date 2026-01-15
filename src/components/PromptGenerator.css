@@ -99,16 +99,40 @@
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
 }
 
-/* 다크 모드에서 select의 option 요소 스타일 */
+/* 다크 모드에서 select의 option 요소 스타일 - 모든 상태에 적용 */
 .dark .content-type-select option,
-.dark .option-select option {
+.dark .option-select option,
+.dark select option {
   background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* 다크 모드에서 select의 option 요소 - 호버 및 선택 상태 */
+.dark .content-type-select option:hover,
+.dark .option-select option:hover,
+.dark select option:hover,
+.dark .content-type-select option:checked,
+.dark .option-select option:checked,
+.dark select option:checked,
+.dark .content-type-select option:focus,
+.dark .option-select option:focus,
+.dark select option:focus {
+  background-color: #f5f5f5 !important;
   color: #000000 !important;
 }
 
 /* select가 포커스되었을 때도 화이트 배경 유지 */
 .dark .content-type-select:focus,
-.dark .option-select:focus {
+.dark .option-select:focus,
+.dark select:focus {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* select가 활성화되었을 때도 화이트 배경 유지 */
+.dark .content-type-select:active,
+.dark .option-select:active,
+.dark select:active {
   background-color: #ffffff !important;
   color: #000000 !important;
 }
@@ -949,18 +973,21 @@
 
 .wizard-panel__hint {
   margin-top: 0;
-  color: #666;
+  color: var(--text-secondary);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
+  transition: color 0.3s ease;
 }
 
 .wizard-panel__summary {
   margin-top: var(--spacing-lg);
   padding: var(--spacing-lg);
   border-radius: 12px;
-  background: #f5f5f5;
+  background: var(--bg-hover);
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .wizard-panel__summary ul {
@@ -990,14 +1017,14 @@
 }
 
 .wizard-nav-button {
-  border: 1px solid #d0d0d0;
-  background: #fff;
-  color: #000;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   padding: var(--spacing-md) var(--spacing-lg);
   border-radius: 999px;
   cursor: pointer;
   font-size: var(--font-size-sm);
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   min-height: var(--touch-target-min);
   display: flex;
   align-items: center;
@@ -1006,9 +1033,9 @@
 }
 
 .wizard-nav-button.primary {
-  border-color: #000;
-  background: #000;
-  color: #fff;
+  border-color: var(--bg-primary);
+  background: var(--bg-primary);
+  color: var(--text-inverse);
 }
 
 .wizard-nav-button:disabled {
@@ -1026,9 +1053,11 @@
 .guideline-chip {
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: 999px;
-  background: #efefef;
+  background: var(--bg-hover);
+  color: var(--text-primary);
   font-size: var(--font-size-xs);
   line-height: var(--line-height-normal);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .token-meter {
@@ -1039,9 +1068,10 @@
   display: flex;
   justify-content: space-between;
   font-size: var(--font-size-xs);
-  color: #555;
+  color: var(--text-secondary);
   margin-bottom: var(--spacing-xs);
   line-height: var(--line-height-normal);
+  transition: color 0.3s ease;
 }
 
 .token-meter__bar {
@@ -1173,6 +1203,13 @@
   color: #000000 !important;
 }
 
+.dark .option-select option:hover,
+.dark .option-select option:checked,
+.dark .option-select option:focus {
+  background-color: #f5f5f5 !important;
+  color: #000000 !important;
+}
+
 .option-select:hover {
   border-color: var(--border-hover);
   background-color: var(--bg-hover);
@@ -1206,7 +1243,7 @@
   align-items: center;
   cursor: pointer;
   font-weight: 400;
-  color: #000000;
+  color: var(--text-primary);
   font-size: var(--font-size-base);
   margin-bottom: 0;
   line-height: var(--line-height-normal);
@@ -1216,6 +1253,7 @@
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
+  transition: color 0.3s ease;
 }
 
 .checkbox-input {
@@ -1225,7 +1263,7 @@
   min-height: 20px;
   margin-right: var(--spacing-md);
   cursor: pointer;
-  accent-color: #000000;
+  accent-color: var(--bg-primary);
   flex-shrink: 0;
   touch-action: manipulation;
 }
@@ -1271,11 +1309,11 @@
   display: flex;
   flex-direction: column;
   padding: var(--spacing-md);
-  border: 1px solid #000;
+  border: 1px solid var(--border-primary);
   cursor: pointer;
-  background-color: #fff;
-  color: #000;
-  transition: all 0.2s ease;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   border-radius: 8px;
   min-height: var(--touch-target-min);
   touch-action: manipulation;
@@ -1283,7 +1321,8 @@
 }
 
 .tone-style-option:hover {
-  background-color: #f5f5f5;
+  background-color: var(--bg-hover);
+  border-color: var(--border-hover);
 }
 
 .tone-style-option input[type="checkbox"] {
@@ -1307,13 +1346,17 @@
   font-weight: 500;
   font-size: var(--font-size-sm);
   line-height: var(--line-height-normal);
+  color: var(--text-primary);
+  transition: color 0.3s ease;
 }
 
 .tone-style-option > span:last-child {
   font-size: var(--font-size-xs);
+  color: var(--text-secondary);
   opacity: 0.8;
   margin-left: calc(18px + var(--spacing-sm));
   line-height: var(--line-height-normal);
+  transition: color 0.3s ease;
 }
 
 /* 모바일에서 톤 스타일 그리드를 스택으로 */
@@ -1488,8 +1531,14 @@
   border: 1px solid #d1e3ff;
   border-radius: 12px;
   padding: var(--spacing-xl);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
   margin-bottom: var(--spacing-xl);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .guide-insight-card {
+  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(59, 130, 246, 0.3);
 }
 
 .guide-insight-header {
@@ -1508,10 +1557,15 @@
   font-weight: 600;
 }
 
+.dark .guide-insight-label {
+  color: #818cf8;
+}
+
 .guide-insight-header h3 {
   margin: 4px 0 0;
   font-size: var(--font-size-lg);
-  color: #0f172a;
+  color: var(--text-primary);
+  transition: color 0.3s ease;
 }
 
 .guide-insight-confidence {
@@ -1520,19 +1574,25 @@
   font-weight: 600;
 }
 
+.dark .guide-insight-confidence {
+  color: #60a5fa;
+}
+
 .guide-insight-list {
   padding-left: 20px;
   margin: 0;
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: var(--font-size-sm);
   line-height: 1.6;
+  transition: color 0.3s ease;
 }
 
 .guide-insight-summary {
   margin: 0;
-  color: #1f2937;
+  color: var(--text-primary);
   font-size: var(--font-size-sm);
   line-height: 1.6;
+  transition: color 0.3s ease;
 }
 
 .guide-suggestions-panel {
@@ -1541,6 +1601,12 @@
   border: 1px solid #e0eaff;
   border-radius: 12px;
   background: #f9fbff;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .guide-suggestions-panel {
+  background: rgba(59, 130, 246, 0.05);
+  border-color: rgba(59, 130, 246, 0.2);
 }
 
 .guide-suggestions-header {
@@ -1574,15 +1640,16 @@
 }
 
 .guide-chip {
-  border: 1px solid #cbd5f5;
+  border: 1px solid var(--border-primary);
   border-radius: 999px;
   padding: 8px 16px;
-  background: #ffffff;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   cursor: pointer;
   display: flex;
   flex-direction: column;
   min-width: 180px;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .guide-chip.active {
@@ -1591,23 +1658,37 @@
   color: #ffffff;
 }
 
+.dark .guide-chip.active {
+  background: #3b82f6;
+  border-color: #3b82f6;
+}
+
 .guide-chip-title {
   font-size: var(--font-size-sm);
   font-weight: 600;
+  color: inherit;
+  transition: color 0.3s ease;
 }
 
 .guide-chip-meta {
   font-size: var(--font-size-xs);
   opacity: 0.8;
+  color: inherit;
+  transition: color 0.3s ease;
 }
 
 .guide-error-text,
 .guide-helper-text {
   margin: 0;
   font-size: var(--font-size-sm);
-  color: #6b7280;
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
 }
 
 .guide-error-text {
   color: #b91c1c;
+}
+
+.dark .guide-error-text {
+  color: #f87171;
 }
