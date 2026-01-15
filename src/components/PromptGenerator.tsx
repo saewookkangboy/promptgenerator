@@ -88,7 +88,7 @@ function PromptGenerator() {
   ], [t])
   
   const GENDER_OPTIONS = useMemo(() => [
-    { value: '', label: t('prompt.age.none') },
+    { value: '', label: t('common.select') },
     { value: '남성', label: t('prompt.gender.male') },
     { value: '여성', label: t('prompt.gender.female') },
     { value: '무관', label: t('prompt.gender.any') },

@@ -385,13 +385,13 @@
 }
 
 .wizard-toggle-button {
-  border: 1px solid #e0e0e0;
-  background: #fff;
-  color: #000;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   padding: var(--spacing-sm) var(--spacing-lg);
   border-radius: 999px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   font-size: var(--font-size-sm);
   min-height: var(--touch-target-min);
   display: flex;
@@ -400,10 +400,15 @@
   line-height: var(--line-height-normal);
 }
 
+.wizard-toggle-button:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
+}
+
 .wizard-toggle-button.active {
-  border-color: #000;
-  background: #000;
-  color: #fff;
+  border-color: var(--bg-primary);
+  background: var(--bg-primary);
+  color: var(--text-inverse);
 }
 
 /* 엔지니어링 방법 선택 컨테이너 */
@@ -419,13 +424,13 @@
   flex-direction: column;
   align-items: flex-start;
   padding: var(--spacing-md) var(--spacing-lg);
-  border: 1px solid #d0d0d0;
-  background: #fff;
-  color: #000;
+  border: 1px solid var(--border-primary);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
   border-radius: 8px;
   cursor: pointer;
   font-size: var(--font-size-sm);
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
   min-height: var(--touch-target-min);
   line-height: var(--line-height-normal);
   touch-action: manipulation;
@@ -435,14 +440,14 @@
 }
 
 .engineering-method-button:hover {
-  border-color: #000;
-  background: #fafafa;
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
 }
 
 .engineering-method-button.active {
-  border-color: #000;
-  background: #000;
-  color: #fff;
+  border-color: var(--bg-primary);
+  background: var(--bg-primary);
+  color: var(--text-inverse);
 }
 
 .engineering-method-label {
@@ -454,13 +459,15 @@
 
 .engineering-method-description {
   font-size: var(--font-size-xs);
-  color: #666;
+  color: var(--text-secondary);
   line-height: var(--line-height-normal);
   display: block;
+  transition: color 0.3s ease;
 }
 
 .engineering-method-button.active .engineering-method-description {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-inverse);
+  opacity: 0.9;
 }
 
 /* 모바일에서 엔지니어링 방법 선택 최적화 */
@@ -495,11 +502,16 @@
 }
 
 .wizard-section {
-  border: 1px solid #f0f0f0;
+  border: 1px solid var(--border-primary);
   border-radius: 16px;
   padding: var(--spacing-xl);
-  background: #fafafa;
+  background: var(--bg-tertiary);
   margin-bottom: var(--spacing-2xl);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .wizard-section {
+  background: var(--bg-secondary);
 }
 
 .wizard-steps-indicator {
@@ -540,14 +552,23 @@
   
   .wizard-steps-indicator::before {
     left: 0;
-    background: linear-gradient(to right, rgba(250, 250, 250, 1), transparent);
+    background: linear-gradient(to right, var(--bg-tertiary), transparent);
     margin-right: calc(-1 * var(--spacing-md));
   }
   
   .wizard-steps-indicator::after {
     right: 0;
-    background: linear-gradient(to left, rgba(250, 250, 250, 1), transparent);
+    background: linear-gradient(to left, var(--bg-tertiary), transparent);
     margin-left: calc(-1 * var(--spacing-md));
+  }
+  
+  .dark .wizard-steps-indicator::before,
+  .dark .wizard-steps-indicator::after {
+    background: linear-gradient(to right, var(--bg-secondary), transparent);
+  }
+  
+  .dark .wizard-steps-indicator::after {
+    background: linear-gradient(to left, var(--bg-secondary), transparent);
   }
 }
 
@@ -557,14 +578,15 @@
   gap: var(--spacing-sm);
   padding: var(--spacing-sm) var(--spacing-md);
   border-radius: 999px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid var(--border-primary);
   font-size: var(--font-size-xs);
-  color: #777;
+  color: var(--text-tertiary);
+  background: transparent;
   flex-shrink: 0;
   line-height: var(--line-height-normal);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
-  transition: all 0.2s ease;
+  transition: all 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
 }
 
 .wizard-step-number {
@@ -573,57 +595,71 @@
   min-width: 24px;
   min-height: 24px;
   border-radius: 50%;
-  border: 1px solid #ccc;
+  border: 1px solid var(--border-secondary);
+  background: transparent;
+  color: var(--text-tertiary);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   font-weight: 600;
   font-size: var(--font-size-xs);
+  transition: all 0.3s ease;
 }
 
 .wizard-step.active {
-  border-color: #000;
-  color: #000;
+  border-color: var(--bg-primary);
+  color: var(--text-primary);
+  background: transparent;
 }
 
 .wizard-step.active .wizard-step-number {
-  border-color: #000;
+  border-color: var(--bg-primary);
+  background: transparent;
+  color: var(--text-primary);
 }
 
 .wizard-step.done {
-  border-color: #000;
-  color: #000;
-  background: #000;
-  color: #fff;
+  border-color: var(--bg-primary);
+  background: var(--bg-primary);
+  color: var(--text-inverse);
 }
 
 .wizard-step.done .wizard-step-number {
-  border-color: #fff;
+  border-color: var(--text-inverse);
+  background: transparent;
+  color: var(--text-inverse);
 }
 
 .wizard-panel {
-  background: #fff;
+  background: var(--bg-secondary);
   border-radius: 12px;
   padding: var(--spacing-lg);
-  border: 1px solid #eee;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: box-shadow 0.2s ease;
+  border: 1px solid var(--border-primary);
+  box-shadow: var(--shadow-sm);
+  transition: box-shadow 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .wizard-panel:hover {
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
 }
 
 /* 요약 패널 개선된 스타일 */
 .summary-panel {
   padding: var(--spacing-2xl);
-  background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 20%);
+  background: var(--bg-secondary);
+  transition: background-color 0.3s ease;
+}
+
+.dark .summary-panel {
+  background: var(--bg-tertiary);
 }
 
 .summary-panel__header {
   margin-bottom: var(--spacing-xl);
   padding-bottom: var(--spacing-lg);
-  border-bottom: 2px solid #f0f0f0;
+  border-bottom: 2px solid var(--border-primary);
+  transition: border-color 0.3s ease;
 }
 
 .summary-panel__title-section {
@@ -636,29 +672,32 @@
 .summary-panel__title {
   font-size: var(--font-size-xl);
   font-weight: 700;
-  color: #000;
+  color: var(--text-primary);
   margin: 0;
   line-height: 1.2;
+  transition: color 0.3s ease;
 }
 
 .summary-panel__method-badge {
   display: inline-flex;
   align-items: center;
   padding: var(--spacing-xs) var(--spacing-md);
-  background: #000;
-  color: #fff;
+  background: var(--bg-primary);
+  color: var(--text-inverse);
   border-radius: 999px;
   font-size: var(--font-size-xs);
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 .summary-panel__description {
   font-size: var(--font-size-sm);
-  color: #666;
+  color: var(--text-secondary);
   margin: 0;
   line-height: var(--line-height-relaxed);
+  transition: color 0.3s ease;
 }
 
 .summary-panel__content {
@@ -666,18 +705,24 @@
 }
 
 .summary-panel__section {
-  background: #ffffff;
+  background: var(--bg-tertiary);
   border-radius: 8px;
   padding: var(--spacing-lg);
-  border: 1px solid #e5e5e5;
+  border: 1px solid var(--border-primary);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.dark .summary-panel__section {
+  background: var(--bg-secondary);
 }
 
 .summary-panel__section-title {
   font-size: var(--font-size-base);
   font-weight: 600;
-  color: #000;
+  color: var(--text-primary);
   margin: 0 0 var(--spacing-md) 0;
   line-height: 1.4;
+  transition: color 0.3s ease;
 }
 
 .summary-panel__info-grid {
@@ -691,9 +736,10 @@
   flex-direction: column;
   gap: var(--spacing-xs);
   padding: var(--spacing-md);
-  background: #f8f9fa;
+  background: var(--bg-hover);
   border-radius: 6px;
-  border: 1px solid #e9ecef;
+  border: 1px solid var(--border-primary);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
   transition: all 0.2s ease;
 }
 

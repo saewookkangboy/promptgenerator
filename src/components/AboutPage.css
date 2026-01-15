@@ -79,13 +79,45 @@
   border-radius: 12px;
   padding: var(--spacing-2xl);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
   border: 1px solid var(--border-primary);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .feature-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+}
+
+.feature-card .card-title {
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
+.feature-card .card-description {
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+}
+
+/* 다크 모드에서 feature-card 배경을 더 밝게 하여 텍스트 가독성 향상 */
+.dark .feature-card {
+  background: var(--bg-tertiary);
+  border-color: var(--border-primary);
+}
+
+.dark .feature-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+.dark .feature-card .card-title {
+  color: var(--text-primary);
+}
+
+.dark .feature-card .card-description {
+  color: var(--text-secondary);
 }
 
 .card-icon {
@@ -169,13 +201,48 @@
   border-radius: 12px;
   padding: var(--spacing-2xl);
   box-shadow: var(--shadow-sm);
-  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
+  transition: transform 0.3s ease, box-shadow 0.3s ease, background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
   border: 1px solid var(--border-primary);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .target-card:hover {
   transform: translateY(-4px);
   box-shadow: var(--shadow-md);
+  border-color: var(--border-hover);
+}
+
+.target-card .card-title {
+  color: var(--text-primary);
+  font-weight: 600;
+  transition: color 0.3s ease;
+}
+
+.target-card .card-description {
+  color: var(--text-secondary);
+  transition: color 0.3s ease;
+}
+
+/* 다크 모드에서 target-card 배경을 더 밝게 하여 텍스트 가독성 향상 */
+.dark .target-card {
+  background: var(--bg-tertiary);
+  border-color: var(--border-primary);
+}
+
+.dark .target-card:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+.dark .target-card .card-title {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.dark .target-card .card-description {
+  color: var(--text-secondary);
+  font-weight: 400;
 }
 
 /* Values Grid */
