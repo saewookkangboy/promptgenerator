@@ -66,7 +66,7 @@ export default function TemplatePreviewModal({ template, onClose }: TemplatePrev
           variables[variable] = `[${variable} 입력 필요]`
         })
 
-        const result = await templateAPI.apply(template.id, variables)
+        const result = await templateAPI.apply(template.id, variables, abortController.signal)
         
         // 컴포넌트가 언마운트되었거나 요청이 취소되었는지 확인
         if (abortController.signal.aborted) {
@@ -77,6 +77,18 @@ export default function TemplatePreviewModal({ template, onClose }: TemplatePrev
       } catch (err: unknown) {
         // 요청이 취소된 경우 상태 업데이트를 건너뜀
         if (abortController.signal.aborted) {
+          devLog('[TemplatePreviewModal] 요청 취소됨 - 상태 업데이트 건너뜀')
+          return
+        }
+
+        // AbortError는 조용히 처리 (요청 취소는 정상적인 동작)
+        // 실제 abort만 처리: AbortError name 또는 DOMException (where available)
+        const isAbortError = 
+          (err instanceof Error && err.name === 'AbortError') ||
+          (typeof DOMException !== 'undefined' && err instanceof DOMException && err.name === 'AbortError')
+        
+        if (isAbortError) {
+          devLog('[TemplatePreviewModal] 요청 취소됨')
           return
         }
 

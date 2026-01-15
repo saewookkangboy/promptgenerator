@@ -416,7 +416,7 @@ export const templateAPI = {
     return apiRequest<any>(`/api/templates/${id}`)
   },
 
-  apply: async (id: string, variables: Record<string, string>) => {
+  apply: async (id: string, variables: Record<string, string>, signal?: AbortSignal) => {
     // 공개 템플릿은 인증 없이 사용 가능하므로 인증 헤더를 보내지 않음
     const normalizedEndpoint = `/api/templates/${id}/apply`
     const url = `${API_BASE_URL}${normalizedEndpoint}`
@@ -435,6 +435,7 @@ export const templateAPI = {
         method: 'POST',
         headers,
         body: JSON.stringify({ variables }),
+        signal, // AbortSignal 지원
       })
 
       console.log(`[templateAPI.apply] ${response.status} ${response.statusText}`)
@@ -454,6 +455,12 @@ export const templateAPI = {
       console.log(`[templateAPI.apply] 응답 성공:`, jsonData)
       return jsonData
     } catch (error: any) {
+      // AbortError는 조용히 처리 (요청 취소는 정상적인 동작)
+      if (error.name === 'AbortError' || (signal?.aborted)) {
+        console.log('[templateAPI.apply] 요청 취소됨')
+        throw error // AbortError를 그대로 전달하여 호출자가 처리할 수 있도록
+      }
+      
       // 네트워크 오류 처리
       if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
         console.error('[templateAPI.apply] 네트워크 오류:', error)
