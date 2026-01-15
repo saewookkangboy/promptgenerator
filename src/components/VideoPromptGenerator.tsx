@@ -457,7 +457,7 @@ function VideoPromptGenerator() {
         <div className="form-group">
           <label>장르</label>
           <select
-            value={overallStyle.genre}
+            value={overallStyle.genre || GENRES[0]?.value || 'drama'}
             onChange={(e) => setOverallStyle({ ...overallStyle, genre: e.target.value as VideoStyle['genre'] })}
             className="option-select"
           >
@@ -471,7 +471,7 @@ function VideoPromptGenerator() {
         <div className="form-group">
           <label>무드</label>
           <select
-            value={overallStyle.mood}
+            value={overallStyle.mood || MOODS[0]?.value || 'peaceful'}
             onChange={(e) => setOverallStyle({ ...overallStyle, mood: e.target.value as VideoStyle['mood'] })}
             className="option-select"
           >
@@ -553,7 +553,7 @@ function VideoPromptGenerator() {
               <div className="form-group">
                 <label>카메라 무브먼트</label>
                 <select
-                  value={scene.camera.movement}
+                  value={scene.camera.movement || CAMERA_MOVEMENTS[0]?.value || 'static'}
                   onChange={(e) => updateSceneCamera(scene.id, { movement: e.target.value as CameraSettings['movement'] })}
                   className="option-select"
                 >
@@ -567,7 +567,7 @@ function VideoPromptGenerator() {
               <div className="form-group">
                 <label>샷 타입</label>
                 <select
-                  value={scene.camera.shotType}
+                  value={scene.camera.shotType || SHOT_TYPES[0]?.value || 'medium'}
                   onChange={(e) => updateSceneCamera(scene.id, { shotType: e.target.value as CameraSettings['shotType'] })}
                   className="option-select"
                 >
@@ -604,7 +604,7 @@ function VideoPromptGenerator() {
           <div className="form-group">
             <label>FPS</label>
             <select
-              value={technical.fps}
+              value={technical.fps || 24}
               onChange={(e) => {
                 const value = parseInt(e.target.value) as 24 | 30 | 60
                 setTechnical({ ...technical, fps: value })
@@ -619,7 +619,7 @@ function VideoPromptGenerator() {
           <div className="form-group">
             <label>해상도</label>
             <select
-              value={technical.resolution}
+              value={technical.resolution || '1080p'}
               onChange={(e) => setTechnical({ ...technical, resolution: e.target.value as VideoTechnicalSettings['resolution'] })}
               className="option-select"
             >
@@ -632,7 +632,7 @@ function VideoPromptGenerator() {
           <div className="form-group">
             <label>종횡비</label>
             <select
-              value={technical.aspectRatio}
+              value={technical.aspectRatio || '16:9'}
               onChange={(e) => setTechnical({ ...technical, aspectRatio: e.target.value as VideoTechnicalSettings['aspectRatio'] })}
               className="option-select"
             >

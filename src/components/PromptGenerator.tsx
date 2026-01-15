@@ -477,7 +477,7 @@ function PromptGenerator() {
       <label htmlFor="content-type">{t('prompt.contentType.label')}</label>
       <select
         id="content-type"
-        value={contentType}
+        value={contentType || CONTENT_TYPES[0]?.value || 'blog'}
         onChange={(e) => setContentType(e.target.value as ContentType)}
         className="content-type-select"
       >
@@ -511,7 +511,7 @@ function PromptGenerator() {
       <label htmlFor="content-goal">{t('prompt.goal.label')}</label>
       <select
         id="content-goal"
-        value={detailedOptions.goal || 'awareness'}
+        value={detailedOptions.goal || GOAL_OPTIONS[0]?.value || 'awareness'}
         onChange={(e) =>
           setDetailedOptions({
             ...detailedOptions,

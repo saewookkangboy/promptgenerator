@@ -402,7 +402,7 @@ function ImagePromptGenerator() {
       <label htmlFor="art-style">아트 스타일</label>
       <select
         id="art-style"
-        value={style.artStyle}
+        value={style.artStyle || ART_STYLES[0]?.value || 'realistic'}
         onChange={(e) => setStyle({ ...style, artStyle: e.target.value as ImageStyle['artStyle'] })}
         className="option-select"
       >
@@ -431,7 +431,7 @@ function ImagePromptGenerator() {
         <label htmlFor="framing">프레이밍</label>
         <select
           id="framing"
-          value={composition.framing}
+          value={composition.framing || FRAMING_OPTIONS[0]?.value || 'medium-shot'}
           onChange={(e) => setComposition({ ...composition, framing: e.target.value as Composition['framing'] })}
           className="option-select"
         >
@@ -447,7 +447,7 @@ function ImagePromptGenerator() {
         <label htmlFor="composition-rule">구도 법칙</label>
         <select
           id="composition-rule"
-          value={composition.rule}
+          value={composition.rule || COMPOSITION_RULES[0]?.value || 'rule-of-thirds'}
           onChange={(e) => setComposition({ ...composition, rule: e.target.value as Composition['rule'] })}
           className="option-select"
         >
@@ -463,7 +463,7 @@ function ImagePromptGenerator() {
         <label htmlFor="lighting-type">조명 타입</label>
         <select
           id="lighting-type"
-          value={lighting.type}
+          value={lighting.type || LIGHTING_TYPES[0]?.value || 'natural'}
           onChange={(e) => setLighting({ ...lighting, type: e.target.value as Lighting['type'] })}
           className="option-select"
         >
@@ -479,7 +479,7 @@ function ImagePromptGenerator() {
         <label htmlFor="lighting-direction">조명 방향</label>
         <select
           id="lighting-direction"
-          value={lighting.direction}
+          value={lighting.direction || 'front'}
           onChange={(e) => setLighting({ ...lighting, direction: e.target.value as Lighting['direction'] })}
           className="option-select"
         >
@@ -495,7 +495,7 @@ function ImagePromptGenerator() {
         <label htmlFor="color-mood">색상 분위기</label>
         <select
           id="color-mood"
-          value={color.mood}
+          value={color.mood || COLOR_MOODS[0]?.value || 'vibrant'}
           onChange={(e) => setColor({ ...color, mood: e.target.value as ColorPalette['mood'] })}
           className="option-select"
         >
@@ -511,7 +511,7 @@ function ImagePromptGenerator() {
         <label htmlFor="aspect-ratio">아스펙트 비율</label>
         <select
           id="aspect-ratio"
-          value={technical.aspectRatio}
+          value={technical.aspectRatio || ASPECT_RATIOS[0]?.value || '16:9'}
           onChange={(e) => setTechnical({ ...technical, aspectRatio: e.target.value as TechnicalSettings['aspectRatio'] })}
           className="option-select"
         >
@@ -1149,7 +1149,7 @@ function ImagePromptGenerator() {
           <label htmlFor="art-style">아트 스타일</label>
           <select
             id="art-style"
-            value={style.artStyle}
+            value={style.artStyle || ART_STYLES[0]?.value || 'realistic'}
             onChange={(e) => setStyle({ ...style, artStyle: e.target.value as ImageStyle['artStyle'] })}
             className="option-select"
           >
