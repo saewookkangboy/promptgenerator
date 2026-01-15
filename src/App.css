@@ -350,6 +350,67 @@
   border-radius: 2px;
 }
 
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+  flex-wrap: wrap;
+}
+
+.footer-social-link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-secondary);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-height: var(--touch-target-min);
+  cursor: pointer;
+}
+
+.footer-social-link:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.footer-social-link:focus {
+  outline: 2px solid #000000;
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.footer-social-link.linkedin-link:hover {
+  background: #0077b5;
+  color: #ffffff;
+  border-color: #0077b5;
+}
+
+.footer-social-link.portfolio-link:hover {
+  background: var(--bg-primary);
+  color: var(--text-inverse);
+  border-color: var(--bg-primary);
+}
+
+.footer-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+}
+
+.footer-social-link span {
+  line-height: 1;
+}
+
 .footer-about-button {
   padding: var(--spacing-sm) var(--spacing-lg);
   background: var(--bg-secondary);
@@ -399,6 +460,12 @@
     text-align: center;
   }
 
+  .footer-links {
+    justify-content: center;
+    width: 100%;
+    margin-top: var(--spacing-md);
+  }
+
   .app-footer p {
     font-size: var(--font-size-xs);
     line-height: var(--line-height-normal);
@@ -420,6 +487,26 @@
 
   .footer-content {
     gap: var(--spacing-md);
+  }
+
+  .footer-links {
+    justify-content: center;
+    width: 100%;
+    margin-top: var(--spacing-md);
+    gap: var(--spacing-sm);
+  }
+
+  .footer-social-link {
+    flex: 1;
+    justify-content: center;
+    min-width: 0;
+    font-size: var(--font-size-xs);
+    padding: var(--spacing-sm) var(--spacing-md);
+  }
+
+  .footer-icon {
+    width: 16px;
+    height: 16px;
   }
 
   .app-footer p {
