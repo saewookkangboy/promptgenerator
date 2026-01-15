@@ -8,6 +8,12 @@
   contain: layout style paint;
 }
 
+/* 프롬프트 생성기 내부 모든 label 색상 보장 */
+.prompt-generator label {
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
 .prompt-generator:hover {
   box-shadow: var(--shadow-md);
 }
@@ -85,9 +91,26 @@
   touch-action: manipulation;
 }
 
+/* 다크 모드에서 select 배경을 화이트로, 텍스트를 블랙으로 설정 */
 .dark .content-type-select,
 .dark .option-select {
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+/* 다크 모드에서 select의 option 요소 스타일 */
+.dark .content-type-select option,
+.dark .option-select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* select가 포커스되었을 때도 화이트 배경 유지 */
+.dark .content-type-select:focus,
+.dark .option-select:focus {
+  background-color: #ffffff !important;
+  color: #000000 !important;
 }
 
 /* 모바일에서 셀렉트 최적화 */
@@ -120,6 +143,12 @@
 .content-type-select:hover {
   border-color: var(--border-hover);
   background-color: var(--bg-hover);
+}
+
+/* 다크 모드에서 호버 시에도 화이트 배경 유지 */
+.dark .content-type-select:hover {
+  background-color: #f5f5f5 !important;
+  color: #000000 !important;
 }
 
 .model-option-list {
@@ -729,10 +758,11 @@
 .summary-panel__section-title {
   font-size: var(--font-size-base);
   font-weight: 600;
-  color: var(--text-primary);
-  margin: 0 0 var(--spacing-md) 0;
-  line-height: 1.4;
-  transition: color 0.3s ease;
+  padding: var(--spacing-md);
+  background: var(--bg-hover);
+  border-radius: 6px;
+  border: 1px solid var(--border-primary);
+  transition: all 0.2s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .summary-panel__info-grid {
@@ -1131,13 +1161,27 @@
   line-height: var(--line-height-normal);
 }
 
+/* 다크 모드에서 option-select도 화이트 배경 적용 */
 .dark .option-select {
-  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L6 6L11 1' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.dark .option-select option {
+  background-color: #ffffff !important;
+  color: #000000 !important;
 }
 
 .option-select:hover {
   border-color: var(--border-hover);
   background-color: var(--bg-hover);
+}
+
+/* 다크 모드에서 호버 시에도 화이트 배경 유지 */
+.dark .option-select:hover {
+  background-color: #f5f5f5 !important;
+  color: #000000 !important;
 }
 
 .option-select:focus {
@@ -1147,7 +1191,9 @@
 }
 
 .dark .option-select:focus {
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
 }
 
 .checkbox-group {

@@ -324,6 +324,12 @@ label {
   min-width: var(--touch-target-min);
 }
 
+/* 전역 label 색상 (다크모드 지원) */
+label {
+  color: var(--text-primary);
+  transition: color 0.3s ease;
+}
+
 /* 성능 최적화: 이미지 최적화 */
 img {
   max-width: 100%;
