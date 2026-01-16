@@ -1,6 +1,6 @@
 // 동영상 프롬프트 생성 UI 컴포넌트
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { templateAPI, aiServicesAPI, promptOptimizerAPI } from '../utils/api'
 import TemplateVariableForm from './TemplateVariableForm'
 import { VideoPromptOptions, VideoModel, VideoScene, CameraSettings, MotionSettings, VideoStyle, VideoTechnicalSettings } from '../types/video.types'
@@ -198,7 +198,6 @@ function VideoPromptGenerator() {
   )
   const [selectedVideoServiceId, setSelectedVideoServiceId] = useState<string>(DEFAULT_VIDEO_SERVICE_ID)
   const [model, setModel] = useState<VideoModel>(DEFAULT_VIDEO_BASE_MODEL)
-  const selectedVideoService = videoServiceOptions.find((option) => option.id === selectedVideoServiceId)
   const [overallStyle, setOverallStyle] = useState<VideoStyle>({
     genre: 'drama',
     mood: 'peaceful',

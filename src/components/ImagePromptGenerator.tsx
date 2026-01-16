@@ -1,6 +1,6 @@
 // 이미지 프롬프트 생성 UI 컴포넌트
 
-import { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { templateAPI, aiServicesAPI, promptOptimizerAPI } from '../utils/api'
 import TemplateVariableForm from './TemplateVariableForm'
 import { ImagePromptOptions, ImageModel, ImageStyle, Composition, Lighting, ColorPalette, TechnicalSettings } from '../types/image.types'
@@ -156,7 +156,6 @@ function ImagePromptGenerator() {
   )
   const [selectedImageServiceId, setSelectedImageServiceId] = useState<string>(DEFAULT_IMAGE_SERVICE_ID)
   const [model, setModel] = useState<ImageModel>(DEFAULT_IMAGE_BASE_MODEL)
-  const selectedImageService = imageServiceOptions.find((option) => option.id === selectedImageServiceId)
   const [subject, setSubject] = useState('')
   const [style, setStyle] = useState<ImageStyle>({
     artStyle: 'realistic',
