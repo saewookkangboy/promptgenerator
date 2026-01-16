@@ -5,13 +5,18 @@ import { BasePromptOptions } from './prompt.types'
 export type ImageModel = 
   | 'midjourney' 
   | 'dalle' 
+  | 'dalle-3'
   | 'stable-diffusion' 
   | 'imagen' 
   | 'imagen-3' // Google Imagen 3 (Nano Banana Pro)
+  | 'nano-banana-pro' // Nano Banana Pro (Gemini 3)
   | 'firefly'
   | 'leonardo' // Leonardo AI
   | 'flux' // Flux
+  | 'flux-2-pro' // Flux.2 Pro
+  | 'flux-2-ultra' // Flux.2 Ultra
   | 'ideogram' // Ideogram
+  | 'ideogram-2' // Ideogram 2.0
   | 'comfyui' // ComfyUI
 
 export interface ImagePromptOptions extends BasePromptOptions {

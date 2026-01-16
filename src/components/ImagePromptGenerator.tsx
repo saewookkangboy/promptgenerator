@@ -15,6 +15,8 @@ import { hasPromptSaveAuth, reportPromptSaveFailure } from '../utils/promptSaveR
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
+import ModelSelectorGuide from './ModelSelectorGuide'
+import ModelSelectorAdvanced from './ModelSelectorAdvanced'
 import './PromptGenerator.css'
 
 type ImageServiceOption = {
@@ -37,12 +39,14 @@ const IMAGE_MODEL_PRIORITY: ImageModel[] = [
 ]
 
 const DEFAULT_IMAGE_SERVICE_OPTIONS: ImageServiceOption[] = [
+  { id: 'image-flux-2-pro', label: 'Flux.2 Pro', baseModel: 'flux-2-pro' },
+  { id: 'image-flux-2-ultra', label: 'Flux.2 Ultra', baseModel: 'flux-2-ultra' },
+  { id: 'image-nano-banana', label: 'Nano Banana Pro (Gemini 3)', baseModel: 'nano-banana-pro' },
   { id: 'image-midjourney', label: 'Midjourney v6', baseModel: 'midjourney' },
-  { id: 'image-flux', label: 'Flux Pro', baseModel: 'flux' },
-  { id: 'image-dalle', label: 'OpenAI DALL-E 3', baseModel: 'dalle' },
-  { id: 'image-imagen', label: 'Google Imagen 3 (Gemini 2.5 Flash)', baseModel: 'imagen-3' },
+  { id: 'image-dalle', label: 'OpenAI DALL-E 3', baseModel: 'dalle-3' },
+  { id: 'image-imagen', label: 'Imagen 3 (Gemini 2.5)', baseModel: 'imagen-3' },
   { id: 'image-stable-diffusion', label: 'Stable Diffusion 3.5 Large', baseModel: 'stable-diffusion' },
-  { id: 'image-ideogram', label: 'Ideogram 2.0', baseModel: 'ideogram' },
+  { id: 'image-ideogram', label: 'Ideogram 2.0', baseModel: 'ideogram-2' },
   { id: 'image-firefly', label: 'Adobe Firefly', baseModel: 'firefly' },
   { id: 'image-leonardo', label: 'Leonardo AI', baseModel: 'leonardo' },
   { id: 'image-comfyui', label: 'ComfyUI', baseModel: 'comfyui' },
@@ -60,20 +64,26 @@ const slugify = (value: string) =>
 // 서비스명을 모델 코드로 매핑하는 함수
 function mapServiceNameToModel(serviceName: string): ImageModel {
   const lowerName = serviceName.toLowerCase()
+  if (lowerName.includes('flux-2-ultra') || (lowerName.includes('flux') && lowerName.includes('ultra'))) return 'flux-2-ultra'
+  if (lowerName.includes('flux-2-pro') || (lowerName.includes('flux') && lowerName.includes('2') && lowerName.includes('pro'))) return 'flux-2-pro'
+  if (lowerName.includes('flux')) return 'flux'
+  if (lowerName.includes('nano-banana') || (lowerName.includes('nano') && lowerName.includes('banana'))) return 'nano-banana-pro'
   if (lowerName.includes('midjourney')) return 'midjourney'
-  if (lowerName.includes('dall') || lowerName.includes('dalle') || lowerName.includes('openai')) return 'dalle'
+  if (lowerName.includes('dall') || lowerName.includes('dalle') || lowerName.includes('openai')) return 'dalle-3'
   if (lowerName.includes('stable') || lowerName.includes('stability')) return 'stable-diffusion'
-  if (lowerName.includes('imagen') || lowerName.includes('gemini') || lowerName.includes('google')) return 'imagen-3'
+  if (lowerName.includes('imagen-3') || (lowerName.includes('imagen') && lowerName.includes('3'))) return 'imagen-3'
+  if (lowerName.includes('imagen') || (lowerName.includes('gemini') && lowerName.includes('2.5'))) return 'imagen-3'
+  if (lowerName.includes('gemini') || lowerName.includes('google')) return 'nano-banana-pro'
+  if (lowerName.includes('ideogram-2') || (lowerName.includes('ideogram') && lowerName.includes('2'))) return 'ideogram-2'
+  if (lowerName.includes('ideogram')) return 'ideogram'
   if (lowerName.includes('firefly') || lowerName.includes('adobe')) return 'firefly'
   if (lowerName.includes('leonardo')) return 'leonardo'
-  if (lowerName.includes('flux')) return 'flux'
-  if (lowerName.includes('ideogram')) return 'ideogram'
   if (lowerName.includes('comfy')) return 'comfyui'
   if (lowerName.includes('luma')) return 'imagen-3'
   if (lowerName.includes('runway')) return 'midjourney'
   if (lowerName.includes('hugging') || lowerName.includes('replicate') || lowerName.includes('fal') || lowerName.includes('bedrock') || lowerName.includes('amazon'))
     return 'stable-diffusion'
-  return 'midjourney'
+  return 'flux-2-pro' // 기본값을 최신 모델로 변경
 }
 
 const ART_STYLES = [
@@ -1021,6 +1031,21 @@ function ImagePromptGenerator() {
 
           {wizardStep === 1 && (
             <div className="wizard-panel">
+              <ModelSelectorGuide
+                category="image"
+                selectedModel={model}
+                onModelSelect={(selectedModel) => {
+                  setModel(selectedModel as ImageModel)
+                  // 선택된 모델에 맞는 서비스 옵션 찾기
+                  const matchingOption = imageServiceOptions.find(
+                    (opt) => opt.baseModel === selectedModel
+                  )
+                  if (matchingOption) {
+                    setSelectedImageServiceId(matchingOption.id)
+                  }
+                }}
+                userPrompt={subject}
+              />
               {renderSubjectInput()}
               {renderArtStyleSelector()}
             </div>
@@ -1061,6 +1086,26 @@ function ImagePromptGenerator() {
 
       {!useWizardMode && (
         <div className="input-section">
+        <ModelSelectorAdvanced
+          category="image"
+          selectedModel={model}
+          onModelSelect={(selectedModel) => {
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3403165f-a2ee-4585-b7cf-3152c04f2c3b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ImagePromptGenerator.tsx:1105',message:'고급모드 모델 선택',data:{selectedModel,currentModel:model},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+            // #endregion
+            setModel(selectedModel as ImageModel)
+            // 선택된 모델에 맞는 서비스 옵션 찾기
+            const matchingOption = imageServiceOptions.find(
+              (opt) => opt.baseModel === selectedModel
+            )
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/3403165f-a2ee-4585-b7cf-3152c04f2c3b',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'ImagePromptGenerator.tsx:1111',message:'고급모드 서비스 매칭',data:{selectedModel,foundMatch:!!matchingOption,allBaseModels:imageServiceOptions.map(o=>o.baseModel)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'E'})}).catch(()=>{});
+            // #endregion
+            if (matchingOption) {
+              setSelectedImageServiceId(matchingOption.id)
+            }
+          }}
+        />
         <div className="form-group">
           <label htmlFor="subject">주제 (Subject)</label>
           <textarea

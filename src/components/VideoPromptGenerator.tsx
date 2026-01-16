@@ -15,6 +15,8 @@ import { hasPromptSaveAuth, reportPromptSaveFailure } from '../utils/promptSaveR
 import ResultCard from './ResultCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
+import ModelSelectorGuide from './ModelSelectorGuide'
+import ModelSelectorAdvanced from './ModelSelectorAdvanced'
 import './PromptGenerator.css'
 
 // 장면 프롬프트 표시 컴포넌트
@@ -89,12 +91,14 @@ const VIDEO_MODEL_PRIORITY: VideoModel[] = [
 ]
 
 const DEFAULT_VIDEO_SERVICE_OPTIONS: VideoServiceOption[] = [
-  { id: 'video-sora', label: 'OpenAI Sora 2', baseModel: 'sora' },
+  { id: 'video-sora-2', label: 'OpenAI Sora 2', baseModel: 'sora-2' },
+  { id: 'video-veo-3.1', label: 'Google Veo 3.1', baseModel: 'veo-3.1' },
   { id: 'video-veo-3', label: 'Google Veo 3', baseModel: 'veo-3' },
   { id: 'video-veo-2', label: 'Google Veo 2', baseModel: 'veo-2' },
-  { id: 'video-kling', label: 'Kling AI v1.6', baseModel: 'kling' },
+  { id: 'video-kling-2.6', label: 'Kling AI 2.6', baseModel: 'kling-2.6' },
   { id: 'video-runway', label: 'Runway Gen-3', baseModel: 'runway-gen3' },
-  { id: 'video-pika', label: 'Pika Labs 2.0', baseModel: 'pika' },
+  { id: 'video-pika-2', label: 'Pika Labs 2.0', baseModel: 'pika-2' },
+  { id: 'video-ltx-2', label: 'LTX-2', baseModel: 'ltx-2' },
   { id: 'video-stable', label: 'Stable Video Diffusion', baseModel: 'stable-video' },
 ]
 
@@ -110,12 +114,15 @@ const slugify = (value: string) =>
 // 서비스명을 모델 코드로 매핑하는 함수
 function mapServiceNameToVideoModel(serviceName: string): VideoModel {
   const lowerName = serviceName.toLowerCase()
+  if (lowerName.includes('veo-3.1') || (lowerName.includes('veo') && lowerName.includes('3.1'))) return 'veo-3.1'
   if (lowerName.includes('sora-2') || (lowerName.includes('sora') && lowerName.includes('2'))) return 'sora-2'
   if (lowerName.includes('sora') || lowerName.includes('video api')) return 'sora'
   if (lowerName.includes('veo-3') || (lowerName.includes('veo') && lowerName.includes('3'))) return 'veo-3'
   if (lowerName.includes('veo-2') || (lowerName.includes('veo') && lowerName.includes('2'))) return 'veo-2'
   if (lowerName.includes('veo') || lowerName.includes('vertex')) return 'veo'
+  if (lowerName.includes('kling-2.6') || (lowerName.includes('kling') && lowerName.includes('2.6'))) return 'kling-2.6'
   if (lowerName.includes('kling')) return 'kling'
+  if (lowerName.includes('ltx-2') || (lowerName.includes('ltx') && lowerName.includes('2'))) return 'ltx-2'
   if (lowerName.includes('runway-gen3') || (lowerName.includes('runway') && lowerName.includes('gen-3'))) return 'runway-gen3'
   if (lowerName.includes('runway')) return 'runway'
   if (lowerName.includes('pika-2') || (lowerName.includes('pika') && lowerName.includes('2'))) return 'pika-2'
@@ -124,7 +131,7 @@ function mapServiceNameToVideoModel(serviceName: string): VideoModel {
     return 'stable-video'
   if (lowerName.includes('luma')) return 'luma'
   if (lowerName.includes('firefly') || lowerName.includes('adobe')) return 'runway'
-  return 'sora-2'
+  return 'veo-3.1' // 기본값을 최신 모델로 변경
 }
 
 const GENRES = [
@@ -909,7 +916,26 @@ function VideoPromptGenerator() {
             ))}
           </div>
 
-          {wizardStep === 1 && renderWizardOverview()}
+          {wizardStep === 1 && (
+            <div className="wizard-panel">
+              <ModelSelectorGuide
+                category="video"
+                selectedModel={model}
+                onModelSelect={(selectedModel) => {
+                  setModel(selectedModel as VideoModel)
+                  // 선택된 모델에 맞는 서비스 옵션 찾기
+                  const matchingOption = videoServiceOptions.find(
+                    (opt) => opt.baseModel === selectedModel
+                  )
+                  if (matchingOption) {
+                    setSelectedVideoServiceId(matchingOption.id)
+                  }
+                }}
+                userPrompt={scenes[0]?.description || ''}
+              />
+              {renderWizardOverview()}
+            </div>
+          )}
           {wizardStep === 2 && renderWizardScenes()}
           {wizardStep === 3 && renderWizardTechnical()}
           {wizardStep === 4 && renderWizardSummary()}
@@ -931,6 +957,20 @@ function VideoPromptGenerator() {
 
       {!useWizardMode && (
         <div className="input-section">
+        <ModelSelectorAdvanced
+          category="video"
+          selectedModel={model}
+          onModelSelect={(selectedModel) => {
+            setModel(selectedModel as VideoModel)
+            // 선택된 모델에 맞는 서비스 옵션 찾기
+            const matchingOption = videoServiceOptions.find(
+              (opt) => opt.baseModel === selectedModel
+            )
+            if (matchingOption) {
+              setSelectedVideoServiceId(matchingOption.id)
+            }
+          }}
+        />
         <div className="options-grid">
           <div className="form-group">
             <label htmlFor="genre">장르</label>

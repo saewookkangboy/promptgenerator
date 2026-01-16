@@ -8,12 +8,15 @@ export type VideoModel =
   | 'veo' 
   | 'veo-2' // Google Veo 2
   | 'veo-3' // Google Veo 3
+  | 'veo-3.1' // Google Veo 3.1
   | 'runway' 
   | 'runway-gen3' // Runway Gen-3
   | 'pika' 
   | 'pika-2' // Pika Labs 2.0
   | 'stable-video'
   | 'kling' // Kling AI v1.6
+  | 'kling-2.6' // Kling AI 2.6
+  | 'ltx-2' // LTX-2
   | 'luma' // Luma Dream Machine
 
 export interface VideoPromptOptions extends BasePromptOptions {
