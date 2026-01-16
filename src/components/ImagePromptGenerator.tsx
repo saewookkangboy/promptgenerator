@@ -132,7 +132,7 @@ const ASPECT_RATIOS = [
 ]
 
 const IMAGE_WIZARD_STEPS = [
-  { id: 1, label: '모델 & 주제' },
+  { id: 1, label: '주제' },
   { id: 2, label: '스타일 & 구성' },
   { id: 3, label: '고급 옵션' },
   { id: 4, label: '요약 확인' },
@@ -156,8 +156,6 @@ function ImagePromptGenerator() {
   )
   const [selectedImageServiceId, setSelectedImageServiceId] = useState<string>(DEFAULT_IMAGE_SERVICE_ID)
   const [model, setModel] = useState<ImageModel>(DEFAULT_IMAGE_BASE_MODEL)
-  const [isImageDropdownOpen, setImageDropdownOpen] = useState(false)
-  const imageDropdownRef = useRef<HTMLDivElement | null>(null)
   const selectedImageService = imageServiceOptions.find((option) => option.id === selectedImageServiceId)
   const [subject, setSubject] = useState('')
   const [style, setStyle] = useState<ImageStyle>({
@@ -230,19 +228,6 @@ function ImagePromptGenerator() {
     }
   }, [selectedImageServiceId, imageServiceOptions])
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (imageDropdownRef.current && !imageDropdownRef.current.contains(event.target as Node)) {
-        setImageDropdownOpen(false)
-      }
-    }
-    if (isImageDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isImageDropdownOpen])
   const [useWizardMode, setUseWizardMode] = useState(true)
   const [wizardStep, setWizardStep] = useState(1)
   
@@ -339,49 +324,6 @@ function ImagePromptGenerator() {
     }
   }, [])
 
-  const renderModelSelector = () => (
-    <div className="form-group">
-      <label>이미지 생성 모델</label>
-      <div className="model-dropdown" ref={imageDropdownRef}>
-        <button
-          type="button"
-          className="model-dropdown-trigger"
-          onClick={() => setImageDropdownOpen((prev) => !prev)}
-        >
-          <span className="model-option__label">{selectedImageService?.label || '모델 선택'}</span>
-          <span className="model-option__meta-inline">
-            <span className="model-option__provider">{selectedImageService?.provider || '공식'}</span>
-            <span className="model-option__chip">{selectedImageService?.baseModel || '-'}</span>
-            <span className="model-dropdown-caret">{isImageDropdownOpen ? '▲' : '▼'}</span>
-          </span>
-        </button>
-        {isImageDropdownOpen && (
-          <div className="model-option-dropdown">
-            {imageServiceOptions.map((option) => {
-              const isActive = option.id === selectedImageServiceId
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={`model-option model-option--compact ${isActive ? 'active' : ''}`}
-                  onClick={() => {
-                    setSelectedImageServiceId(option.id)
-                    setImageDropdownOpen(false)
-                  }}
-                >
-                  <span className="model-option__label">{option.label}</span>
-                  <span className="model-option__meta-inline">
-                    <span className="model-option__provider">{option.provider || '공식'}</span>
-                    <span className="model-option__chip">{option.baseModel}</span>
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  )
 
   const renderSubjectInput = () => (
     <div className="form-group">
@@ -848,15 +790,6 @@ function ImagePromptGenerator() {
           <h4>핵심 설정</h4>
           <div className="summary-info-grid">
             <div className="summary-info-card">
-              <div className="summary-info-label">모델</div>
-              <div className="summary-info-value">
-                {selectedImageService?.label || '-'}
-                {selectedImageService?.provider && (
-                  <span style={{ opacity: 0.7, marginLeft: 4 }}>({selectedImageService.provider})</span>
-                )}
-              </div>
-            </div>
-            <div className="summary-info-card">
               <div className="summary-info-label">주제</div>
               <div className="summary-info-value">{subject || '-'}</div>
             </div>
@@ -1089,7 +1022,6 @@ function ImagePromptGenerator() {
 
           {wizardStep === 1 && (
             <div className="wizard-panel">
-              {renderModelSelector()}
               {renderSubjectInput()}
               {renderArtStyleSelector()}
             </div>
@@ -1130,22 +1062,6 @@ function ImagePromptGenerator() {
 
       {!useWizardMode && (
         <div className="input-section">
-        <div className="form-group">
-          <label htmlFor="image-model">이미지 생성 모델</label>
-          <select
-            id="image-model"
-            value={selectedImageServiceId}
-            onChange={(e) => setSelectedImageServiceId(e.target.value)}
-            className="content-type-select"
-          >
-            {imageServiceOptions.map((option) => (
-              <option key={option.id} value={option.id}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
-
         <div className="form-group">
           <label htmlFor="subject">주제 (Subject)</label>
           <textarea

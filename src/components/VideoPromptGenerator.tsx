@@ -174,7 +174,7 @@ const MOTION_SPEEDS = [
 ]
 
 const VIDEO_WIZARD_STEPS = [
-  { id: 1, label: '모델 & 콘셉트' },
+  { id: 1, label: '콘셉트' },
   { id: 2, label: '장면 구성' },
   { id: 3, label: '기술 & 레퍼런스' },
   { id: 4, label: '요약' },
@@ -198,8 +198,6 @@ function VideoPromptGenerator() {
   )
   const [selectedVideoServiceId, setSelectedVideoServiceId] = useState<string>(DEFAULT_VIDEO_SERVICE_ID)
   const [model, setModel] = useState<VideoModel>(DEFAULT_VIDEO_BASE_MODEL)
-  const [isVideoDropdownOpen, setVideoDropdownOpen] = useState(false)
-  const videoDropdownRef = useRef<HTMLDivElement | null>(null)
   const selectedVideoService = videoServiceOptions.find((option) => option.id === selectedVideoServiceId)
   const [overallStyle, setOverallStyle] = useState<VideoStyle>({
     genre: 'drama',
@@ -283,19 +281,6 @@ function VideoPromptGenerator() {
     }
   }, [selectedVideoServiceId, videoServiceOptions])
 
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (videoDropdownRef.current && !videoDropdownRef.current.contains(event.target as Node)) {
-        setVideoDropdownOpen(false)
-      }
-    }
-    if (isVideoDropdownOpen) {
-      document.addEventListener('mousedown', handleClickOutside)
-    }
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside)
-    }
-  }, [isVideoDropdownOpen])
   
   // 템플릿 관련 상태
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
@@ -405,54 +390,9 @@ function VideoPromptGenerator() {
     }
   }, [])
 
-  const renderVideoModelSelector = () => (
-    <div className="form-group">
-      <label>동영상 생성 모델</label>
-      <div className="model-dropdown" ref={videoDropdownRef}>
-        <button
-          type="button"
-          className="model-dropdown-trigger"
-          onClick={() => setVideoDropdownOpen((prev) => !prev)}
-        >
-          <span className="model-option__label">{selectedVideoService?.label || '모델 선택'}</span>
-          <span className="model-option__meta-inline">
-            <span className="model-option__provider">{selectedVideoService?.provider || '공식'}</span>
-            <span className="model-option__chip">{selectedVideoService?.baseModel || '-'}</span>
-            <span className="model-dropdown-caret">{isVideoDropdownOpen ? '▲' : '▼'}</span>
-          </span>
-        </button>
-        {isVideoDropdownOpen && (
-          <div className="model-option-dropdown">
-            {videoServiceOptions.map((option) => {
-              const isActive = option.id === selectedVideoServiceId
-              return (
-                <button
-                  key={option.id}
-                  type="button"
-                  className={`model-option model-option--compact ${isActive ? 'active' : ''}`}
-                  onClick={() => {
-                    setSelectedVideoServiceId(option.id)
-                    setVideoDropdownOpen(false)
-                  }}
-                >
-                  <span className="model-option__label">{option.label}</span>
-                  <span className="model-option__meta-inline">
-                    <span className="model-option__provider">{option.provider || '공식'}</span>
-                    <span className="model-option__chip">{option.baseModel}</span>
-                  </span>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  )
 
   const renderWizardOverview = () => (
     <div className="wizard-panel">
-      {renderVideoModelSelector()}
-
       <div className="options-grid">
         <div className="form-group">
           <label>장르</label>
@@ -671,9 +611,6 @@ function VideoPromptGenerator() {
           <div className="quality-panel__header">
             <div>
               <p className="quality-panel__label">요약</p>
-              <div className="quality-panel__score" style={{ fontSize: '1rem', color: '#000' }}>
-                {selectedVideoService?.label || '-'}
-              </div>
             </div>
           </div>
           <div className="quality-panel__section">
@@ -995,8 +932,6 @@ function VideoPromptGenerator() {
 
       {!useWizardMode && (
         <div className="input-section">
-        {renderVideoModelSelector()}
-
         <div className="options-grid">
           <div className="form-group">
             <label htmlFor="genre">장르</label>

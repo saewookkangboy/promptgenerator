@@ -1325,6 +1325,31 @@
   border-color: var(--border-hover);
 }
 
+/* 선택된 상태 스타일 */
+.tone-style-option--selected {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #000000 !important;
+}
+
+.tone-style-option--selected:hover {
+  background-color: #1a1a1a !important;
+  border-color: #1a1a1a !important;
+}
+
+.tone-style-option--selected > div:first-child {
+  color: #ffffff !important;
+}
+
+.tone-style-option--selected > div:first-child span {
+  color: #ffffff !important;
+}
+
+.tone-style-option--selected > span:last-child {
+  color: #ffffff !important;
+  opacity: 0.9 !important;
+}
+
 .tone-style-option input[type="checkbox"] {
   margin: 0;
   cursor: pointer;
@@ -1356,7 +1381,7 @@
   opacity: 0.8;
   margin-left: calc(18px + var(--spacing-sm));
   line-height: var(--line-height-normal);
-  transition: color 0.3s ease;
+  transition: color 0.3s ease, opacity 0.3s ease;
 }
 
 /* 모바일에서 톤 스타일 그리드를 스택으로 */

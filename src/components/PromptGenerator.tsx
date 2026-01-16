@@ -617,29 +617,35 @@ function PromptGenerator() {
               return (
                 <label
                   key={tone.value}
-                  className="tone-style-option"
+                  className={`tone-style-option ${isSelected ? 'tone-style-option--selected' : ''}`}
                   style={{
                     display: 'flex',
                     flexDirection: 'column',
                     padding: '12px',
-                    border: '1px solid #000',
+                    border: isSelected ? '1px solid #000' : '1px solid var(--border-primary)',
                     cursor: 'pointer',
-                    backgroundColor: isSelected ? '#000' : '#fff',
-                    color: isSelected ? '#fff' : '#000',
+                    backgroundColor: isSelected ? '#000' : 'var(--bg-secondary)',
+                    color: isSelected ? '#ffffff' : 'var(--text-primary)',
                     transition: 'all 0.2s ease',
                   }}
                   onMouseEnter={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = '#f5f5f5'
+                      e.currentTarget.style.backgroundColor = 'var(--bg-hover)'
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (!isSelected) {
-                      e.currentTarget.style.backgroundColor = '#fff'
+                      e.currentTarget.style.backgroundColor = 'var(--bg-secondary)'
                     }
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    marginBottom: '4px',
+                    color: isSelected ? '#ffffff' : 'inherit'
+                  }}>
                     <input
                       type="checkbox"
                       checked={isSelected}
@@ -679,9 +685,20 @@ function PromptGenerator() {
                       }}
                       style={{ margin: 0, cursor: 'pointer' }}
                     />
-                    <span style={{ fontWeight: '500', fontSize: '14px' }}>{tone.label}</span>
+                    <span style={{ 
+                      fontWeight: '500', 
+                      fontSize: '14px',
+                      color: isSelected ? '#ffffff' : 'inherit'
+                    }}>
+                      {tone.label}
+                    </span>
                   </div>
-                  <span style={{ fontSize: '12px', opacity: 0.8, marginLeft: '24px' }}>
+                  <span style={{ 
+                    fontSize: '12px', 
+                    opacity: isSelected ? 0.9 : 0.8, 
+                    marginLeft: '24px',
+                    color: isSelected ? '#ffffff' : 'inherit'
+                  }}>
                     {tone.description}
                   </span>
                 </label>
