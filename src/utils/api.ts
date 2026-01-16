@@ -124,13 +124,32 @@ export async function apiRequest<T>(
       apiError.details = standardError?.details || errorData?.error?.details
       
       // 401 Unauthorized - 토큰 만료 또는 무효
-      if (response.status === 401) {
-        removeToken()
+      // 403 Forbidden - 유효하지 않은 토큰 (JWT 검증 실패 등)
+      if (response.status === 401 || response.status === 403) {
+        // 토큰 문제이므로 토큰 제거
+        if (token) {
+          removeToken()
+        }
+        
         // Admin 모드이거나 로그인 페이지에서는 리다이렉트하지 않음
         const isAdmin = isAdminMode()
         const isLoginPage = window.location.pathname.includes('/login') || 
                            window.location.pathname === '/' ||
                            document.querySelector('.admin-login-container') !== null
+        
+        // 403 오류의 경우, 더 명확한 메시지로 변경
+        if (response.status === 403 && errorMessage.includes('토큰')) {
+          const tokenError = new Error('로그인이 필요합니다. 다시 로그인해주세요.') as Error & { code?: string; statusCode?: number; details?: any }
+          tokenError.code = 'INVALID_TOKEN'
+          tokenError.statusCode = 403
+          tokenError.details = { originalMessage: errorMessage }
+          
+          if (!isAdmin && !isLoginPage) {
+            // 일반 사용자이고 로그인 페이지가 아니면 리다이렉트
+            window.location.href = '/login'
+          }
+          throw tokenError
+        }
         
         if (!isAdmin && !isLoginPage) {
           // 일반 사용자이고 로그인 페이지가 아니면 리다이렉트

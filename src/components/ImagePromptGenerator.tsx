@@ -992,6 +992,19 @@ function ImagePromptGenerator() {
             })
           } catch (serverError: any) {
             console.warn('서버 저장 실패:', serverError)
+            
+            // 403 또는 401 오류인 경우 (토큰 문제) 사용자에게 알림
+            if (serverError?.statusCode === 403 || serverError?.statusCode === 401 || 
+                serverError?.message?.includes('토큰') || serverError?.message?.includes('로그인')) {
+              showNotification(
+                '프롬프트 저장을 위해 다시 로그인해주세요.',
+                'warning'
+              )
+            } else {
+              // 기타 오류는 조용히 처리 (로컬 저장은 성공했으므로)
+              console.warn('서버 저장 실패 (로컬 저장은 성공):', serverError?.message || 'server_error')
+            }
+            
             await reportPromptSaveFailure('IMAGE', serverError?.message || 'server_error', {
               inputPreview: subject.slice(0, 120),
             })
