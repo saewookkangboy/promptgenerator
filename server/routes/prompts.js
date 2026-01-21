@@ -1,13 +1,131 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 // 프롬프트 관련 API 라우트
 const express_1 = require("express");
+const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
 const prisma_1 = require("../db/prisma");
 const auth_1 = require("../middleware/auth");
 const validation_1 = require("../middleware/validation");
 const rbac_1 = require("../middleware/rbac");
 const router = (0, express_1.Router)();
-// 모든 프롬프트 라우트는 인증 필요
+// 공개 프롬프트 생성 엔드포인트 (인증 선택적)
+// 인증이 있으면 userId를 포함하고, 없으면 익명 사용자로 저장
+router.post('/public', validation_1.validatePromptInput, async (req, res) => {
+    try {
+        const { title, content, category, model, inputText, options, folderId, workspaceId, tagIds, } = req.body;
+        // 인증 토큰 확인 (선택적)
+        let userId = null;
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+        if (token) {
+            try {
+                const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET || 'secret');
+                // 사용자 정보 확인
+                const user = await prisma_1.prisma.user.findUnique({
+                    where: { id: decoded.userId },
+                    select: {
+                        id: true,
+                        email: true,
+                        tier: true,
+                        subscriptionStatus: true,
+                    },
+                });
+                if (user && user.subscriptionStatus === 'ACTIVE') {
+                    userId = user.id;
+                }
+            }
+            catch (error) {
+                // 토큰이 유효하지 않으면 익명 사용자로 처리
+                console.log('토큰 검증 실패, 익명 사용자로 저장');
+            }
+        }
+        // 익명 사용자 ID 찾기 또는 생성
+        if (!userId) {
+            const anonymousUser = await prisma_1.prisma.user.findFirst({
+                where: {
+                    email: 'anonymous@system.local',
+                },
+            });
+            if (anonymousUser) {
+                userId = anonymousUser.id;
+            }
+            else {
+                // 익명 사용자 생성
+                const newAnonymousUser = await prisma_1.prisma.user.create({
+                    data: {
+                        email: 'anonymous@system.local',
+                        passwordHash: 'anonymous', // 실제로는 사용되지 않음
+                        name: 'Anonymous User',
+                        tier: 'FREE',
+                        subscriptionStatus: 'ACTIVE',
+                    },
+                });
+                userId = newAnonymousUser.id;
+            }
+        }
+        // 워크스페이스 권한 확인 (userId가 있을 때만)
+        if (workspaceId && userId) {
+            const workspace = await prisma_1.prisma.workspace.findFirst({
+                where: {
+                    id: workspaceId,
+                    OR: [
+                        { ownerId: userId },
+                        {
+                            members: {
+                                some: {
+                                    userId: userId,
+                                },
+                            },
+                        },
+                    ],
+                },
+            });
+            if (!workspace) {
+                res.status(403).json({ error: '워크스페이스 접근 권한이 없습니다' });
+                return;
+            }
+        }
+        const prompt = await prisma_1.prisma.prompt.create({
+            data: {
+                title,
+                content,
+                category,
+                model,
+                inputText,
+                options: options || {},
+                folderId: folderId || null,
+                workspaceId: workspaceId || null,
+                userId: userId,
+                tags: tagIds
+                    ? {
+                        create: tagIds.map((tagId) => ({
+                            tag: {
+                                connect: { id: tagId },
+                            },
+                        })),
+                    }
+                    : undefined,
+            },
+            include: {
+                folder: true,
+                tags: {
+                    include: {
+                        tag: true,
+                    },
+                },
+            },
+        });
+        res.status(201).json(prompt);
+    }
+    catch (error) {
+        console.error('공개 프롬프트 생성 오류:', error);
+        res.status(500).json({ error: '프롬프트 생성에 실패했습니다' });
+    }
+});
+// 모든 프롬프트 라우트는 인증 필요 (공개 엔드포인트 제외)
 router.use(auth_1.authenticateToken);
 /**
  * @swagger

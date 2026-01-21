@@ -880,6 +880,33 @@ try {
   // Admin 라우트에 Rate Limiting 적용
   app.use('/api/admin', adminLimiter, finalAdminRouter)
   
+  // 템플릿 라우트 (다른 /api 라우트보다 먼저 등록하여 우선순위 확보)
+  const finalTemplatesRouter = templatesRouter?.default || templatesRouter
+  if (finalTemplatesRouter) {
+    app.use('/api/templates', finalTemplatesRouter)
+    console.log('✅ 템플릿 API 라우트 로드됨: /api/templates')
+    
+    // 템플릿 라우터에 등록된 라우트 확인
+    if (finalTemplatesRouter.stack) {
+      const templateRoutes = finalTemplatesRouter.stack
+        .filter((layer) => layer.route)
+        .map((layer) => ({
+          path: layer.route.path,
+          methods: Object.keys(layer.route.methods),
+        }))
+      console.log('📋 템플릿 라우터에 등록된 라우트:', templateRoutes.length, '개')
+      if (templateRoutes.length > 0) {
+        const routeExamples = templateRoutes.map((r) => {
+          const method = Array.isArray(r.methods) ? r.methods[0] : Object.keys(r.methods)[0]
+          return `${method.toUpperCase()} ${r.path}`
+        }).join(', ')
+        console.log('   라우트:', routeExamples)
+      }
+    }
+  } else {
+    console.error('❌ 템플릿 라우터를 로드할 수 없습니다!')
+  }
+  
   // AI 서비스 정보 API
   const aiServicesRouter = require('./routes/aiServices')
   const publicApiRouter = require('./routes/api')
@@ -894,13 +921,6 @@ try {
     console.log('✅ 프롬프트 최적화 API 라우트 로드됨: /api/prompt-optimizer')
   } catch (error) {
     console.warn('⚠️ 프롬프트 최적화 라우트 로드 실패:', error.message)
-  }
-  
-  // 템플릿 라우트
-  const finalTemplatesRouter = templatesRouter.default || templatesRouter
-  if (finalTemplatesRouter) {
-    app.use('/api/templates', finalTemplatesRouter)
-    console.log('✅ 템플릿 API 라우트 로드됨: /api/templates')
   }
   
   // Analytics 이벤트 라우트
