@@ -340,6 +340,57 @@ export const promptAPI = {
     })
   },
 
+  // 공개 프롬프트 생성 (인증 선택적 - 로그인 없이도 저장 가능)
+  createPublic: async (data: {
+    title?: string
+    content: string
+    category: string
+    model?: string
+    inputText?: string
+    options?: any
+    folderId?: string
+    workspaceId?: string
+    tagIds?: string[]
+  }) => {
+    // 토큰이 있으면 포함하고, 없으면 없이 요청
+    const token = getToken()
+    const normalizedEndpoint = '/api/prompts/public'
+    const url = `${API_BASE_URL}${normalizedEndpoint}`
+    
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+    }
+    
+    // 토큰이 있으면 Authorization 헤더 추가
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`
+    }
+    
+    try {
+      console.log(`[promptAPI.createPublic] POST ${url}`)
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+      })
+
+      console.log(`[promptAPI.createPublic] ${response.status} ${response.statusText}`)
+
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({ error: '알 수 없는 오류가 발생했습니다' }))
+        throw new Error(error.error || `HTTP ${response.status}`)
+      }
+
+      const jsonData = await response.json()
+      console.log(`[promptAPI.createPublic] 응답 성공:`, jsonData)
+      return jsonData
+    } catch (error: any) {
+      console.error('[promptAPI.createPublic] 요청 실패:', error)
+      throw error
+    }
+  },
+
   update: async (id: string, data: {
     title?: string
     content?: string

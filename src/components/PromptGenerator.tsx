@@ -9,7 +9,7 @@ import { upsertGuide } from '../utils/prompt-guide-storage'
 import { showNotification } from '../utils/notifications'
 import RecommendationPanel from './RecommendationPanel'
 import { suggestDefaults } from '../utils/personalization'
-import { hasPromptSaveAuth, reportPromptSaveFailure } from '../utils/promptSaveReporter'
+import { reportPromptSaveFailure } from '../utils/promptSaveReporter'
 import { PromptGuide, ModelName } from '../types/prompt-guide.types'
 import { MODEL_OPTIONS, getCategoryByModel } from '../config/model-options'
 import { evaluateQuality, QualityReport } from '../utils/qualityRules'
@@ -345,54 +345,34 @@ function PromptGenerator() {
           },
         })
 
-        // 서버에 저장 시도 (로그인 없이도 시도)
-        if (!hasPromptSaveAuth()) {
-          await reportPromptSaveFailure(
-            'TEXT',
-            'unauthenticated',
-            { inputPreview: userPrompt.slice(0, 120) },
-            '로그인 후에만 프롬프트가 서버 DB에 저장됩니다. 로그인 후 다시 시도해주세요.'
-          )
-        } else {
-          try {
-            await promptAPI.create({
-              title: `${contentType} 프롬프트`,
-              content: generated.metaPrompt,
-              category: 'TEXT',
-              inputText: userPrompt,
-              options: {
-                contentType,
-                age: detailedOptions.age,
-                gender: detailedOptions.gender,
-                occupation: detailedOptions.occupation,
-                conversational: detailedOptions.conversational,
-                toneStyles: detailedOptions.toneStyles,
-                goal: detailedOptions.goal,
-                targetModel,
-                appliedGuideId: enrichedResults.appliedGuide?.guideId,
-                contextPrompt: generated.contextPrompt,
-                hashtags: generated.hashtags,
-              },
-            })
-          } catch (serverError: any) {
-            console.warn('서버 저장 실패:', serverError)
-            
-            // 403 또는 401 오류인 경우 (토큰 문제) 사용자에게 알림
-            if (serverError?.statusCode === 403 || serverError?.statusCode === 401 || 
-                serverError?.message?.includes('토큰') || serverError?.message?.includes('로그인')) {
-              showNotification(
-                '프롬프트 저장을 위해 다시 로그인해주세요.',
-                'warning'
-              )
-            } else {
-              // 기타 오류는 조용히 처리 (로컬 저장은 성공했으므로)
-              console.warn('서버 저장 실패 (로컬 저장은 성공):', serverError?.message || 'server_error')
-            }
-            
-            await reportPromptSaveFailure('TEXT', serverError?.message || 'server_error', {
-              inputPreview: userPrompt.slice(0, 120),
-            })
-          }
+        // 서버에 저장 시도 (로그인 여부와 관계없이 항상 저장)
+        try {
+          await promptAPI.createPublic({
+            title: `${contentType} 프롬프트`,
+            content: generated.metaPrompt,
+            category: 'TEXT',
+            inputText: userPrompt,
+            options: {
+              contentType,
+              age: detailedOptions.age,
+              gender: detailedOptions.gender,
+              occupation: detailedOptions.occupation,
+              conversational: detailedOptions.conversational,
+              toneStyles: detailedOptions.toneStyles,
+              goal: detailedOptions.goal,
+              targetModel,
+              appliedGuideId: enrichedResults.appliedGuide?.guideId,
+              contextPrompt: generated.contextPrompt,
+              hashtags: generated.hashtags,
+            },
+          })
+          console.log('[PromptGenerator] 프롬프트가 DB에 저장되었습니다.')
+        } catch (serverError: any) {
+          console.warn('서버 저장 실패:', serverError)
+          // 저장 실패해도 계속 진행 (로컬 저장은 성공했으므로)
+          await reportPromptSaveFailure('TEXT', serverError?.message || 'server_error', {
+            inputPreview: userPrompt.slice(0, 120),
+          })
         }
       } catch (err) {
         setError(t('prompt.error.generation'))
