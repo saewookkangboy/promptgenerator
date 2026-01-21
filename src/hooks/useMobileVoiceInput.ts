@@ -1,5 +1,5 @@
 // 모바일 음성 입력 훅
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 
 interface VoiceInputOptions {
   onTranscript?: (text: string) => void
@@ -11,7 +11,7 @@ export function useMobileVoiceInput(options: VoiceInputOptions = {}) {
   const { onTranscript, onError, language = 'ko-KR' } = options
   const [isListening, setIsListening] = useState(false)
   const [transcript, setTranscript] = useState('')
-  const recognitionRef = useState<SpeechRecognition | null>(null)
+  const recognitionRef = useRef<SpeechRecognition | null>(null)
 
   const startListening = useCallback(() => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
@@ -51,12 +51,12 @@ export function useMobileVoiceInput(options: VoiceInputOptions = {}) {
     }
 
     recognition.start()
-    recognitionRef[0] = recognition
+    recognitionRef.current = recognition
   }, [language, onTranscript, onError])
 
   const stopListening = useCallback(() => {
-    if (recognitionRef[0]) {
-      recognitionRef[0].stop()
+    if (recognitionRef.current) {
+      recognitionRef.current.stop()
       setIsListening(false)
     }
   }, [])

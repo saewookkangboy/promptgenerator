@@ -80,9 +80,14 @@ function PromptHistoryManager({ onSelectPrompt, onClose }: PromptHistoryManagerP
     loadRecords()
   }, [loadRecords])
 
-  const handleCopy = useCallback((content: string) => {
-    navigator.clipboard.writeText(content)
-    showNotification('클립보드에 복사되었습니다.', 'success')
+  const handleCopy = useCallback(async (content: string) => {
+    try {
+      await navigator.clipboard.writeText(content)
+      showNotification('클립보드에 복사되었습니다.', 'success')
+    } catch (err) {
+      console.error('Failed to copy:', err)
+      showNotification('복사에 실패했습니다.', 'error')
+    }
   }, [])
 
   const formatDate = (timestamp: number) => {
