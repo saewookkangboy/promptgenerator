@@ -676,17 +676,15 @@ async function handleGoogleCallback(code: string, redirectUri: string, res: Resp
           tier: 'FREE',
           subscriptionStatus: 'ACTIVE',
         },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          tier: true,
-          createdAt: true,
-        },
       })
     }
 
     // JWT 토큰 생성
+    if (!user) {
+      res.status(500).json({ error: '사용자 생성에 실패했습니다' })
+      return
+    }
+    
     const accessToken = generateAccessToken(user.id, user.email)
     const refreshToken = generateRefreshToken(user.id, user.email)
 
@@ -782,17 +780,15 @@ async function handleGitHubCallback(code: string, redirectUri: string, res: Resp
           tier: 'FREE',
           subscriptionStatus: 'ACTIVE',
         },
-        select: {
-          id: true,
-          email: true,
-          name: true,
-          tier: true,
-          createdAt: true,
-        },
       })
     }
 
     // JWT 토큰 생성
+    if (!user) {
+      res.status(500).json({ error: '사용자 생성에 실패했습니다' })
+      return
+    }
+    
     const accessToken = generateAccessToken(user.id, user.email)
     const refreshToken = generateRefreshToken(user.id, user.email)
 
