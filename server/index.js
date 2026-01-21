@@ -114,7 +114,7 @@ async function summarizeWithLLM(text, context = 'general') {
   }
 }
 
-async function translateWithGemini(text, context = 'general', compress = false) {
+async function translateWithGemini(text, context = 'general', compress = false, sourceLang = null) {
   if (!GEMINI_API_KEY) {
     throw new Error('Gemini API 키가 설정되지 않았습니다.')
   }
@@ -125,6 +125,13 @@ async function translateWithGemini(text, context = 'general', compress = false) 
     'Translate the following content into natural, professional English suited for prompt engineering.',
     'Preserve structure, bullet points, placeholders, and instructions.',
   ]
+
+  // sourceLang이 제공되면 프롬프트에 포함
+  if (sourceLang) {
+    const langMap = { 'KO': 'Korean', 'JA': 'Japanese', 'EN': 'English' }
+    const sourceLangName = langMap[sourceLang] || sourceLang
+    instructions.push(`The source language is ${sourceLangName}. Translate from ${sourceLangName} to English.`)
+  }
 
   if (compress) {
     instructions.push('Keep the translation concise (≤120 tokens) while retaining CTAs and requirements.')
@@ -378,7 +385,7 @@ app.post('/api/translate', async (req, res) => {
     let translations = []
     for (const text of texts) {
       if (typeof text === 'string') {
-        const translated = await translateWithGemini(text, context, compress)
+        const translated = await translateWithGemini(text, context, compress, sourceLang)
         translations.push(translated)
       } else {
         translations.push('')

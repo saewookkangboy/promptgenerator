@@ -12,6 +12,7 @@ import { PromptGuide, ModelName } from '../types/prompt-guide.types'
 import { MODEL_OPTIONS, getCategoryByModel } from '../config/model-options'
 import { evaluateQuality, QualityReport } from '../utils/qualityRules'
 import { useLanguage } from '../contexts/LanguageContext'
+import { translateTextMap, buildNativeEnglishFallback } from '../utils/translation'
 // import { applyTemplate } from '../utils/templateUtils' // 템플릿 적용은 서버에서 처리
 import ResultCard from './ResultCard'
 import StructuredPromptCard from './StructuredPromptCard'
@@ -232,7 +233,36 @@ function PromptGenerator() {
 
         const generated = generatePrompts(userPrompt, contentType, options, appliedGuideContext)
 
-        const enrichedResults = generated
+        // 언어 감지 및 자동 번역
+        let enrichedResults = generated
+        try {
+          const translationTargets: Record<string, string | undefined> = {}
+          
+          if (generated.metaPrompt) {
+            translationTargets.englishMetaPrompt = generated.metaPrompt
+          }
+          
+          if (generated.contextPrompt) {
+            translationTargets.englishContextPrompt = generated.contextPrompt
+          }
+
+          // 번역 대상이 있는 경우에만 번역 시도
+          if (Object.keys(translationTargets).length > 0) {
+            const translations = await translateTextMap(translationTargets, {
+              compress: true,
+              context: 'TEXT',
+            })
+            
+            if (Object.keys(translations).length > 0) {
+              enrichedResults = { ...generated, ...translations }
+            }
+          }
+        } catch (translationError) {
+          console.warn('Gemini translation failed:', translationError)
+          // 번역 실패 시 폴백 사용
+          const fallback = buildNativeEnglishFallback(generated)
+          enrichedResults = { ...generated, ...fallback }
+        }
 
         // AI 키워드 추출 (비동기, 실패해도 계속 진행)
         try {
@@ -330,7 +360,7 @@ function PromptGenerator() {
         setIsGenerating(false)
       }
     }, 300)
-  }, [userPrompt, contentType, detailedOptions, buildGenerationOptions, guideInsight])
+  }, [userPrompt, contentType, detailedOptions, buildGenerationOptions, guideInsight, t, targetModel])
 
   const handleDismissError = useCallback(() => {
     setError(null)
