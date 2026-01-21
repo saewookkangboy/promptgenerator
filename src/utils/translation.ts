@@ -2,7 +2,7 @@ import { translationAPI } from './api'
 import { convertToNativeEnglish } from './englishTranslator'
 import { PromptResult } from '../types'
 import { checkTranslationQuality, getQualityGrade } from './translation/qualityChecker'
-import { detectLanguageFromMultiple, isEnglish } from './languageDetector'
+import { detectLanguageFromMultiple } from './languageDetector'
 
 type TextMap = Record<string, string | undefined | null>
 
