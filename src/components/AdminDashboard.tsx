@@ -5,6 +5,8 @@ import VisitGraphModal from './VisitGraphModal'
 import TemplateManager from './TemplateManager'
 import UserEditModal from './UserEditModal'
 import PromptDetailModal from './PromptDetailModal'
+import UserAnalyticsDashboard from './UserAnalyticsDashboard'
+import PromptHistoryManager from './PromptHistoryManager'
 import { useAdminData, AdminPromptRecord } from '../hooks/useAdminData'
 import './AdminDashboard.css'
 
@@ -17,7 +19,7 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
   const [selectedCategory, setSelectedCategory] = useState<'all' | 'text' | 'image' | 'video' | 'engineering'>('all')
   const [isGraphModalOpen, setIsGraphModalOpen] = useState(false)
   const [selectedRecord, setSelectedRecord] = useState<AdminPromptRecord | null>(null)
-  const [activeSection, setActiveSection] = useState<'stats' | 'users' | 'prompts' | 'templates'>('stats')
+  const [activeSection, setActiveSection] = useState<'stats' | 'users' | 'prompts' | 'templates' | 'history' | 'analytics'>('stats')
   const [usersPage, setUsersPage] = useState(1)
   const [promptsPage, setPromptsPage] = useState(1)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
@@ -216,6 +218,18 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                 onClick={() => setActiveSection('stats')}
               >
                 통계 및 기록
+              </button>
+              <button
+                className={`section-tab ${activeSection === 'history' ? 'active' : ''}`}
+                onClick={() => setActiveSection('history')}
+              >
+                📚 히스토리
+              </button>
+              <button
+                className={`section-tab ${activeSection === 'analytics' ? 'active' : ''}`}
+                onClick={() => setActiveSection('analytics')}
+              >
+                📊 통계
               </button>
               <button
                 className={`section-tab ${activeSection === 'users' ? 'active' : ''}`}
@@ -690,6 +704,24 @@ function AdminDashboard({ onLogout, onBackToMain }: AdminDashboardProps) {
                   <h2>템플릿 관리</h2>
                 </div>
                 <TemplateManager />
+              </div>
+            )}
+
+            {activeSection === 'history' && (
+              <div className="admin-section">
+                <div className="admin-section-header">
+                  <h2>프롬프트 히스토리</h2>
+                </div>
+                <PromptHistoryManager />
+              </div>
+            )}
+
+            {activeSection === 'analytics' && (
+              <div className="admin-section">
+                <div className="admin-section-header">
+                  <h2>사용 통계</h2>
+                </div>
+                <UserAnalyticsDashboard />
               </div>
             )}
 

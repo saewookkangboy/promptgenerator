@@ -2,8 +2,6 @@ import { useState, useEffect, lazy, Suspense } from 'react'
 import LoadingSpinner from './components/LoadingSpinner'
 import LanguageToggle from './components/LanguageToggle'
 import Onboarding from './components/Onboarding'
-import UserAnalyticsDashboard from './components/UserAnalyticsDashboard'
-import PromptHistoryManager from './components/PromptHistoryManager'
 import { getAdminAuth, incrementVisitCount, getUserPreferences } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import { templateAPI } from './utils/api'
@@ -29,8 +27,6 @@ function App() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
   const [showOnboarding, setShowOnboarding] = useState(false)
-  const [showAnalytics, setShowAnalytics] = useState(false)
-  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     // 방문수 증가
@@ -207,10 +203,6 @@ function App() {
         activeTab={activeTab}
         setActiveTab={setActiveTab}
         setIsAdmin={setIsAdmin}
-        showAnalytics={showAnalytics}
-        setShowAnalytics={setShowAnalytics}
-        showHistory={showHistory}
-        setShowHistory={setShowHistory}
       />
     </>
   )
@@ -220,18 +212,10 @@ function AppContent({
   activeTab,
   setActiveTab,
   setIsAdmin,
-  showAnalytics,
-  setShowAnalytics,
-  showHistory,
-  setShowHistory,
 }: {
   activeTab: TabType
   setActiveTab: (tab: TabType) => void
   setIsAdmin: (admin: boolean) => void
-  showAnalytics: boolean
-  setShowAnalytics: (show: boolean) => void
-  showHistory: boolean
-  setShowHistory: (show: boolean) => void
 }) {
   const { t } = useLanguage()
   
@@ -264,20 +248,6 @@ function AppContent({
           </div>
           <div className="header-actions">
             <div className="header-controls">
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className="header-button"
-                title="프롬프트 히스토리"
-              >
-                📚 히스토리
-              </button>
-              <button
-                onClick={() => setShowAnalytics(!showAnalytics)}
-                className="header-button"
-                title="사용 통계"
-              >
-                📊 통계
-              </button>
               <LanguageToggle />
             </div>
             <button
@@ -336,23 +306,6 @@ function AppContent({
       </div>
 
       <div className="tab-content">
-        {showHistory && (
-          <div className="modal-overlay" onClick={() => setShowHistory(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <PromptHistoryManager onClose={() => setShowHistory(false)} />
-            </div>
-          </div>
-        )}
-        
-        {showAnalytics && (
-          <div className="modal-overlay" onClick={() => setShowAnalytics(false)}>
-            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-              <UserAnalyticsDashboard />
-              <button className="modal-close" onClick={() => setShowAnalytics(false)}>×</button>
-            </div>
-          </div>
-        )}
-
         <Suspense fallback={<LoadingSpinner message="로딩 중..." />}>
           {activeTab === 'text' && <PromptGenerator />}
           {activeTab === 'image' && <ImagePromptGenerator />}
