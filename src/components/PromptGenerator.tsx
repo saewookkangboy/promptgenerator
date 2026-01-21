@@ -7,6 +7,8 @@ import { savePromptRecord } from '../utils/storage'
 import { promptAPI, guideAPI, templateAPI, keywordAPI } from '../utils/api'
 import { upsertGuide } from '../utils/prompt-guide-storage'
 import { showNotification } from '../utils/notifications'
+import RecommendationPanel from './RecommendationPanel'
+import { suggestDefaults } from '../utils/personalization'
 import { hasPromptSaveAuth, reportPromptSaveFailure } from '../utils/promptSaveReporter'
 import { PromptGuide, ModelName } from '../types/prompt-guide.types'
 import { MODEL_OPTIONS, getCategoryByModel } from '../config/model-options'
@@ -19,6 +21,7 @@ import StructuredPromptCard from './StructuredPromptCard'
 import ErrorMessage from './ErrorMessage'
 import LoadingSpinner from './LoadingSpinner'
 import TemplateVariableForm from './TemplateVariableForm'
+import PromptPreview from './PromptPreview'
 import './PromptGenerator.css'
 import './StructuredPromptCard.css'
 
@@ -75,6 +78,14 @@ function PromptGenerator() {
     { value: 'facebook' as ContentType, label: t('prompt.contentType.facebook') },
     { value: 'instagram' as ContentType, label: t('prompt.contentType.instagram') },
     { value: 'youtube' as ContentType, label: t('prompt.contentType.youtube') },
+    { value: 'twitter' as ContentType, label: t('prompt.contentType.twitter') },
+    { value: 'threads' as ContentType, label: t('prompt.contentType.threads') },
+    { value: 'tiktok' as ContentType, label: t('prompt.contentType.tiktok') },
+    { value: 'podcast' as ContentType, label: t('prompt.contentType.podcast') },
+    { value: 'email' as ContentType, label: t('prompt.contentType.email') },
+    { value: 'newsletter' as ContentType, label: t('prompt.contentType.newsletter') },
+    { value: 'product' as ContentType, label: t('prompt.contentType.product') },
+    { value: 'faq' as ContentType, label: t('prompt.contentType.faq') },
     { value: 'general' as ContentType, label: t('prompt.contentType.general') },
   ], [t])
   
@@ -144,6 +155,14 @@ function PromptGenerator() {
     facebook: [t('prompt.guideline.facebook'), t('prompt.guideline.facebook2'), t('prompt.guideline.facebook3')],
     instagram: [t('prompt.guideline.instagram'), t('prompt.guideline.instagram2'), t('prompt.guideline.instagram3')],
     youtube: [t('prompt.guideline.youtube'), t('prompt.guideline.youtube2'), t('prompt.guideline.youtube3')],
+    twitter: ['280자 이내', '해시태그 활용', '임팩트 있는 메시지'],
+    threads: ['500자 이내', 'Meta 플랫폼 최적화', '커뮤니티 중심'],
+    tiktok: ['15-60초 영상', '강렬한 훅', '시각적 요소 강조'],
+    podcast: ['대화형 구조', '자연스러운 발화', '에피소드 구성'],
+    email: ['명확한 제목', 'CTA 포함', '모바일 최적화'],
+    newsletter: ['섹션별 구성', '가치 있는 정보', '정기 발행 형식'],
+    product: ['제품 특징', '혜택 강조', '구매 유도'],
+    faq: ['질문과 답변', '명확한 설명', '간결한 형식'],
     general: [t('prompt.guideline.general'), t('prompt.guideline.general2'), t('prompt.guideline.general3')],
   }), [t])
   
@@ -202,6 +221,22 @@ function PromptGenerator() {
   useEffect(() => {
     fetchGuides()
   }, [fetchGuides])
+
+  // 개인화: 사용 패턴 기반 기본값 적용
+  useEffect(() => {
+    const defaults = suggestDefaults()
+    if (defaults) {
+      if (defaults.contentType && !contentType) {
+        setContentType(defaults.contentType as ContentType)
+      }
+      if (defaults.goal && !detailedOptions.goal) {
+        setDetailedOptions(prev => ({ ...prev, goal: defaults.goal as any }))
+      }
+      if (defaults.toneStyles && detailedOptions.toneStyles?.length === 0) {
+        setDetailedOptions(prev => ({ ...prev, toneStyles: defaults.toneStyles as any[] }))
+      }
+    }
+  }, []) // 초기 마운트 시 한 번만 실행
 
   const handleGenerate = useCallback(() => {
     // 입력 검증
@@ -291,6 +326,12 @@ function PromptGenerator() {
         savePromptRecord({
           category: 'text',
           userInput: userPrompt,
+          title: `${contentType} 프롬프트`,
+          content: enrichedResults.metaPrompt,
+          metaPrompt: enrichedResults.metaPrompt,
+          contextPrompt: enrichedResults.contextPrompt,
+          hashtags: enrichedResults.hashtags || enrichedResults.hashtagKeywords?.map(k => `#${k.keyword}`) || [],
+          model: targetModel,
           options: {
             contentType,
             age: detailedOptions.age,
@@ -928,6 +969,46 @@ function PromptGenerator() {
           >
             {isGenerating ? t('prompt.wizard.generating') : t('prompt.wizard.generate')}
           </button>
+
+          {/* 추천 패널 */}
+          {!useWizardMode && userPrompt.trim().length >= 3 && (
+            <RecommendationPanel
+              userInput={userPrompt}
+              currentOptions={buildGenerationOptions()}
+              onApplyRecommendation={(type: 'contentType' | 'toneStyle' | 'goal' | 'tag' | 'template', value: string) => {
+                if (type === 'contentType') {
+                  setContentType(value as ContentType)
+                } else if (type === 'goal') {
+                  setDetailedOptions(prev => ({ ...prev, goal: value as any }))
+                } else if (type === 'toneStyle') {
+                  setDetailedOptions(prev => ({
+                    ...prev,
+                    toneStyles: [...(prev.toneStyles || []), value as any],
+                  }))
+                }
+              }}
+              onSelectSimilarPrompt={(prompt) => {
+                setUserPrompt(prompt.userInput)
+                if (prompt.options?.contentType) {
+                  setContentType(prompt.options.contentType as ContentType)
+                }
+                if (prompt.options?.goal) {
+                  setDetailedOptions(prev => ({ ...prev, goal: prompt.options!.goal as any }))
+                }
+                showNotification('유사한 프롬프트가 적용되었습니다', 'success')
+              }}
+            />
+          )}
+
+          {/* 실시간 프리뷰 */}
+          {!useWizardMode && isFormValid && (
+            <PromptPreview
+              userPrompt={userPrompt}
+              contentType={contentType}
+              options={buildGenerationOptions()}
+              guideInsight={guideInsight}
+            />
+          )}
         </div>
       )}
 

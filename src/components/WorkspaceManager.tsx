@@ -1,255 +1,256 @@
 // 워크스페이스 관리 컴포넌트
 import { useState, useEffect } from 'react'
+import { workspaceAPI } from '../utils/api'
 import { showNotification } from '../utils/notifications'
-import LoadingSpinner from './LoadingSpinner'
-import ErrorMessage from './ErrorMessage'
 import './WorkspaceManager.css'
 
 interface Workspace {
   id: string
   name: string
   description?: string
+  ownerId: string
   tier: string
-  memberCount?: number
   createdAt: string
+  memberCount?: number
+}
+
+interface WorkspaceMember {
+  id: string
+  userId: string
+  userName?: string
+  userEmail?: string
+  role: 'OWNER' | 'ADMIN' | 'MEMBER' | 'VIEWER'
+  joinedAt: string
 }
 
 function WorkspaceManager() {
   const [workspaces, setWorkspaces] = useState<Workspace[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
+  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
+  const [members, setMembers] = useState<WorkspaceMember[]>([])
+  const [isLoading, setIsLoading] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
   const [newWorkspaceName, setNewWorkspaceName] = useState('')
-  const [newWorkspaceDescription, setNewWorkspaceDescription] = useState('')
+  const [newWorkspaceDesc, setNewWorkspaceDesc] = useState('')
+  const [inviteEmail, setInviteEmail] = useState('')
+  const [inviteRole, setInviteRole] = useState<'ADMIN' | 'MEMBER' | 'VIEWER'>('MEMBER')
 
   useEffect(() => {
     loadWorkspaces()
   }, [])
 
+  useEffect(() => {
+    if (selectedWorkspace) {
+      loadMembers(selectedWorkspace.id)
+    }
+  }, [selectedWorkspace])
+
   const loadWorkspaces = async () => {
     try {
-      setLoading(true)
-      setError(null)
-      // TODO: 워크스페이스 API 구현 후 연결
-      // const response = await workspaceAPI.list()
-      // setWorkspaces(response.workspaces || [])
-      
-      // 임시: 로컬 스토리지에서 워크스페이스 로드
-      const localWorkspaces = localStorage.getItem('local_workspaces')
-      if (localWorkspaces) {
-        setWorkspaces(JSON.parse(localWorkspaces))
-      } else {
-        setWorkspaces([])
-      }
-    } catch (err: any) {
-      console.error('워크스페이스 로드 실패:', err)
-      setError(err.message || '워크스페이스를 불러오는데 실패했습니다.')
+      setIsLoading(true)
+      // TODO: workspaceAPI 구현 필요
+      // const data = await workspaceAPI.list()
+      // setWorkspaces(data.workspaces || [])
+      showNotification('워크스페이스 목록을 불러오는 중...', 'info')
+    } catch (error: any) {
+      showNotification(error.message || '워크스페이스 목록을 불러오는데 실패했습니다', 'error')
     } finally {
-      setLoading(false)
+      setIsLoading(false)
+    }
+  }
+
+  const loadMembers = async (workspaceId: string) => {
+    try {
+      // TODO: workspaceAPI.getMembers 구현 필요
+      // const data = await workspaceAPI.getMembers(workspaceId)
+      // setMembers(data.members || [])
+    } catch (error: any) {
+      showNotification(error.message || '멤버 목록을 불러오는데 실패했습니다', 'error')
     }
   }
 
   const handleCreateWorkspace = async () => {
     if (!newWorkspaceName.trim()) {
-      showNotification('워크스페이스 이름을 입력해주세요.', 'error')
+      showNotification('워크스페이스 이름을 입력해주세요', 'error')
       return
     }
 
     try {
-      // TODO: 워크스페이스 API 구현 후 연결
-      // const response = await workspaceAPI.create({
+      setIsLoading(true)
+      // TODO: workspaceAPI.create 구현 필요
+      // const workspace = await workspaceAPI.create({
       //   name: newWorkspaceName,
-      //   description: newWorkspaceDescription || undefined,
+      //   description: newWorkspaceDesc,
       // })
-
-      // 임시: 로컬 스토리지에 저장
-      const newWorkspace: Workspace = {
-        id: `workspace_${Date.now()}`,
-        name: newWorkspaceName,
-        description: newWorkspaceDescription || undefined,
-        tier: 'FREE',
-        createdAt: new Date().toISOString(),
-      }
-
-      const updatedWorkspaces = [...workspaces, newWorkspace]
-      setWorkspaces(updatedWorkspaces)
-      localStorage.setItem('local_workspaces', JSON.stringify(updatedWorkspaces))
-
-      showNotification('워크스페이스가 생성되었습니다.', 'success')
+      // setWorkspaces([...workspaces, workspace])
       setShowCreateModal(false)
       setNewWorkspaceName('')
-      setNewWorkspaceDescription('')
-    } catch (err: any) {
-      showNotification(err.message || '워크스페이스 생성에 실패했습니다.', 'error')
+      setNewWorkspaceDesc('')
+      showNotification('워크스페이스가 생성되었습니다', 'success')
+    } catch (error: any) {
+      showNotification(error.message || '워크스페이스 생성에 실패했습니다', 'error')
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const handleDeleteWorkspace = async (id: string) => {
-    if (!confirm('이 워크스페이스를 삭제하시겠습니까?')) {
+  const handleInviteMember = async () => {
+    if (!inviteEmail.trim() || !selectedWorkspace) {
+      showNotification('이메일을 입력해주세요', 'error')
       return
     }
 
     try {
-      // TODO: 워크스페이스 API 구현 후 연결
-      // await workspaceAPI.delete(id)
-
-      // 임시: 로컬 스토리지에서 삭제
-      const updatedWorkspaces = workspaces.filter(w => w.id !== id)
-      setWorkspaces(updatedWorkspaces)
-      localStorage.setItem('local_workspaces', JSON.stringify(updatedWorkspaces))
-
-      showNotification('워크스페이스가 삭제되었습니다.', 'success')
-    } catch (err: any) {
-      showNotification(err.message || '워크스페이스 삭제에 실패했습니다.', 'error')
+      setIsLoading(true)
+      // TODO: workspaceAPI.inviteMember 구현 필요
+      // await workspaceAPI.inviteMember(selectedWorkspace.id, {
+      //   email: inviteEmail,
+      //   role: inviteRole,
+      // })
+      setShowInviteModal(false)
+      setInviteEmail('')
+      showNotification('멤버 초대가 전송되었습니다', 'success')
+      loadMembers(selectedWorkspace.id)
+    } catch (error: any) {
+      showNotification(error.message || '멤버 초대에 실패했습니다', 'error')
+    } finally {
+      setIsLoading(false)
     }
-  }
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString)
-    return date.toLocaleDateString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    })
-  }
-
-  const getTierLabel = (tier: string) => {
-    const labels: Record<string, string> = {
-      FREE: '무료',
-      BASIC: '기본',
-      PROFESSIONAL: '프로',
-      ENTERPRISE: '엔터프라이즈',
-    }
-    return labels[tier] || tier
   }
 
   return (
-    <div className="workspace-manager-container">
-      <div className="workspace-manager-header">
-        <div>
-          <h2>워크스페이스</h2>
-          <p className="subtitle">프롬프트를 그룹으로 관리하고 팀과 협업하세요</p>
-        </div>
+    <div className="workspace-manager">
+      <div className="workspace-header">
+        <h2>워크스페이스</h2>
         <button
           className="create-workspace-button"
           onClick={() => setShowCreateModal(true)}
         >
-          + 워크스페이스 생성
+          + 새 워크스페이스
         </button>
       </div>
 
-      {loading && <LoadingSpinner />}
-      {error && !loading && <ErrorMessage message={error} />}
-
-      {!loading && !error && (
-        <>
+      <div className="workspace-content">
+        <div className="workspace-list">
           {workspaces.length === 0 ? (
             <div className="empty-state">
-              <p>워크스페이스가 없습니다.</p>
-              <p className="empty-hint">워크스페이스를 생성하여 프롬프트를 그룹으로 관리하세요.</p>
-              <button
-                className="create-workspace-button"
-                onClick={() => setShowCreateModal(true)}
-              >
-                첫 워크스페이스 생성하기
-              </button>
+              <p>워크스페이스가 없습니다</p>
+              <p className="empty-hint">새 워크스페이스를 생성하여 팀과 협업하세요</p>
             </div>
           ) : (
-            <div className="workspaces-grid">
-              {workspaces.map((workspace) => (
-                <div key={workspace.id} className="workspace-card">
-                  <div className="workspace-card-header">
-                    <h3 className="workspace-name">{workspace.name}</h3>
-                    <span className={`tier-badge tier-${workspace.tier.toLowerCase()}`}>
-                      {getTierLabel(workspace.tier)}
-                    </span>
-                  </div>
+            workspaces.map(workspace => (
+              <div
+                key={workspace.id}
+                className={`workspace-item ${selectedWorkspace?.id === workspace.id ? 'selected' : ''}`}
+                onClick={() => setSelectedWorkspace(workspace)}
+              >
+                <div className="workspace-info">
+                  <h3>{workspace.name}</h3>
                   {workspace.description && (
                     <p className="workspace-description">{workspace.description}</p>
                   )}
-                  <div className="workspace-card-footer">
-                    <div className="workspace-meta">
-                      <span className="workspace-date">생성일: {formatDate(workspace.createdAt)}</span>
-                      {workspace.memberCount !== undefined && (
-                        <span className="workspace-members">멤버: {workspace.memberCount}명</span>
-                      )}
-                    </div>
-                    <div className="workspace-actions">
-                      <button
-                        className="action-button view-button"
-                        onClick={() => {
-                          showNotification('워크스페이스 상세 기능은 곧 제공됩니다.', 'info')
-                        }}
-                      >
-                        열기
-                      </button>
-                      <button
-                        className="action-button delete-button"
-                        onClick={() => handleDeleteWorkspace(workspace.id)}
-                      >
-                        삭제
-                      </button>
-                    </div>
+                  <div className="workspace-meta">
+                    <span>멤버 {workspace.memberCount || 0}명</span>
+                    <span>•</span>
+                    <span>{new Date(workspace.createdAt).toLocaleDateString('ko-KR')}</span>
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))
           )}
-        </>
-      )}
+        </div>
 
+        {selectedWorkspace && (
+          <div className="workspace-details">
+            <div className="workspace-details-header">
+              <h3>{selectedWorkspace.name}</h3>
+              <button
+                className="invite-button"
+                onClick={() => setShowInviteModal(true)}
+              >
+                멤버 초대
+              </button>
+            </div>
+
+            <div className="members-section">
+              <h4>멤버</h4>
+              <div className="members-list">
+                {members.map(member => (
+                  <div key={member.id} className="member-item">
+                    <div className="member-info">
+                      <span className="member-name">{member.userName || member.userEmail}</span>
+                      <span className="member-role">{member.role}</span>
+                    </div>
+                    <span className="member-joined">
+                      {new Date(member.joinedAt).toLocaleDateString('ko-KR')}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* 생성 모달 */}
       {showCreateModal && (
         <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>워크스페이스 생성</h3>
-              <button
-                className="modal-close-button"
-                onClick={() => setShowCreateModal(false)}
-              >
-                ×
-              </button>
+            <h3>새 워크스페이스 생성</h3>
+            <div className="form-group">
+              <label>워크스페이스 이름</label>
+              <input
+                type="text"
+                value={newWorkspaceName}
+                onChange={(e) => setNewWorkspaceName(e.target.value)}
+                placeholder="예: 마케팅 팀"
+              />
             </div>
-            <div className="modal-body">
-              <div className="form-group">
-                <label htmlFor="workspace-name">워크스페이스 이름 *</label>
-                <input
-                  id="workspace-name"
-                  type="text"
-                  value={newWorkspaceName}
-                  onChange={(e) => setNewWorkspaceName(e.target.value)}
-                  placeholder="워크스페이스 이름을 입력하세요"
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label htmlFor="workspace-description">설명 (선택사항)</label>
-                <textarea
-                  id="workspace-description"
-                  value={newWorkspaceDescription}
-                  onChange={(e) => setNewWorkspaceDescription(e.target.value)}
-                  placeholder="워크스페이스에 대한 설명을 입력하세요"
-                  className="form-textarea"
-                  rows={4}
-                />
-              </div>
+            <div className="form-group">
+              <label>설명 (선택사항)</label>
+              <textarea
+                value={newWorkspaceDesc}
+                onChange={(e) => setNewWorkspaceDesc(e.target.value)}
+                placeholder="워크스페이스에 대한 설명을 입력하세요"
+                rows={3}
+              />
             </div>
-            <div className="modal-footer">
-              <button
-                className="modal-button cancel-button"
-                onClick={() => {
-                  setShowCreateModal(false)
-                  setNewWorkspaceName('')
-                  setNewWorkspaceDescription('')
-                }}
-              >
-                취소
-              </button>
-              <button
-                className="modal-button create-button"
-                onClick={handleCreateWorkspace}
-              >
+            <div className="modal-actions">
+              <button onClick={() => setShowCreateModal(false)}>취소</button>
+              <button onClick={handleCreateWorkspace} disabled={isLoading}>
                 생성
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 초대 모달 */}
+      {showInviteModal && (
+        <div className="modal-overlay" onClick={() => setShowInviteModal(false)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3>멤버 초대</h3>
+            <div className="form-group">
+              <label>이메일</label>
+              <input
+                type="email"
+                value={inviteEmail}
+                onChange={(e) => setInviteEmail(e.target.value)}
+                placeholder="user@example.com"
+              />
+            </div>
+            <div className="form-group">
+              <label>역할</label>
+              <select value={inviteRole} onChange={(e) => setInviteRole(e.target.value as any)}>
+                <option value="MEMBER">멤버</option>
+                <option value="ADMIN">관리자</option>
+                <option value="VIEWER">뷰어</option>
+              </select>
+            </div>
+            <div className="modal-actions">
+              <button onClick={() => setShowInviteModal(false)}>취소</button>
+              <button onClick={handleInviteMember} disabled={isLoading}>
+                초대
               </button>
             </div>
           </div>
@@ -260,4 +261,3 @@ function WorkspaceManager() {
 }
 
 export default WorkspaceManager
-

@@ -1,334 +1,244 @@
-/* 워크스페이스 관리 스타일 */
-.workspace-manager-container {
-  padding: 32px 20px;
-  max-width: 1400px;
+.workspace-manager {
+  padding: 24px;
+  max-width: 1200px;
   margin: 0 auto;
 }
 
-.workspace-manager-header {
+.workspace-header {
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
-  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
 }
 
-.workspace-manager-header h2 {
-  margin: 0 0 8px 0;
-  font-size: 28px;
-  font-weight: 600;
-  color: #000000;
-}
-
-.workspace-manager-header .subtitle {
+.workspace-header h2 {
   margin: 0;
-  font-size: 14px;
-  color: #666666;
+  font-size: 24px;
+  font-weight: 600;
 }
 
 .create-workspace-button {
-  padding: 12px 24px;
-  background: #000000;
-  color: #ffffff;
+  padding: 10px 20px;
+  background: #000;
+  color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 6px;
+  cursor: pointer;
   font-size: 14px;
   font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'IBM Plex Sans KR', sans-serif;
+  transition: all 0.2s;
 }
 
 .create-workspace-button:hover {
-  background: #333333;
+  background: #333;
 }
 
-.workspaces-grid {
+.workspace-content {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
 }
 
-.workspace-card {
-  background: #ffffff;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  padding: 20px;
-  transition: all 0.2s ease;
+.workspace-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.workspace-card:hover {
-  border-color: #000000;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.workspace-item {
+  padding: 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
-.workspace-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: 12px;
+.workspace-item:hover {
+  border-color: var(--border-hover);
+  background: var(--bg-hover);
 }
 
-.workspace-name {
-  margin: 0;
-  font-size: 18px;
+.workspace-item.selected {
+  border-color: #000;
+  background: var(--bg-tertiary);
+}
+
+.workspace-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
   font-weight: 600;
-  color: #000000;
-  flex: 1;
-}
-
-.tier-badge {
-  display: inline-block;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  font-weight: 500;
-}
-
-.tier-badge.tier-free {
-  background: #f5f5f5;
-  color: #666666;
-}
-
-.tier-badge.tier-basic {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.tier-badge.tier-professional {
-  background: #f3e5f5;
-  color: #7b1fa2;
-}
-
-.tier-badge.tier-enterprise {
-  background: #fff3e0;
-  color: #e65100;
 }
 
 .workspace-description {
-  margin: 0;
+  margin: 0 0 8px 0;
   font-size: 14px;
-  color: #666666;
-  line-height: 1.6;
-}
-
-.workspace-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 12px;
-  border-top: 1px solid #f0f0f0;
-  flex-wrap: wrap;
-  gap: 12px;
+  color: var(--text-secondary);
 }
 
 .workspace-meta {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
-  font-size: 12px;
-  color: #999999;
-}
-
-.workspace-actions {
-  display: flex;
   gap: 8px;
-}
-
-.action-button {
-  padding: 6px 12px;
-  border: 1px solid #e5e5e5;
-  border-radius: 6px;
   font-size: 12px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  background: #ffffff;
-  color: #000000;
-}
-
-.action-button:hover {
-  background: #000000;
-  color: #ffffff;
-  border-color: #000000;
-}
-
-.action-button.delete-button:hover {
-  background: #dc3545;
-  border-color: #dc3545;
-  color: #ffffff;
+  color: var(--text-secondary);
 }
 
 .empty-state {
+  padding: 40px;
   text-align: center;
-  padding: 60px 20px;
-  color: #999999;
-}
-
-.empty-state p {
-  margin: 8px 0;
-  font-size: 16px;
+  color: var(--text-secondary);
 }
 
 .empty-hint {
+  margin-top: 8px;
   font-size: 14px;
-  color: #cccccc;
-  margin-bottom: 24px;
 }
 
-/* 모달 스타일 */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
+.workspace-details {
   padding: 20px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
 }
 
-.modal-content {
-  background: #ffffff;
-  border-radius: 12px;
-  max-width: 500px;
-  width: 100%;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-}
-
-.modal-header {
+.workspace-details-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e5e5;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border-primary);
 }
 
-.modal-header h3 {
+.workspace-details-header h3 {
   margin: 0;
   font-size: 20px;
   font-weight: 600;
-  color: #000000;
 }
 
-.modal-close-button {
-  background: none;
-  border: none;
-  font-size: 28px;
-  color: #666666;
+.invite-button {
+  padding: 8px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
   cursor: pointer;
-  padding: 0;
-  width: 32px;
-  height: 32px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.invite-button:hover {
+  background: var(--bg-hover);
+}
+
+.members-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.members-list {
   display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.member-item {
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-  justify-content: center;
-  border-radius: 4px;
-  transition: all 0.2s ease;
+  padding: 12px;
+  background: var(--bg-tertiary);
+  border-radius: 6px;
 }
 
-.modal-close-button:hover {
-  background: #f5f5f5;
-  color: #000000;
+.member-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.modal-body {
-  padding: 24px;
+.member-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.member-role {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.member-joined {
+  font-size: 12px;
+  color: var(--text-secondary);
 }
 
 .form-group {
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .form-group label {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   font-size: 14px;
   font-weight: 500;
-  color: #000000;
 }
 
-.form-input,
-.form-textarea {
+.form-group input,
+.form-group textarea,
+.form-group select {
   width: 100%;
-  padding: 12px 16px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
+  padding: 10px;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
   font-size: 14px;
-  font-family: 'IBM Plex Sans KR', sans-serif;
-  transition: border-color 0.2s ease;
+  font-family: inherit;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
-.form-input:focus,
-.form-textarea:focus {
-  outline: none;
-  border-color: #000000;
-}
-
-.form-textarea {
+.form-group textarea {
   resize: vertical;
-  min-height: 100px;
+  min-height: 80px;
 }
 
-.modal-footer {
+.modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 12px;
-  padding: 20px 24px;
-  border-top: 1px solid #e5e5e5;
+  margin-top: 20px;
 }
 
-.modal-button {
+.modal-actions button {
   padding: 10px 20px;
-  border: 1px solid #e5e5e5;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: 'IBM Plex Sans KR', sans-serif;
+  font-size: 14px;
+  transition: all 0.2s;
 }
 
-.modal-button.cancel-button {
-  background: #ffffff;
-  color: #666666;
+.modal-actions button:first-child {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
 }
 
-.modal-button.cancel-button:hover {
-  background: #f5f5f5;
-  border-color: #000000;
+.modal-actions button:last-child {
+  background: #000;
+  color: #fff;
+  border-color: #000;
 }
 
-.modal-button.create-button {
-  background: #000000;
-  color: #ffffff;
-  border-color: #000000;
+.modal-actions button:hover:not(:disabled) {
+  opacity: 0.8;
 }
 
-.modal-button.create-button:hover {
-  background: #333333;
+.modal-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
-/* 반응형 */
 @media (max-width: 768px) {
-  .workspaces-grid {
+  .workspace-content {
     grid-template-columns: 1fr;
   }
-
-  .workspace-manager-header {
-    flex-direction: column;
-  }
-
-  .workspace-card-footer {
-    flex-direction: column;
-    align-items: flex-start;
-  }
 }
-

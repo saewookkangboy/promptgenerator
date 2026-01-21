@@ -1,0 +1,70 @@
+.mobile-voice-input-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+  min-height: var(--touch-target-min);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.mobile-voice-input-button:hover:not(:disabled) {
+  background: var(--bg-hover);
+  border-color: var(--border-hover);
+}
+
+.mobile-voice-input-button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.mobile-voice-input-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mobile-voice-input-button.listening {
+  background: #ff4444;
+  color: #ffffff;
+  border-color: #ff4444;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.voice-icon {
+  font-size: 18px;
+  display: inline-block;
+}
+
+.voice-icon.listening {
+  animation: bounce 0.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@media (min-width: 769px) {
+  .mobile-voice-input-button {
+    display: none;
+  }
+}

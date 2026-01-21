@@ -63,6 +63,14 @@ export type ContentType =
   | 'facebook'
   | 'instagram'
   | 'youtube'
+  | 'twitter' // X (Twitter)
+  | 'threads' // Meta Threads
+  | 'tiktok' // TikTok
+  | 'podcast' // 팟캐스트
+  | 'email' // 이메일 마케팅
+  | 'newsletter' // 뉴스레터
+  | 'product' // 제품 설명서
+  | 'faq' // FAQ
   | 'general' // 일반 텍스트 (비정형 자연어 프롬프트)
 
 // 어투/말 표현 타입

@@ -1,18 +1,25 @@
-import { useState, useEffect } from 'react'
-import PromptGenerator from './components/PromptGenerator'
-import ImagePromptGenerator from './components/ImagePromptGenerator'
-import VideoPromptGenerator from './components/VideoPromptGenerator'
-import EngineeringPromptGenerator from './components/EngineeringPromptGenerator'
-import TemplateGallery from './components/TemplateGallery'
-import AboutPage from './components/AboutPage'
-import AdminLogin from './components/AdminLogin'
-import AdminDashboard from './components/AdminDashboard'
+import { useState, useEffect, lazy, Suspense } from 'react'
+import LoadingSpinner from './components/LoadingSpinner'
 import LanguageToggle from './components/LanguageToggle'
-import { getAdminAuth, incrementVisitCount } from './utils/storage'
+import Onboarding from './components/Onboarding'
+import UserAnalyticsDashboard from './components/UserAnalyticsDashboard'
+import PromptHistoryManager from './components/PromptHistoryManager'
+import { getAdminAuth, incrementVisitCount, getUserPreferences } from './utils/storage'
 import { initializeScheduler } from './utils/prompt-guide-scheduler'
 import { templateAPI } from './utils/api'
 import { useLanguage } from './contexts/LanguageContext'
+import { useSwipe } from './hooks/useSwipe'
 import './App.css'
+
+// 코드 스플리팅: 컴포넌트를 지연 로딩
+const PromptGenerator = lazy(() => import('./components/PromptGenerator'))
+const ImagePromptGenerator = lazy(() => import('./components/ImagePromptGenerator'))
+const VideoPromptGenerator = lazy(() => import('./components/VideoPromptGenerator'))
+const EngineeringPromptGenerator = lazy(() => import('./components/EngineeringPromptGenerator'))
+const TemplateGallery = lazy(() => import('./components/TemplateGallery'))
+const AboutPage = lazy(() => import('./components/AboutPage'))
+const AdminLogin = lazy(() => import('./components/AdminLogin'))
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'))
 
 type TabType = 'text' | 'image' | 'video' | 'engineering' | 'templates' | 'about'
 
@@ -21,6 +28,9 @@ function App() {
   // 서비스 시작 시 항상 일반 모드로 시작 (Admin 모드는 명시적으로 진입)
   const [isAdmin, setIsAdmin] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
+  const [showOnboarding, setShowOnboarding] = useState(false)
+  const [showAnalytics, setShowAnalytics] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
 
   useEffect(() => {
     // 방문수 증가
@@ -29,6 +39,13 @@ function App() {
     // Admin 인증 상태 확인
     const adminAuth = getAdminAuth()
     setIsAdminAuthenticated(adminAuth)
+    
+    // 온보딩 확인 (첫 방문자)
+    const prefs = getUserPreferences()
+    const isFirstVisit = !prefs.preferredContentTypes || prefs.preferredContentTypes.length === 0
+    if (isFirstVisit) {
+      setShowOnboarding(true)
+    }
     
     // 프롬프트 가이드 스케줄러 초기화
     initializeScheduler()
@@ -153,33 +170,49 @@ function App() {
     if (!isAdminAuthenticated) {
       return (
         <div className="app">
-          <AdminLogin 
-            onLogin={handleAdminLogin}
-            onBack={() => {
-              setIsAdmin(false)
-            }}
-          />
+          <Suspense fallback={<LoadingSpinner message="로딩 중..." />}>
+            <AdminLogin 
+              onLogin={handleAdminLogin}
+              onBack={() => {
+                setIsAdmin(false)
+              }}
+            />
+          </Suspense>
         </div>
       )
     }
     return (
       <div className="app">
-        <AdminDashboard 
-          onLogout={handleAdminLogout}
-          onBackToMain={() => {
-            setIsAdmin(false)
-          }}
-        />
+        <Suspense fallback={<LoadingSpinner message="로딩 중..." />}>
+          <AdminDashboard 
+            onLogout={handleAdminLogout}
+            onBackToMain={() => {
+              setIsAdmin(false)
+            }}
+          />
+        </Suspense>
       </div>
     )
   }
 
   return (
-    <AppContent 
-      activeTab={activeTab}
-      setActiveTab={setActiveTab}
-      setIsAdmin={setIsAdmin}
-    />
+    <>
+      {showOnboarding && (
+        <Onboarding
+          onComplete={() => setShowOnboarding(false)}
+          onSkip={() => setShowOnboarding(false)}
+        />
+      )}
+      <AppContent 
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        setIsAdmin={setIsAdmin}
+        showAnalytics={showAnalytics}
+        setShowAnalytics={setShowAnalytics}
+        showHistory={showHistory}
+        setShowHistory={setShowHistory}
+      />
+    </>
   )
 }
 
@@ -187,15 +220,42 @@ function AppContent({
   activeTab,
   setActiveTab,
   setIsAdmin,
+  showAnalytics,
+  setShowAnalytics,
+  showHistory,
+  setShowHistory,
 }: {
   activeTab: TabType
   setActiveTab: (tab: TabType) => void
   setIsAdmin: (admin: boolean) => void
+  showAnalytics: boolean
+  setShowAnalytics: (show: boolean) => void
+  showHistory: boolean
+  setShowHistory: (show: boolean) => void
 }) {
   const { t } = useLanguage()
+  
+  const tabs: TabType[] = ['text', 'image', 'video', 'engineering', 'templates', 'about']
+  const currentIndex = tabs.indexOf(activeTab)
+
+  // 스와이프 제스처로 탭 전환
+  const swipeRef = useSwipe({
+    onSwipeLeft: () => {
+      if (currentIndex < tabs.length - 1) {
+        setActiveTab(tabs[currentIndex + 1])
+      }
+    },
+    onSwipeRight: () => {
+      if (currentIndex > 0) {
+        setActiveTab(tabs[currentIndex - 1])
+      }
+    },
+    threshold: 50,
+    velocity: 0.3,
+  })
 
   return (
-    <div className="app">
+    <div className="app" ref={swipeRef as any}>
       <header className="app-header">
         <div className="app-header-content">
           <div className="app-header-text">
@@ -204,6 +264,20 @@ function AppContent({
           </div>
           <div className="header-actions">
             <div className="header-controls">
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="header-button"
+                title="프롬프트 히스토리"
+              >
+                📚 히스토리
+              </button>
+              <button
+                onClick={() => setShowAnalytics(!showAnalytics)}
+                className="header-button"
+                title="사용 통계"
+              >
+                📊 통계
+              </button>
               <LanguageToggle />
             </div>
             <button
@@ -262,14 +336,33 @@ function AppContent({
       </div>
 
       <div className="tab-content">
-        {activeTab === 'text' && <PromptGenerator />}
-        {activeTab === 'image' && <ImagePromptGenerator />}
-        {activeTab === 'video' && <VideoPromptGenerator />}
-        {activeTab === 'engineering' && <EngineeringPromptGenerator />}
-        {activeTab === 'templates' && (
-          <TemplateGalleryWrapper />
+        {showHistory && (
+          <div className="modal-overlay" onClick={() => setShowHistory(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <PromptHistoryManager onClose={() => setShowHistory(false)} />
+            </div>
+          </div>
         )}
-        {activeTab === 'about' && <AboutPage />}
+        
+        {showAnalytics && (
+          <div className="modal-overlay" onClick={() => setShowAnalytics(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <UserAnalyticsDashboard />
+              <button className="modal-close" onClick={() => setShowAnalytics(false)}>×</button>
+            </div>
+          </div>
+        )}
+
+        <Suspense fallback={<LoadingSpinner message="로딩 중..." />}>
+          {activeTab === 'text' && <PromptGenerator />}
+          {activeTab === 'image' && <ImagePromptGenerator />}
+          {activeTab === 'video' && <VideoPromptGenerator />}
+          {activeTab === 'engineering' && <EngineeringPromptGenerator />}
+          {activeTab === 'templates' && (
+            <TemplateGalleryWrapper />
+          )}
+          {activeTab === 'about' && <AboutPage />}
+        </Suspense>
       </div>
 
       <footer className="app-footer">

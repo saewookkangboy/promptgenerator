@@ -91,6 +91,8 @@
     padding: 8px;
     background: var(--bg-secondary);
     box-shadow: var(--shadow-md);
+    /* iOS safe area 지원 */
+    padding-bottom: max(8px, env(safe-area-inset-bottom));
   }
   
   /* 스크롤 가능할 때 힌트 표시 */
@@ -99,7 +101,35 @@
   }
   
   .tab-content {
-    padding-bottom: 80px; /* 하단 네비게이션 공간 확보 */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom)); /* 하단 네비게이션 공간 확보 + safe area */
+    /* 스와이프 제스처를 위한 터치 최적화 */
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  /* 모바일에서 스와이프 힌트 표시 */
+  .app::before {
+    content: '';
+    position: fixed;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--border-primary), transparent);
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+    z-index: 999;
+  }
+  
+  .app.swipe-hint::before {
+    opacity: 0.3;
+    animation: swipeHint 2s ease-in-out infinite;
+  }
+  
+  @keyframes swipeHint {
+    0%, 100% { transform: translateX(-20px) translateY(-50%); opacity: 0.3; }
+    50% { transform: translateX(20px) translateY(-50%); opacity: 0.6; }
   }
 }
 
@@ -540,6 +570,77 @@
   gap: var(--spacing-sm);
 }
 
+.header-button {
+  padding: var(--spacing-sm) var(--spacing-md);
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-primary);
+  border-radius: 6px;
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  min-height: var(--touch-target-min);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-button:hover {
+  background: var(--bg-primary);
+  color: var(--text-inverse);
+  border-color: var(--bg-primary);
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-content {
+  background: var(--bg-secondary);
+  border-radius: 12px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: var(--shadow-lg);
+}
+
+.modal-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  border-radius: 50%;
+  cursor: pointer;
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: #000;
+  color: #fff;
+}
+
 @media (max-width: 768px) {
   .header-controls {
     gap: var(--spacing-xs);
@@ -547,6 +648,17 @@
   
   .header-actions {
     gap: var(--spacing-xs);
+  }
+
+  .header-button {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: var(--font-size-xs);
+  }
+
+  .modal-content {
+    max-width: 100vw;
+    max-height: 100vh;
+    border-radius: 0;
   }
 }
 

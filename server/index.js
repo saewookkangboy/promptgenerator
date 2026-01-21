@@ -882,7 +882,9 @@ try {
   
   // AI 서비스 정보 API
   const aiServicesRouter = require('./routes/aiServices')
+  const publicApiRouter = require('./routes/api')
   app.use('/api/ai-services', aiServicesRouter)
+  app.use('/api', publicApiRouter)
   console.log('✅ AI 서비스 API 라우트 로드됨: /api/ai-services')
   
   // 프롬프트 최적화 API (Agent Lightning)

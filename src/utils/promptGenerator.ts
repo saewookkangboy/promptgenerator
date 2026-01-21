@@ -27,6 +27,38 @@ const CONTENT_TYPE_INFO = {
     name: '유튜브 영상 제목 및 설명 텍스트',
     requirements: '검색 최적화된 제목과 상세한 설명',
   },
+  twitter: {
+    name: 'X (Twitter) 포스트',
+    requirements: '280자 이내의 간결하고 임팩트 있는 메시지, 해시태그 활용',
+  },
+  threads: {
+    name: 'Threads 포스트',
+    requirements: 'Meta의 Threads 플랫폼에 최적화된 콘텐츠, 500자 이내',
+  },
+  tiktok: {
+    name: 'TikTok 스크립트',
+    requirements: '짧고 강렬한 메시지, 훅(Hook) 포함, 15-60초 영상용',
+  },
+  podcast: {
+    name: '팟캐스트 스크립트',
+    requirements: '대화형 스크립트, 자연스러운 발화, 에피소드 구조',
+  },
+  email: {
+    name: '이메일 마케팅',
+    requirements: '명확한 제목과 본문, CTA 포함, 모바일 최적화',
+  },
+  newsletter: {
+    name: '뉴스레터',
+    requirements: '정기 발행 콘텐츠, 섹션별 구성, 가치 있는 정보 제공',
+  },
+  product: {
+    name: '제품 설명서',
+    requirements: '제품 특징과 혜택을 명확히 설명, 구매 유도',
+  },
+  faq: {
+    name: 'FAQ (자주 묻는 질문)',
+    requirements: '질문과 답변 형식, 명확하고 간결한 설명',
+  },
   general: {
     name: '일반 텍스트',
     requirements: '자연어 프롬프트 기반의 비정형 텍스트 생성, 특정 플랫폼 제약 없음',

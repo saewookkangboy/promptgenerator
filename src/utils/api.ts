@@ -648,6 +648,22 @@ export const adminAPI = {
       body: JSON.stringify({ version, changeSummary }),
     })
   },
+
+  getAdvancedAnalytics: async (params?: { timeRange?: '7d' | '30d' | '90d' | 'all' }) => {
+    const queryParams = new URLSearchParams()
+    if (params?.timeRange) {
+      queryParams.append('timeRange', params.timeRange)
+    }
+    return apiRequest<{
+      userBehaviors: any[]
+      funnelData: any[]
+      userSegments: any[]
+    }>(`/api/admin/analytics/advanced?${queryParams.toString()}`)
+  },
+
+  getUserBehavior: async (userId: string) => {
+    return apiRequest<any>(`/api/admin/users/${userId}/behavior`)
+  },
 }
 
 // Analytics API
@@ -714,6 +730,95 @@ export const aiServicesAPI = {
     return apiRequest<{ success: boolean; data: any[]; count: number }>(
       `/api/ai-services/category/${category}`
     )
+  },
+}
+
+// 워크스페이스 API
+export const workspaceAPI = {
+  list: async () => {
+    return apiRequest<{ workspaces: any[] }>('/api/workspaces')
+  },
+
+  get: async (id: string) => {
+    return apiRequest<any>(`/api/workspaces/${id}`)
+  },
+
+  create: async (data: { name: string; description?: string }) => {
+    return apiRequest<any>('/api/workspaces', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  update: async (id: string, data: { name?: string; description?: string }) => {
+    return apiRequest<any>(`/api/workspaces/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (id: string) => {
+    return apiRequest<{ message: string }>(`/api/workspaces/${id}`, {
+      method: 'DELETE',
+    })
+  },
+
+  getMembers: async (workspaceId: string) => {
+    return apiRequest<{ members: any[] }>(`/api/workspaces/${workspaceId}/members`)
+  },
+
+  inviteMember: async (workspaceId: string, data: { email: string; role: 'ADMIN' | 'MEMBER' | 'VIEWER' }) => {
+    return apiRequest<any>(`/api/workspaces/${workspaceId}/members`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  updateMemberRole: async (workspaceId: string, userId: string, role: 'ADMIN' | 'MEMBER' | 'VIEWER') => {
+    return apiRequest<any>(`/api/workspaces/${workspaceId}/members/${userId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ role }),
+    })
+  },
+
+  removeMember: async (workspaceId: string, userId: string) => {
+    return apiRequest<{ message: string }>(`/api/workspaces/${workspaceId}/members/${userId}`, {
+      method: 'DELETE',
+    })
+  },
+}
+
+// 댓글 API
+export const commentAPI = {
+  list: async (promptId: string) => {
+    return apiRequest<{ comments: any[] }>(`/api/prompts/${promptId}/comments`)
+  },
+
+  create: async (promptId: string, data: { content: string; parentCommentId?: string }) => {
+    return apiRequest<any>(`/api/prompts/${promptId}/comments`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  createReply: async (promptId: string, parentCommentId: string, data: { content: string }) => {
+    return apiRequest<any>(`/api/prompts/${promptId}/comments/${parentCommentId}/replies`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  },
+
+  update: async (promptId: string, commentId: string, data: { content: string }) => {
+    return apiRequest<any>(`/api/prompts/${promptId}/comments/${commentId}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    })
+  },
+
+  delete: async (promptId: string, commentId: string) => {
+    return apiRequest<{ message: string }>(`/api/prompts/${promptId}/comments/${commentId}`, {
+      method: 'DELETE',
+    })
   },
 }
 

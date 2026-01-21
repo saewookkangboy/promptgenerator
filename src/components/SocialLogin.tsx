@@ -13,7 +13,7 @@ export default function SocialLogin({ onSuccess }: SocialLoginProps) {
     setIsLoading(provider)
     try {
       // 소셜 로그인 URL 생성
-      const redirectUri = `${window.location.origin}/auth/callback`
+      const redirectUri = `${window.location.origin}/auth/callback?provider=${provider}`
       const authUrl = `/api/auth/${provider}?redirect_uri=${encodeURIComponent(redirectUri)}`
       
       // 새 창으로 소셜 로그인 페이지 열기
@@ -41,9 +41,21 @@ export default function SocialLogin({ onSuccess }: SocialLoginProps) {
         if (event.data.type === 'SOCIAL_LOGIN_SUCCESS') {
           window.removeEventListener('message', messageListener)
           popup.close()
+          
+          // 토큰 저장
+          if (event.data.token) {
+            localStorage.setItem('auth_token', event.data.token)
+          }
+          if (event.data.refreshToken) {
+            localStorage.setItem('refresh_token', event.data.refreshToken)
+          }
+          
           showNotification(`${provider} 로그인 성공!`, 'success')
           setIsLoading(null)
           onSuccess?.()
+          
+          // 페이지 새로고침하여 인증 상태 반영
+          window.location.reload()
         } else if (event.data.type === 'SOCIAL_LOGIN_ERROR') {
           window.removeEventListener('message', messageListener)
           popup.close()

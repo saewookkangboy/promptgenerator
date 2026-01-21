@@ -7,6 +7,9 @@ const STORAGE_KEYS = {
   DAILY_VISITS: 'daily_visits',
   STATS: 'prompt_stats',
   GUIDE_COLLECTION_HISTORY: 'guide_collection_history',
+  PROMPT_FAVORITES: 'prompt_favorites',
+  PROMPT_TAGS: 'prompt_tags',
+  USER_PREFERENCES: 'user_preferences',
 } as const
 
 export interface PromptRecord {
@@ -15,6 +18,15 @@ export interface PromptRecord {
   category: 'text' | 'image' | 'video' | 'engineering'
   userInput: string
   model?: string
+  // 새로운 필드들
+  title?: string
+  content?: string // 생성된 프롬프트 내용
+  metaPrompt?: string
+  contextPrompt?: string
+  hashtags?: string[]
+  isFavorite?: boolean
+  tags?: string[]
+  notes?: string
   options?: {
     // Text options
     contentType?: string
@@ -351,6 +363,225 @@ export function updateGuideCollectionHistory(
     }
   } catch (error) {
     console.error('가이드 수집 이력 업데이트 실패:', error)
+  }
+}
+
+// 즐겨찾기 관리
+export function toggleFavorite(promptId: string): boolean {
+  try {
+    const favorites = getFavorites()
+    const index = favorites.indexOf(promptId)
+    
+    if (index >= 0) {
+      favorites.splice(index, 1)
+    } else {
+      favorites.push(promptId)
+    }
+    
+    localStorage.setItem(STORAGE_KEYS.PROMPT_FAVORITES, JSON.stringify(favorites))
+    
+    // 프롬프트 기록도 업데이트
+    const records = getPromptRecordsInternal()
+    const recordIndex = records.findIndex(r => r.id === promptId)
+    if (recordIndex >= 0) {
+      records[recordIndex].isFavorite = index < 0
+      localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(records))
+    }
+    
+    return index < 0 // true면 즐겨찾기 추가됨
+  } catch (error) {
+    console.error('즐겨찾기 토글 실패:', error)
+    return false
+  }
+}
+
+export function getFavorites(): string[] {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.PROMPT_FAVORITES)
+    return data ? JSON.parse(data) : []
+  } catch (error) {
+    console.error('즐겨찾기 조회 실패:', error)
+    return []
+  }
+}
+
+export function isFavorite(promptId: string): boolean {
+  return getFavorites().includes(promptId)
+}
+
+// 태그 관리
+export function getAllTags(): string[] {
+  try {
+    const records = getPromptRecordsInternal()
+    const tagSet = new Set<string>()
+    
+    records.forEach(record => {
+      if (record.tags && Array.isArray(record.tags)) {
+        record.tags.forEach(tag => tagSet.add(tag))
+      }
+    })
+    
+    return Array.from(tagSet).sort()
+  } catch (error) {
+    console.error('태그 조회 실패:', error)
+    return []
+  }
+}
+
+export function addTagsToPrompt(promptId: string, tags: string[]): void {
+  try {
+    const records = getPromptRecordsInternal()
+    const recordIndex = records.findIndex(r => r.id === promptId)
+    
+    if (recordIndex >= 0) {
+      const existingTags = records[recordIndex].tags || []
+      const newTags = [...new Set([...existingTags, ...tags])]
+      records[recordIndex].tags = newTags
+      localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(records))
+    }
+  } catch (error) {
+    console.error('태그 추가 실패:', error)
+  }
+}
+
+export function removeTagFromPrompt(promptId: string, tag: string): void {
+  try {
+    const records = getPromptRecordsInternal()
+    const recordIndex = records.findIndex(r => r.id === promptId)
+    
+    if (recordIndex >= 0) {
+      const existingTags = records[recordIndex].tags || []
+      records[recordIndex].tags = existingTags.filter(t => t !== tag)
+      localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(records))
+    }
+  } catch (error) {
+    console.error('태그 제거 실패:', error)
+  }
+}
+
+export function updatePromptRecord(
+  promptId: string,
+  updates: Partial<Pick<PromptRecord, 'title' | 'notes' | 'tags' | 'isFavorite'>>
+): void {
+  try {
+    const records = getPromptRecordsInternal()
+    const recordIndex = records.findIndex(r => r.id === promptId)
+    
+    if (recordIndex >= 0) {
+      records[recordIndex] = { ...records[recordIndex], ...updates }
+      localStorage.setItem(STORAGE_KEYS.PROMPT_HISTORY, JSON.stringify(records))
+      
+      // 즐겨찾기도 업데이트
+      if (updates.isFavorite !== undefined) {
+        const favorites = getFavorites()
+        if (updates.isFavorite) {
+          if (!favorites.includes(promptId)) {
+            favorites.push(promptId)
+            localStorage.setItem(STORAGE_KEYS.PROMPT_FAVORITES, JSON.stringify(favorites))
+          }
+        } else {
+          const index = favorites.indexOf(promptId)
+          if (index >= 0) {
+            favorites.splice(index, 1)
+            localStorage.setItem(STORAGE_KEYS.PROMPT_FAVORITES, JSON.stringify(favorites))
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('프롬프트 기록 업데이트 실패:', error)
+  }
+}
+
+// 검색 기능
+export function searchPromptRecords(query: string, filters?: {
+  category?: PromptRecord['category']
+  tags?: string[]
+  favoritesOnly?: boolean
+  dateFrom?: number
+  dateTo?: number
+}): PromptRecord[] {
+  try {
+    let records = getPromptRecords()
+    
+    // 카테고리 필터
+    if (filters?.category) {
+      records = records.filter(r => r.category === filters.category)
+    }
+    
+    // 태그 필터
+    if (filters?.tags && filters.tags.length > 0) {
+      records = records.filter(r => {
+        const recordTags = r.tags || []
+        return filters.tags!.some(tag => recordTags.includes(tag))
+      })
+    }
+    
+    // 즐겨찾기만
+    if (filters?.favoritesOnly) {
+      const favorites = getFavorites()
+      records = records.filter(r => favorites.includes(r.id))
+    }
+    
+    // 날짜 필터
+    if (filters?.dateFrom) {
+      records = records.filter(r => r.timestamp >= filters.dateFrom!)
+    }
+    if (filters?.dateTo) {
+      records = records.filter(r => r.timestamp <= filters.dateTo!)
+    }
+    
+    // 검색어 필터
+    if (query.trim()) {
+      const lowerQuery = query.toLowerCase()
+      records = records.filter(r => {
+        const searchableText = [
+          r.userInput,
+          r.title,
+          r.content,
+          r.metaPrompt,
+          r.contextPrompt,
+          ...(r.tags || []),
+          r.notes,
+        ].filter(Boolean).join(' ').toLowerCase()
+        
+        return searchableText.includes(lowerQuery)
+      })
+    }
+    
+    return records
+  } catch (error) {
+    console.error('프롬프트 검색 실패:', error)
+    return []
+  }
+}
+
+// 사용자 선호도 저장
+export interface UserPreferences {
+  preferredContentTypes?: string[]
+  preferredToneStyles?: string[]
+  defaultOptions?: Partial<PromptRecord['options']>
+  theme?: 'light' | 'dark'
+  language?: string
+}
+
+export function getUserPreferences(): UserPreferences {
+  try {
+    const data = localStorage.getItem(STORAGE_KEYS.USER_PREFERENCES)
+    return data ? JSON.parse(data) : {}
+  } catch (error) {
+    console.error('사용자 선호도 조회 실패:', error)
+    return {}
+  }
+}
+
+export function updateUserPreferences(updates: Partial<UserPreferences>): void {
+  try {
+    const current = getUserPreferences()
+    const updated = { ...current, ...updates }
+    localStorage.setItem(STORAGE_KEYS.USER_PREFERENCES, JSON.stringify(updated))
+  } catch (error) {
+    console.error('사용자 선호도 업데이트 실패:', error)
   }
 }
 

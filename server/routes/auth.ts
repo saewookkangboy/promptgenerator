@@ -2,12 +2,38 @@
 import { Router, Response } from 'express'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import rateLimit from 'express-rate-limit'
 import { prisma } from '../db/prisma'
 import { authenticateToken, AuthRequest } from '../middleware/auth'
 import { validateRegisterInput, validateLoginInput } from '../middleware/validation'
 import { log } from '../utils/logger'
 
 const router = Router()
+
+// 인증 API에 대한 엄격한 Rate Limiting
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15분
+  max: 5, // 최대 5회
+  message: {
+    error: '요청 횟수를 초과했습니다. 15분 후 다시 시도해주세요.',
+    retryAfter: '15분'
+  },
+  skipSuccessfulRequests: true, // 성공한 요청은 카운트에서 제외
+  standardHeaders: true,
+  legacyHeaders: false,
+})
+
+// 소셜 로그인에 대한 Rate Limiting
+const socialAuthLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15분
+  max: 10, // 최대 10회
+  message: {
+    error: '소셜 로그인 시도 횟수를 초과했습니다. 15분 후 다시 시도해주세요.',
+    retryAfter: '15분'
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+})
 
 // Access Token 생성 (15분 만료)
 function generateAccessToken(userId: string, email: string): string {
@@ -93,7 +119,7 @@ function generateToken(userId: string, email: string): string {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/register', validateRegisterInput, async (req, res: Response) => {
+router.post('/register', authLimiter, validateRegisterInput, async (req, res: Response) => {
   try {
     const { email, password, name } = req.body
 
@@ -207,7 +233,7 @@ router.post('/register', validateRegisterInput, async (req, res: Response) => {
  *             schema:
  *               $ref: '#/components/schemas/Error'
  */
-router.post('/login', validateLoginInput, async (req, res: Response) => {
+router.post('/login', authLimiter, validateLoginInput, async (req, res: Response) => {
   try {
     const { email, password } = req.body
 
@@ -505,6 +531,295 @@ router.post('/change-password', authenticateToken, async (req: AuthRequest, res:
     res.status(500).json({ error: '비밀번호 변경에 실패했습니다' })
   }
 })
+
+// 소셜 로그인 엔드포인트 (Google, GitHub)
+router.get('/google', socialAuthLimiter, async (req, res: Response) => {
+  try {
+    const { redirect_uri } = req.query
+    const clientId = process.env.GOOGLE_CLIENT_ID
+    
+    if (!clientId) {
+      res.status(500).json({ error: 'Google OAuth가 설정되지 않았습니다' })
+      return
+    }
+
+    const redirectUri = (redirect_uri as string) || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`
+    const scope = 'openid email profile'
+    const responseType = 'code'
+    const state = jwt.sign({ redirectUri }, process.env.JWT_SECRET || 'secret', { expiresIn: '10m' })
+    
+    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `response_type=${responseType}&` +
+      `scope=${scope}&` +
+      `state=${state}`
+
+    res.redirect(authUrl)
+  } catch (error: any) {
+    console.error('Google OAuth 오류:', error)
+    res.status(500).json({ error: 'Google 로그인에 실패했습니다' })
+  }
+})
+
+router.get('/github', socialAuthLimiter, async (req, res: Response) => {
+  try {
+    const { redirect_uri } = req.query
+    const clientId = process.env.GITHUB_CLIENT_ID
+    
+    if (!clientId) {
+      res.status(500).json({ error: 'GitHub OAuth가 설정되지 않았습니다' })
+      return
+    }
+
+    const redirectUri = (redirect_uri as string) || `${process.env.FRONTEND_URL || 'http://localhost:5173'}/auth/callback`
+    const scope = 'user:email'
+    const state = jwt.sign({ redirectUri }, process.env.JWT_SECRET || 'secret', { expiresIn: '10m' })
+    
+    const authUrl = `https://github.com/login/oauth/authorize?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=${scope}&` +
+      `state=${state}`
+
+    res.redirect(authUrl)
+  } catch (error: any) {
+    console.error('GitHub OAuth 오류:', error)
+    res.status(500).json({ error: 'GitHub 로그인에 실패했습니다' })
+  }
+})
+
+// 소셜 로그인 콜백 처리
+router.get('/callback', socialAuthLimiter, async (req, res: Response) => {
+  try {
+    const { code, state, provider } = req.query
+
+    if (!code || !state) {
+      res.status(400).json({ error: '인증 코드가 없습니다' })
+      return
+    }
+
+    // State 검증
+    let decodedState: { redirectUri: string }
+    try {
+      decodedState = jwt.verify(state as string, process.env.JWT_SECRET || 'secret') as { redirectUri: string }
+    } catch {
+      res.status(400).json({ error: '유효하지 않은 요청입니다' })
+      return
+    }
+
+    // Provider에 따라 처리
+    const providerName = (provider as string) || 'google'
+    
+    if (providerName === 'google') {
+      await handleGoogleCallback(code as string, decodedState.redirectUri, res)
+    } else if (providerName === 'github') {
+      await handleGitHubCallback(code as string, decodedState.redirectUri, res)
+    } else {
+      res.status(400).json({ error: '지원하지 않는 소셜 로그인 제공자입니다' })
+    }
+  } catch (error: any) {
+    console.error('소셜 로그인 콜백 오류:', error)
+    res.status(500).json({ error: '소셜 로그인에 실패했습니다' })
+  }
+})
+
+// Google OAuth 콜백 처리
+async function handleGoogleCallback(code: string, redirectUri: string, res: Response) {
+  try {
+    const clientId = process.env.GOOGLE_CLIENT_ID
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET
+
+    if (!clientId || !clientSecret) {
+      res.status(500).json({ error: 'Google OAuth가 설정되지 않았습니다' })
+      return
+    }
+
+    // Access Token 요청
+    const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+        grant_type: 'authorization_code',
+      }),
+    })
+
+    const tokenData = await tokenResponse.json()
+
+    if (!tokenData.access_token) {
+      res.status(400).json({ error: '토큰을 받아오는데 실패했습니다' })
+      return
+    }
+
+    // 사용자 정보 요청
+    const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    })
+
+    const userData = await userResponse.json()
+
+    // 사용자 생성 또는 조회
+    let user = await prisma.user.findUnique({
+      where: { email: userData.email },
+    })
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: userData.email,
+          name: userData.name || null,
+          passwordHash: '', // 소셜 로그인은 비밀번호 없음
+          tier: 'FREE',
+          subscriptionStatus: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          tier: true,
+          createdAt: true,
+        },
+      })
+    }
+
+    // JWT 토큰 생성
+    const accessToken = generateAccessToken(user.id, user.email)
+    const refreshToken = generateRefreshToken(user.id, user.email)
+
+    // 프론트엔드로 리다이렉트 (팝업 메시지 전송)
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>로그인 중...</title></head>
+        <body>
+          <script>
+            window.opener.postMessage({
+              type: 'SOCIAL_LOGIN_SUCCESS',
+              token: '${accessToken}',
+              refreshToken: '${refreshToken}',
+              user: ${JSON.stringify(user)}
+            }, '${redirectUri.split('/').slice(0, 3).join('/')}');
+            window.close();
+          </script>
+        </body>
+      </html>
+    `
+    res.send(html)
+  } catch (error: any) {
+    console.error('Google 콜백 처리 오류:', error)
+    res.status(500).json({ error: 'Google 로그인 처리에 실패했습니다' })
+  }
+}
+
+// GitHub OAuth 콜백 처리
+async function handleGitHubCallback(code: string, redirectUri: string, res: Response) {
+  try {
+    const clientId = process.env.GITHUB_CLIENT_ID
+    const clientSecret = process.env.GITHUB_CLIENT_SECRET
+
+    if (!clientId || !clientSecret) {
+      res.status(500).json({ error: 'GitHub OAuth가 설정되지 않았습니다' })
+      return
+    }
+
+    // Access Token 요청
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        code,
+        client_id: clientId,
+        client_secret: clientSecret,
+        redirect_uri: redirectUri,
+      }),
+    })
+
+    const tokenData = await tokenResponse.json()
+
+    if (!tokenData.access_token) {
+      res.status(400).json({ error: '토큰을 받아오는데 실패했습니다' })
+      return
+    }
+
+    // 사용자 정보 요청
+    const userResponse = await fetch('https://api.github.com/user', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    })
+
+    const userData = await userResponse.json()
+
+    // 이메일 요청 (별도 엔드포인트)
+    const emailResponse = await fetch('https://api.github.com/user/emails', {
+      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    })
+
+    const emails = await emailResponse.json()
+    const primaryEmail = emails.find((e: any) => e.primary)?.email || emails[0]?.email
+
+    if (!primaryEmail) {
+      res.status(400).json({ error: '이메일 정보를 가져올 수 없습니다' })
+      return
+    }
+
+    // 사용자 생성 또는 조회
+    let user = await prisma.user.findUnique({
+      where: { email: primaryEmail },
+    })
+
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: primaryEmail,
+          name: userData.name || userData.login || null,
+          passwordHash: '', // 소셜 로그인은 비밀번호 없음
+          tier: 'FREE',
+          subscriptionStatus: 'ACTIVE',
+        },
+        select: {
+          id: true,
+          email: true,
+          name: true,
+          tier: true,
+          createdAt: true,
+        },
+      })
+    }
+
+    // JWT 토큰 생성
+    const accessToken = generateAccessToken(user.id, user.email)
+    const refreshToken = generateRefreshToken(user.id, user.email)
+
+    // 프론트엔드로 리다이렉트 (팝업 메시지 전송)
+    const html = `
+      <!DOCTYPE html>
+      <html>
+        <head><title>로그인 중...</title></head>
+        <body>
+          <script>
+            window.opener.postMessage({
+              type: 'SOCIAL_LOGIN_SUCCESS',
+              token: '${accessToken}',
+              refreshToken: '${refreshToken}',
+              user: ${JSON.stringify(user)}
+            }, '${redirectUri.split('/').slice(0, 3).join('/')}');
+            window.close();
+          </script>
+        </body>
+      </html>
+    `
+    res.send(html)
+  } catch (error: any) {
+    console.error('GitHub 콜백 처리 오류:', error)
+    res.status(500).json({ error: 'GitHub 로그인 처리에 실패했습니다' })
+  }
+}
 
 export default router
 
