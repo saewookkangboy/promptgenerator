@@ -1,6 +1,6 @@
 // 프롬프트 댓글 컴포넌트
 import { useState, useEffect } from 'react'
-import { commentAPI } from '../utils/api'
+// import { commentAPI } from '../utils/api' // 사용하지 않음
 import { showNotification } from '../utils/notifications'
 import './PromptComments.css'
 
@@ -21,8 +21,8 @@ interface PromptCommentsProps {
   onCommentCountChange?: (count: number) => void
 }
 
-function PromptComments({ promptId, onCommentCountChange }: PromptCommentsProps) {
-  const [comments, setComments] = useState<Comment[]>([])
+function PromptComments({ promptId, onCommentCountChange: _onCommentCountChange }: PromptCommentsProps) {
+  const [comments, _setComments] = useState<Comment[]>([])
   const [newComment, setNewComment] = useState('')
   const [replyingTo, setReplyingTo] = useState<string | null>(null)
   const [replyContent, setReplyContent] = useState('')
@@ -45,29 +45,29 @@ function PromptComments({ promptId, onCommentCountChange }: PromptCommentsProps)
     }
   }
 
-  const buildCommentTree = (flatComments: Comment[]): Comment[] => {
-    const commentMap = new Map<string, Comment>()
-    const rootComments: Comment[] = []
-
-    flatComments.forEach(comment => {
-      commentMap.set(comment.id, { ...comment, replies: [] })
-    })
-
-    flatComments.forEach(comment => {
-      const commentWithReplies = commentMap.get(comment.id)!
-      if (comment.parentCommentId) {
-        const parent = commentMap.get(comment.parentCommentId)
-        if (parent) {
-          parent.replies = parent.replies || []
-          parent.replies.push(commentWithReplies)
-        }
-      } else {
-        rootComments.push(commentWithReplies)
-      }
-    })
-
-    return rootComments
-  }
+  // const _buildCommentTree = (flatComments: Comment[]): Comment[] => {
+  //   const commentMap = new Map<string, Comment>()
+  //   const rootComments: Comment[] = []
+  //
+  //   flatComments.forEach(comment => {
+  //     commentMap.set(comment.id, { ...comment, replies: [] })
+  //   })
+  //
+  //   flatComments.forEach(comment => {
+  //     const commentWithReplies = commentMap.get(comment.id)!
+  //     if (comment.parentCommentId) {
+  //       const parent = commentMap.get(comment.parentCommentId)
+  //       if (parent) {
+  //         parent.replies = parent.replies || []
+  //         parent.replies.push(commentWithReplies)
+  //       }
+  //     } else {
+  //       rootComments.push(commentWithReplies)
+  //     }
+  //   })
+  //
+  //   return rootComments
+  // }
 
   const handleSubmitComment = async () => {
     if (!newComment.trim()) {
@@ -91,7 +91,7 @@ function PromptComments({ promptId, onCommentCountChange }: PromptCommentsProps)
     }
   }
 
-  const handleSubmitReply = async (parentCommentId: string) => {
+  const handleSubmitReply = async (_parentCommentId: string) => {
     if (!replyContent.trim()) {
       showNotification('답글을 입력해주세요', 'error')
       return

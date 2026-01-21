@@ -1,6 +1,6 @@
 // Admin 고급 분석 컴포넌트
 import { useState, useEffect, useMemo } from 'react'
-import { adminAPI } from '../utils/api'
+// import { adminAPI } from '../utils/api' // 사용하지 않음
 import './AdminAdvancedAnalytics.css'
 
 interface UserBehavior {
@@ -35,9 +35,9 @@ interface UserSegment {
 }
 
 function AdminAdvancedAnalytics() {
-  const [userBehaviors, setUserBehaviors] = useState<UserBehavior[]>([])
-  const [funnelData, setFunnelData] = useState<FunnelData[]>([])
-  const [userSegments, setUserSegments] = useState<UserSegment[]>([])
+  const [userBehaviors, _setUserBehaviors] = useState<UserBehavior[]>([])
+  const [funnelData, _setFunnelData] = useState<FunnelData[]>([])
+  const [userSegments, _setUserSegments] = useState<UserSegment[]>([])
   const [timeRange, setTimeRange] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
   const [isLoading, setIsLoading] = useState(false)
 

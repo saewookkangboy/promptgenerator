@@ -12,7 +12,7 @@ import './UserAnalyticsDashboard.css'
 
 function UserAnalyticsDashboard() {
   const [records, setRecords] = useState<PromptRecord[]>([])
-  const [stats, setStats] = useState<PromptStats>({ text: 0, image: 0, video: 0, engineering: 0, total: 0 })
+  const [_stats, setStats] = useState<PromptStats>({ text: 0, image: 0, video: 0, engineering: 0, total: 0 })
   const [dailyVisits, setDailyVisits] = useState<Array<{ date: string; count: number }>>([])
   const [selectedPeriod, setSelectedPeriod] = useState<'7d' | '30d' | '90d' | 'all'>('30d')
 
@@ -129,7 +129,7 @@ function UserAnalyticsDashboard() {
             <div className="stat-item">
               <span className="stat-label">가장 많이 사용한 태그</span>
               <span className="stat-value">
-                {patterns.mostUsedTags.length > 0 ? patterns.mostUsedTags[0] : '없음'}
+                {patterns.mostUsedTags && patterns.mostUsedTags.length > 0 ? patterns.mostUsedTags[0] : '없음'}
               </span>
             </div>
           </div>
@@ -197,7 +197,7 @@ function UserAnalyticsDashboard() {
             <div className="stat-item">
               <span className="stat-label">선호 콘텐츠 타입</span>
               <span className="stat-value">
-                {patterns.preferredContentTypes.length > 0 
+                {patterns.preferredContentTypes && patterns.preferredContentTypes.length > 0 
                   ? patterns.preferredContentTypes.join(', ') 
                   : '없음'}
               </span>
@@ -205,7 +205,7 @@ function UserAnalyticsDashboard() {
             <div className="stat-item">
               <span className="stat-label">선호 톤 스타일</span>
               <span className="stat-value">
-                {patterns.preferredToneStyles.length > 0 
+                {patterns.preferredToneStyles && patterns.preferredToneStyles.length > 0 
                   ? patterns.preferredToneStyles.join(', ') 
                   : '없음'}
               </span>
@@ -213,7 +213,7 @@ function UserAnalyticsDashboard() {
             <div className="stat-item">
               <span className="stat-label">선호 목표</span>
               <span className="stat-value">
-                {patterns.preferredGoals.length > 0 
+                {patterns.preferredGoals && patterns.preferredGoals.length > 0 
                   ? patterns.preferredGoals.join(', ') 
                   : '없음'}
               </span>

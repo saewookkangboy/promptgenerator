@@ -10,7 +10,7 @@ interface OnboardingProps {
 }
 
 function Onboarding({ onComplete, onSkip }: OnboardingProps) {
-  const { t } = useLanguage()
+  const { t: _t } = useLanguage()
   const [currentStep, setCurrentStep] = useState(1)
   const [selectedContentTypes, setSelectedContentTypes] = useState<string[]>([])
   const [selectedToneStyles, setSelectedToneStyles] = useState<string[]>([])

@@ -1,6 +1,6 @@
 // 워크스페이스 관리 컴포넌트
 import { useState, useEffect } from 'react'
-import { workspaceAPI } from '../utils/api'
+// import { workspaceAPI } from '../utils/api' // 사용하지 않음
 import { showNotification } from '../utils/notifications'
 import './WorkspaceManager.css'
 
@@ -24,9 +24,9 @@ interface WorkspaceMember {
 }
 
 function WorkspaceManager() {
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([])
+  const [workspaces, _setWorkspaces] = useState<Workspace[]>([])
   const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null)
-  const [members, setMembers] = useState<WorkspaceMember[]>([])
+  const [members, _setMembers] = useState<WorkspaceMember[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
@@ -59,7 +59,7 @@ function WorkspaceManager() {
     }
   }
 
-  const loadMembers = async (workspaceId: string) => {
+  const loadMembers = async (_workspaceId: string) => {
     try {
       // TODO: workspaceAPI.getMembers 구현 필요
       // const data = await workspaceAPI.getMembers(workspaceId)

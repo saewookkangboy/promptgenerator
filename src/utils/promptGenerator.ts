@@ -683,6 +683,14 @@ function generateHashtags(userPrompt: string, contentType: ContentType): string[
     instagram: ['인스타그램', '소셜미디어', '콘텐츠', '스토리텔링'],
     youtube: ['유튜브', '영상', '콘텐츠', '크리에이터'],
     general: ['텍스트', '자연어', '프롬프트', '일반'],
+    twitter: ['트위터', 'X', '소셜미디어', '짧은글'],
+    threads: ['Threads', '메타', '소셜미디어', '대화'],
+    tiktok: ['틱톡', '바이럴', '트렌드', '짧은영상'],
+    email: ['이메일', '마케팅', '전환', '이메일마케팅'],
+    newsletter: ['뉴스레터', '구독', '정기발행', '콘텐츠'],
+    product: ['제품', '설명서', '제품소개', '특징'],
+    faq: ['FAQ', '질문', '답변', '자주묻는질문'],
+    podcast: ['팟캐스트', '오디오', '스크립트', '쇼노트'],
   }
   
   baseHashtags.push(...typeHashtags[contentType])

@@ -585,3 +585,95 @@ export function updateUserPreferences(updates: Partial<UserPreferences>): void {
   }
 }
 
+export function analyzeUserPatterns(records?: PromptRecord[]): {
+  mostUsedCategory?: string
+  mostUsedTime?: string
+  averageLength?: number
+  trends?: Array<{ date: string; count: number }>
+  mostUsedTags?: string[]
+  preferredContentTypes?: string[]
+  preferredToneStyles?: string[]
+  preferredGoals?: string[]
+} {
+  const recordsToAnalyze = records || getPromptRecords()
+  
+  if (recordsToAnalyze.length === 0) {
+    return {}
+  }
+
+  // 가장 많이 사용된 카테고리
+  const categoryCounts: Record<string, number> = {}
+  recordsToAnalyze.forEach(r => {
+    categoryCounts[r.category] = (categoryCounts[r.category] || 0) + 1
+  })
+  const mostUsedCategory = Object.entries(categoryCounts)
+    .sort(([, a], [, b]) => b - a)[0]?.[0]
+
+  // 가장 많이 사용된 시간대
+  const hourCounts: Record<number, number> = {}
+  recordsToAnalyze.forEach(r => {
+    const hour = new Date(r.timestamp).getHours()
+    hourCounts[hour] = (hourCounts[hour] || 0) + 1
+  })
+  const mostUsedHour = Object.entries(hourCounts)
+    .sort(([, a], [, b]) => b - a)[0]?.[0]
+  const mostUsedTime = mostUsedHour ? `${mostUsedHour}시` : undefined
+
+  // 평균 입력 길이
+  const totalLength = recordsToAnalyze.reduce((sum, r) => sum + (r.userInput?.length || 0), 0)
+  const averageLength = recordsToAnalyze.length > 0 ? Math.round(totalLength / recordsToAnalyze.length) : 0
+
+  // 트렌드 (일별 사용량)
+  const dateCounts: Record<string, number> = {}
+  recordsToAnalyze.forEach(r => {
+    const date = new Date(r.timestamp).toISOString().split('T')[0]
+    dateCounts[date] = (dateCounts[date] || 0) + 1
+  })
+  const trends = Object.entries(dateCounts)
+    .map(([date, count]) => ({ date, count }))
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(-30) // 최근 30일
+
+  // 가장 많이 사용된 태그
+  const tagCounts: Record<string, number> = {}
+  recordsToAnalyze.forEach(r => {
+    if (r.tags) {
+      r.tags.forEach(tag => {
+        tagCounts[tag] = (tagCounts[tag] || 0) + 1
+      })
+    }
+  })
+  const mostUsedTags = Object.entries(tagCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 5)
+    .map(([tag]) => tag)
+
+  // 선호 콘텐츠 타입
+  const contentTypeCounts: Record<string, number> = {}
+  recordsToAnalyze.forEach(r => {
+    if (r.options?.contentType) {
+      contentTypeCounts[r.options.contentType] = (contentTypeCounts[r.options.contentType] || 0) + 1
+    }
+  })
+  const preferredContentTypes = Object.entries(contentTypeCounts)
+    .sort(([, a], [, b]) => b - a)
+    .slice(0, 3)
+    .map(([type]) => type)
+
+  // 선호 톤 스타일
+  const preferredToneStyles: string[] = []
+
+  // 선호 목표
+  const preferredGoals: string[] = []
+
+  return {
+    mostUsedCategory,
+    mostUsedTime,
+    averageLength,
+    trends,
+    mostUsedTags,
+    preferredContentTypes,
+    preferredToneStyles,
+    preferredGoals,
+  }
+}

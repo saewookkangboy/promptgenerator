@@ -49,6 +49,54 @@ const CONTENT_TYPE_INFO: Record<
     requirements: '자연어 프롬프트 기반의 비정형 텍스트 생성, 특정 플랫폼 제약 없음',
     requirementsEn: 'Generate unstructured text based on natural language prompts without platform-specific constraints.',
   },
+  twitter: {
+    name: '트위터(X) 콘텐츠',
+    englishName: 'Twitter/X Content',
+    requirements: '간결하고 임팩트 있는 짧은 텍스트',
+    requirementsEn: 'Create concise, impactful short-form content optimized for Twitter/X.',
+  },
+  threads: {
+    name: 'Threads 콘텐츠',
+    englishName: 'Meta Threads Content',
+    requirements: '대화형이고 참여를 유도하는 콘텐츠',
+    requirementsEn: 'Craft conversational content that encourages engagement on Meta Threads.',
+  },
+  tiktok: {
+    name: '틱톡 콘텐츠',
+    englishName: 'TikTok Content',
+    requirements: '트렌디하고 바이럴 가능성이 높은 콘텐츠',
+    requirementsEn: 'Generate trendy, viral-worthy content optimized for TikTok.',
+  },
+  email: {
+    name: '이메일 마케팅',
+    englishName: 'Email Marketing',
+    requirements: '전환율을 높이는 이메일 콘텐츠',
+    requirementsEn: 'Create conversion-focused email marketing content.',
+  },
+  newsletter: {
+    name: '뉴스레터',
+    englishName: 'Newsletter',
+    requirements: '정기적으로 발행되는 뉴스레터 콘텐츠',
+    requirementsEn: 'Generate regular newsletter content that keeps subscribers engaged.',
+  },
+  product: {
+    name: '제품 설명서',
+    englishName: 'Product Description',
+    requirements: '제품의 특징과 장점을 명확히 전달하는 설명서',
+    requirementsEn: 'Create clear product descriptions that highlight features and benefits.',
+  },
+  faq: {
+    name: 'FAQ',
+    englishName: 'FAQ',
+    requirements: '자주 묻는 질문에 대한 명확한 답변',
+    requirementsEn: 'Generate clear answers to frequently asked questions.',
+  },
+  podcast: {
+    name: '팟캐스트',
+    englishName: 'Podcast',
+    requirements: '팟캐스트 스크립트 및 쇼 노트',
+    requirementsEn: 'Create podcast scripts and show notes.',
+  },
 }
 
 export class TextPromptGenerator extends BasePromptGenerator {

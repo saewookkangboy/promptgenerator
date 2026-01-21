@@ -1,6 +1,6 @@
 // 구독 관리 컴포넌트
 import { useState, useEffect } from 'react'
-import { userAPI } from '../utils/api'
+// import { userAPI } from '../utils/api' // 사용하지 않음
 import { showNotification } from '../utils/notifications'
 import './SubscriptionManager.css'
 
@@ -120,9 +120,9 @@ const PLANS: SubscriptionPlan[] = [
 ]
 
 function SubscriptionManager() {
-  const [currentSubscription, setCurrentSubscription] = useState<UserSubscription | null>(null)
+  const [currentSubscription, _setCurrentSubscription] = useState<UserSubscription | null>(null)
   const [isLoading, setIsLoading] = useState(false)
-  const [selectedPlan, setSelectedPlan] = useState<string | null>(null)
+  const [_selectedPlan, _setSelectedPlan] = useState<string | null>(null)
 
   useEffect(() => {
     loadSubscription()
@@ -139,7 +139,7 @@ function SubscriptionManager() {
   }
 
   const handleUpgrade = async (planId: string) => {
-    setSelectedPlan(planId)
+    _setSelectedPlan(planId)
     // TODO: 결제 프로세스 시작
     showNotification('결제 프로세스를 시작합니다...', 'info')
   }
